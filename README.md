@@ -47,6 +47,30 @@ npm install
 
 ### 🚀 Executando o Projeto
 
+#### 🎯 Scripts de Inicialização Automática (Recomendado)
+
+**Opção 1 - Script Simples (Mais Rápido):**
+```bash
+start-simple.bat
+```
+
+**Opção 2 - Script Completo (Com verificações):**
+```bash
+start-crm.bat
+```
+
+**Opção 3 - Script PowerShell (Mais recursos):**
+```powershell
+start-crm.ps1
+```
+
+**Para parar os serviços:**
+```bash
+stop-crm.bat
+```
+
+#### 🔧 Execução Manual
+
 **Modo de desenvolvimento (com auto-reload):**
 ```bash
 npm run dev
