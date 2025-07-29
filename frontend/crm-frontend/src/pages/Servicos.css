@@ -1,0 +1,61 @@
+/* Importa estilos base */
+@import './Clientes.css';
+
+.servico-card {
+  border-left-color: #2196F3;
+}
+
+.card-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.valor-badge {
+  background: #4CAF50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.status-badge.concluido,
+.status-badge.realizado {
+  background: #4CAF50;
+  color: white;
+}
+
+.status-badge.pendente,
+.status-badge.agendado {
+  background: #FF9800;
+  color: white;
+}
+
+.status-badge.cancelado {
+  background: #f44336;
+  color: white;
+}
+
+.status-badge.em_andamento {
+  background: #2196F3;
+  color: white;
+}
+
+/* Responsive para badges */
+@media (max-width: 768px) {
+  .card-badges {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
