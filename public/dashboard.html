@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CRM Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card.clientes {
+            border-left-color: #4CAF50;
+        }
+
+        .metric-card.servicos {
+            border-left-color: #2196F3;
+        }
+
+        .metric-card.recontatos {
+            border-left-color: #FF9800;
+        }
+
+        .metric-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-card.clientes .metric-value {
+            color: #4CAF50;
+        }
+
+        .metric-card.servicos .metric-value {
+            color: #2196F3;
+        }
+
+        .metric-card.recontatos .metric-value {
+            color: #FF9800;
+        }
+
+        .metric-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .sub-metrics {
+            margin-top: 15px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .sub-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .sub-metric-label {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .sub-metric-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .summary {
+            background: #f8f9fa;
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+
+        .summary h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-item .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+
+        .summary-item .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .timestamp {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-success { background-color: #4CAF50; }
+        .status-warning { background-color: #FF9800; }
+        .status-danger { background-color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard CRM</h1>
+            <p>Visão geral das métricas e estatísticas do sistema</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <h3>Carregando métricas...</h3>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <h3>Erro ao carregar dados</h3>
+            <p id="error-message"></p>
+        </div>
+
+        <div id="dashboard-content" style="display: none;">
+            <div class="metrics-grid">
+                <!-- Card Clientes -->
+                <div class="metric-card clientes">
+                    <h3>👥 Clientes</h3>
+                    <div class="metric-value" id="total-clientes">0</div>
+                    <div class="metric-description" id="clientes-desc">Número total de clientes cadastrados</div>
+                </div>
+
+                <!-- Card Serviços -->
+                <div class="metric-card servicos">
+                    <h3>🔧 Serviços</h3>
+                    <div class="metric-value" id="servicos-realizados">0</div>
+                    <div class="metric-description" id="servicos-desc">Serviços realizados e receita total</div>
+                    <div class="sub-metrics">
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">Hoje:</span>
+                            <span class="sub-metric-value" id="servicos-hoje">0</span>
+                        </div>
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">Receita Total:</span>
+                            <span class="sub-metric-value" id="receita-total">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Recontatos -->
+                <div class="metric-card recontatos">
+                    <h3>📞 Recontatos</h3>
+                    <div class="metric-value" id="total-recontatos">0</div>
+                    <div class="metric-description" id="recontatos-desc">Status dos recontatos no sistema</div>
+                    <div class="sub-metrics">
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">
+                                <span class="status-indicator status-success"></span>Realizados:
+                            </span>
+                            <span class="sub-metric-value" id="recontatos-realizados">0</span>
+                        </div>
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">
+                                <span class="status-indicator status-danger"></span>Atrasados:
+                            </span>
+                            <span class="sub-metric-value" id="recontatos-atrasados">0</span>
+                        </div>
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">
+                                <span class="status-indicator status-warning"></span>Próximos:
+                            </span>
+                            <span class="sub-metric-value" id="recontatos-proximos">0</span>
+                        </div>
+                        <div class="sub-metric">
+                            <span class="sub-metric-label">Taxa de Conversão:</span>
+                            <span class="sub-metric-value" id="taxa-conversao">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary">
+                <h2>📈 Resumo Executivo</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="value" id="summary-clientes">0</div>
+                        <div class="label">Total de Clientes</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="summary-servicos">0</div>
+                        <div class="label">Serviços Realizados</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="summary-receita">R$ 0</div>
+                        <div class="label">Receita Total</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="summary-urgentes">0</div>
+                        <div class="label">Recontatos Urgentes</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timestamp">
+                Última atualização: <span id="timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadDashboard()">🔄 Atualizar</button>
+
+    <script>
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('pt-BR');
+        }
+
+        async function loadDashboard() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('dashboard-content');
+
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            content.style.display = 'none';
+
+            try {
+                const response = await fetch('/dashboard');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error('Resposta indica falha no servidor');
+                }
+
+                // Atualizar métricas principais
+                document.getElementById('total-clientes').textContent = data.metricas.clientes.total;
+                document.getElementById('clientes-desc').textContent = data.metricas.clientes.descricao;
+
+                document.getElementById('servicos-realizados').textContent = data.metricas.servicos.realizados;
+                document.getElementById('servicos-hoje').textContent = data.metricas.servicos.hoje;
+                document.getElementById('receita-total').textContent = formatCurrency(data.metricas.servicos.receita_total);
+                document.getElementById('servicos-desc').textContent = data.metricas.servicos.descricao;
+
+                document.getElementById('total-recontatos').textContent = data.metricas.recontatos.total;
+                document.getElementById('recontatos-realizados').textContent = data.metricas.recontatos.realizados;
+                document.getElementById('recontatos-atrasados').textContent = data.metricas.recontatos.atrasados;
+                document.getElementById('recontatos-proximos').textContent = data.metricas.recontatos.proximos;
+                document.getElementById('taxa-conversao').textContent = data.metricas.recontatos.taxa_conversao;
+                document.getElementById('recontatos-desc').textContent = data.metricas.recontatos.descricao;
+
+                // Atualizar resumo
+                document.getElementById('summary-clientes').textContent = data.resumo.total_clientes;
+                document.getElementById('summary-servicos').textContent = data.resumo.servicos_realizados;
+                document.getElementById('summary-receita').textContent = formatCurrency(data.resumo.receita_total);
+                document.getElementById('summary-urgentes').textContent = data.resumo.recontatos_urgentes;
+
+                // Atualizar timestamp
+                document.getElementById('timestamp').textContent = formatDate(data.timestamp);
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+            } catch (err) {
+                console.error('Erro ao carregar dashboard:', err);
+                document.getElementById('error-message').textContent = err.message;
+                loading.style.display = 'none';
+                error.style.display = 'block';
+            }
+        }
+
+        // Carregar dashboard ao inicializar a página
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+
+        // Auto-refresh a cada 30 segundos
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

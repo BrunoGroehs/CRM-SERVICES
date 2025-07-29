@@ -83,10 +83,18 @@ app.get('/', (req, res) => {
         'PUT /recontatos/:id': 'Atualiza recontato',
         'DELETE /recontatos/:id': 'Remove recontato'
       },
+      dashboard: {
+        'GET /dashboard': 'Métricas e estatísticas do sistema'
+      },
       health: {
         'GET /db-test': 'Testa conexão com banco',
         'GET /health': 'Status do servidor'
       }
+    },
+    pages: {
+      'dashboard.html': 'Interface visual do dashboard com métricas',
+      'teste-recontatos.html': 'Interface de teste para recontatos',
+      'teste-completo-recontatos.html': 'Interface completa de gerenciamento de recontatos'
     }
   });
 });
@@ -95,6 +103,113 @@ app.get('/', (req, res) => {
 app.use('/clientes', clientesRouter);
 app.use('/servicos', servicosRouter);
 app.use('/recontatos', recontatosRouter);
+
+// Endpoint Dashboard - Métricas do Sistema
+app.get('/dashboard', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    
+    // 1. Número total de clientes
+    const totalClientesQuery = await client.query('SELECT COUNT(*) as total FROM clientes');
+    const totalClientes = parseInt(totalClientesQuery.rows[0].total);
+    
+    // 2. Total de serviços realizados (assumindo que serviços com data passada foram realizados)
+    const servicosRealizadosQuery = await client.query(`
+      SELECT COUNT(*) as total 
+      FROM servicos 
+      WHERE data <= CURRENT_DATE
+    `);
+    const servicosRealizados = parseInt(servicosRealizadosQuery.rows[0].total);
+    
+    // 3. Soma do valor de todos os serviços (receita total)
+    const receitaTotalQuery = await client.query(`
+      SELECT COALESCE(SUM(valor), 0) as receita_total 
+      FROM servicos
+    `);
+    const receitaTotal = parseFloat(receitaTotalQuery.rows[0].receita_total) || 0;
+    
+    // 4. Número de recontatos com status próximo ou atrasado
+    // Considerando:
+    // - "atrasado": data_agendada < hoje e status = 'agendado'
+    // - "próximo": data_agendada <= próximos 7 dias e status = 'agendado'
+    const recontatosUrgentesQuery = await client.query(`
+      SELECT 
+        COUNT(CASE WHEN data_agendada < CURRENT_DATE AND status = 'agendado' THEN 1 END) as atrasados,
+        COUNT(CASE WHEN data_agendada <= CURRENT_DATE + INTERVAL '7 days' AND data_agendada >= CURRENT_DATE AND status = 'agendado' THEN 1 END) as proximos
+      FROM recontatos
+    `);
+    
+    const recontatos = recontatosUrgentesQuery.rows[0];
+    const recontatosAtrasados = parseInt(recontatos.atrasados) || 0;
+    const recontatosProximos = parseInt(recontatos.proximos) || 0;
+    
+    // 5. Métricas adicionais úteis
+    const servicosHojeQuery = await client.query(`
+      SELECT COUNT(*) as total 
+      FROM servicos 
+      WHERE data = CURRENT_DATE
+    `);
+    const servicosHoje = parseInt(servicosHojeQuery.rows[0].total);
+    
+    const totalRecontatosQuery = await client.query('SELECT COUNT(*) as total FROM recontatos');
+    const totalRecontatos = parseInt(totalRecontatosQuery.rows[0].total);
+    
+    const recontatosRealizadosQuery = await client.query(`
+      SELECT COUNT(*) as total 
+      FROM recontatos 
+      WHERE status = 'realizado'
+    `);
+    const recontatosRealizados = parseInt(recontatosRealizadosQuery.rows[0].total);
+    
+    client.release();
+    
+    // Calcular taxa de conversão de recontatos
+    const taxaConversaoRecontatos = totalRecontatos > 0 ? 
+      ((recontatosRealizados / totalRecontatos) * 100).toFixed(2) : 0;
+    
+    // Retornar métricas organizadas
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      metricas: {
+        clientes: {
+          total: totalClientes,
+          descricao: "Número total de clientes cadastrados"
+        },
+        servicos: {
+          realizados: servicosRealizados,
+          hoje: servicosHoje,
+          receita_total: receitaTotal,
+          descricao: "Serviços realizados e receita total"
+        },
+        recontatos: {
+          total: totalRecontatos,
+          realizados: recontatosRealizados,
+          atrasados: recontatosAtrasados,
+          proximos: recontatosProximos,
+          taxa_conversao: `${taxaConversaoRecontatos}%`,
+          descricao: "Status dos recontatos no sistema"
+        }
+      },
+      resumo: {
+        total_clientes: totalClientes,
+        servicos_realizados: servicosRealizados,
+        receita_total: receitaTotal,
+        recontatos_urgentes: recontatosAtrasados + recontatosProximos,
+        recontatos_atrasados: recontatosAtrasados,
+        recontatos_proximos: recontatosProximos
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erro ao buscar métricas do dashboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao buscar métricas',
+      error: error.message
+    });
+  }
+});
 
 // Endpoint para testar a conexão com o banco
 app.get('/db-test', async (req, res) => {
@@ -187,6 +302,7 @@ app.listen(port, async () => {
   console.log('   - POST /recontatos - Cria novo recontato');
   console.log('   - PUT /recontatos/:id - Atualiza recontato');
   console.log('   - DELETE /recontatos/:id - Remove recontato');
+  console.log('   - GET /dashboard  - Métricas e estatísticas do sistema');
   console.log('   - GET /db-test    - Teste de conexão com banco');
   console.log('   - GET /health     - Status do servidor');
   console.log('');
