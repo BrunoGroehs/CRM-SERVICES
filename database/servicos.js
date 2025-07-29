@@ -7,16 +7,12 @@ async function createServicosTable(pool) {
       CREATE TABLE IF NOT EXISTS servicos (
         id SERIAL PRIMARY KEY,
         cliente_id INTEGER NOT NULL,
-        tipo_servico VARCHAR(255) NOT NULL,
-        descricao TEXT,
-        data_servico DATE NOT NULL,
-        hora_inicio TIME NOT NULL,
-        hora_fim TIME,
-        status VARCHAR(50) DEFAULT 'agendado',
+        data DATE NOT NULL,
+        hora VARCHAR(10) NOT NULL,
         valor DECIMAL(10,2),
-        observacoes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        notas TEXT,
+        status VARCHAR(50) DEFAULT 'agendado',
+        funcionario_responsavel VARCHAR(255),
         FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
       );
     `;
@@ -27,9 +23,8 @@ async function createServicosTable(pool) {
     // Criar índices para melhor performance
     const createIndexes = [
       'CREATE INDEX IF NOT EXISTS idx_servicos_cliente_id ON servicos(cliente_id);',
-      'CREATE INDEX IF NOT EXISTS idx_servicos_data_servico ON servicos(data_servico);',
-      'CREATE INDEX IF NOT EXISTS idx_servicos_status ON servicos(status);',
-      'CREATE INDEX IF NOT EXISTS idx_servicos_created_at ON servicos(created_at);'
+      'CREATE INDEX IF NOT EXISTS idx_servicos_data ON servicos(data);',
+      'CREATE INDEX IF NOT EXISTS idx_servicos_status ON servicos(status);'
     ];
     
     for (const indexQuery of createIndexes) {

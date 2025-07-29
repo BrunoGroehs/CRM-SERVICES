@@ -177,23 +177,20 @@ router.get('/cliente/:clienteId', async (req, res) => {
     const query = `
       SELECT 
         s.id,
-        s.tipo_servico,
-        s.descricao,
         s.cliente_id,
         c.nome as cliente_nome,
         c.telefone as cliente_telefone,
         c.email as cliente_email,
-        s.data_servico as data,
-        s.hora_inicio as hora,
+        s.data,
+        s.hora,
         s.valor,
-        s.observacoes as notas,
+        s.notas,
         s.status,
-        s.created_at,
-        s.updated_at
+        s.funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       WHERE s.cliente_id = $1
-      ORDER BY s.data_servico DESC, s.hora_inicio DESC
+      ORDER BY s.data DESC, s.hora DESC
     `;
     
     const result = await pool.query(query, [clienteId]);
