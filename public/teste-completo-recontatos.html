@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste COMPLETO - Endpoints Recontatos</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 { 
+            color: #333; 
+            text-align: center; 
+            border-bottom: 2px solid #4CAF50; 
+            padding-bottom: 10px;
+        }
+        .section { 
+            margin: 30px 0; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            background-color: #fafafa;
+        }
+        .button { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        .button:hover { background-color: #45a049; }
+        .button.danger { background-color: #dc3545; }
+        .button.danger:hover { background-color: #c82333; }
+        .button.warning { background-color: #fd7e14; }
+        .button.warning:hover { background-color: #e96106; }
+        .result { 
+            margin-top: 10px; 
+            padding: 10px; 
+            border-radius: 5px; 
+            white-space: pre-wrap; 
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 8px; 
+            margin: 5px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box;
+        }
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        .inline-form { 
+            display: flex; 
+            align-items: end; 
+            gap: 10px; 
+        }
+        .inline-form input { 
+            width: 200px; 
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-top: 10px;
+        }
+        .status-success { background-color: #28a745; }
+        .status-error { background-color: #dc3545; }
+        .status-warning { background-color: #ffc107; color: #212529; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Teste COMPLETO - Endpoints Recontatos CRM</h1>
+        
+        <!-- Status do Sistema -->
+        <div class="section">
+            <h2>🌐 Status do Sistema</h2>
+            <div id="statusSistema" class="status-badge status-warning">Verificando...</div>
+            <button class="button" onclick="verificarStatus()">Verificar Status</button>
+        </div>
+        
+        <!-- Seção GET - Listar Recontatos -->
+        <div class="section">
+            <h2>📋 GET - Listar Recontatos</h2>
+            <button class="button" onclick="testarGET()">🔄 Listar Todos os Recontatos</button>
+            <button class="button" onclick="testarGETComFiltro()">🔍 Buscar por Cliente</button>
+            <div id="resultGET" class="result"></div>
+        </div>
+
+        <!-- Seção POST - Criar Recontato -->
+        <div class="section">
+            <h2>➕ POST - Criar Novo Recontato</h2>
+            <div class="form-group">
+                <label>Cliente ID:</label>
+                <input type="number" id="clienteId" value="1" placeholder="ID do cliente">
+            </div>
+            <div class="form-group">
+                <label>Data Agendada:</label>
+                <input type="date" id="dataAgendada" value="2025-02-01">
+            </div>
+            <div class="form-group">
+                <label>Hora Agendada:</label>
+                <input type="time" id="horaAgendada" value="14:30">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Recontato:</label>
+                <select id="tipoRecontato">
+                    <option value="ligacao">Ligação</option>
+                    <option value="email">Email</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="visita">Visita</option>
+                    <option value="reuniao">Reunião</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Motivo:</label>
+                <input type="text" id="motivo" value="Follow-up de proposta comercial" placeholder="Motivo do recontato">
+            </div>
+            <div class="form-group">
+                <label>Status:</label>
+                <select id="status">
+                    <option value="agendado">Agendado</option>
+                    <option value="realizado">Realizado</option>
+                    <option value="cancelado">Cancelado</option>
+                    <option value="reagendado">Reagendado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Funcionário Responsável:</label>
+                <input type="text" id="funcionarioResponsavel" value="João Silva" placeholder="Nome do funcionário">
+            </div>
+            <div class="form-group">
+                <label>Observações:</label>
+                <textarea id="observacoes" rows="3" placeholder="Observações adicionais">Cliente demonstrou interesse no serviço premium</textarea>
+            </div>
+            <button class="button" onclick="testarPOST()">✨ Criar Recontato</button>
+            <div id="resultPOST" class="result"></div>
+        </div>
+
+        <!-- Seção PUT - Atualizar Recontato -->
+        <div class="section">
+            <h2>✏️ PUT - Atualizar Recontato</h2>
+            <div class="inline-form">
+                <div>
+                    <label>ID do Recontato:</label>
+                    <input type="number" id="updateId" placeholder="ID para atualizar">
+                </div>
+                <button class="button" onclick="carregarRecontato()">📥 Carregar Dados</button>
+                <button class="button warning" onclick="testarPUT()">💾 Atualizar</button>
+            </div>
+            <div id="formUpdate" style="display: none;">
+                <div class="form-group">
+                    <label>Novo Status:</label>
+                    <select id="updateStatus">
+                        <option value="agendado">Agendado</option>
+                        <option value="realizado">Realizado</option>
+                        <option value="cancelado">Cancelado</option>
+                        <option value="reagendado">Reagendado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data Realizado (se aplicável):</label>
+                    <input type="date" id="updateDataRealizado">
+                </div>
+                <div class="form-group">
+                    <label>Resultado:</label>
+                    <textarea id="updateResultado" rows="3" placeholder="Resultado do recontato"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Observações Atualizadas:</label>
+                    <textarea id="updateObservacoes" rows="3" placeholder="Observações atualizadas"></textarea>
+                </div>
+            </div>
+            <div id="resultPUT" class="result"></div>
+        </div>
+
+        <!-- Seção DELETE - Remover Recontato -->
+        <div class="section">
+            <h2>🗑️ DELETE - Remover Recontato</h2>
+            <div class="inline-form">
+                <div>
+                    <label>ID do Recontato:</label>
+                    <input type="number" id="deleteId" placeholder="ID para remover">
+                </div>
+                <button class="button danger" onclick="testarDELETE()">🗑️ DELETAR</button>
+            </div>
+            <div id="resultDELETE" class="result"></div>
+        </div>
+
+        <!-- Seção de Teste Completo -->
+        <div class="section">
+            <h2>🚀 Teste Completo CRUD</h2>
+            <button class="button" onclick="executarTesteCRUDCompleto()" style="background-color: #6f42c1;">
+                🧪 Executar Teste CRUD Completo (Criar → Listar → Atualizar → Deletar)
+            </button>
+            <div id="resultCRUD" class="result"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let ultimoRecontatoCriado = null;
+
+        async function verificarStatus() {
+            const statusDiv = document.getElementById('statusSistema');
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = '✅ Sistema Online';
+                    statusDiv.className = 'status-badge status-success';
+                } else {
+                    statusDiv.innerHTML = '❌ Sistema com Problemas';
+                    statusDiv.className = 'status-badge status-error';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Sistema Offline';
+                statusDiv.className = 'status-badge status-error';
+            }
+        }
+
+        async function testarGET() {
+            const resultDiv = document.getElementById('resultGET');
+            try {
+                resultDiv.innerHTML = '⏳ Carregando recontatos...';
+                resultDiv.className = 'result info';
+                
+                const response = await fetch('/recontatos');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `✅ Sucesso! Encontrados ${data.length} recontatos:\n\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = `❌ Erro: ${data.error || 'Erro desconhecido'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Erro de conexão: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testarGETComFiltro() {
+            const clienteId = prompt('Digite o ID do cliente:');
+            if (!clienteId) return;
+            
+            const resultDiv = document.getElementById('resultGET');
+            try {
+                resultDiv.innerHTML = `⏳ Buscando recontatos do cliente ${clienteId}...`;
+                resultDiv.className = 'result info';
+                
+                const response = await fetch(`/recontatos?cliente_id=${clienteId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `✅ Encontrados ${data.length} recontatos para o cliente ${clienteId}:\n\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = `❌ Erro: ${data.error || 'Erro desconhecido'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Erro de conexão: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testarPOST() {
+            const resultDiv = document.getElementById('resultPOST');
+            try {
+                const novoRecontato = {
+                    cliente_id: parseInt(document.getElementById('clienteId').value),
+                    data_agendada: document.getElementById('dataAgendada').value,
+                    hora_agendada: document.getElementById('horaAgendada').value,
+                    tipo_recontato: document.getElementById('tipoRecontato').value,
+                    motivo: document.getElementById('motivo').value,
+                    status: document.getElementById('status').value,
+                    funcionario_responsavel: document.getElementById('funcionarioResponsavel').value,
+                    observacoes: document.getElementById('observacoes').value
+                };
+
+                resultDiv.innerHTML = '⏳ Criando novo recontato...';
+                resultDiv.className = 'result info';
+                
+                const response = await fetch('/recontatos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(novoRecontato)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    ultimoRecontatoCriado = data.id;
+                    document.getElementById('updateId').value = data.id;
+                    document.getElementById('deleteId').value = data.id;
+                    
+                    resultDiv.innerHTML = `✅ Recontato criado com sucesso!\nID: ${data.id}\n\nDados:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                    
+                    // Atualizar lista automaticamente
+                    setTimeout(testarGET, 1000);
+                } else {
+                    resultDiv.innerHTML = `❌ Erro: ${data.error || 'Erro desconhecido'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Erro de conexão: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function carregarRecontato() {
+            const id = document.getElementById('updateId').value;
+            if (!id) {
+                alert('Digite um ID válido');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/recontatos?id=${id}`);
+                const data = await response.json();
+                
+                if (response.ok && data.length > 0) {
+                    const recontato = data[0];
+                    document.getElementById('updateStatus').value = recontato.status;
+                    document.getElementById('updateObservacoes').value = recontato.observacoes || '';
+                    document.getElementById('formUpdate').style.display = 'block';
+                } else {
+                    alert('Recontato não encontrado');
+                }
+            } catch (error) {
+                alert('Erro ao carregar recontato: ' + error.message);
+            }
+        }
+
+        async function testarPUT() {
+            const id = document.getElementById('updateId').value;
+            if (!id) {
+                alert('Digite um ID válido');
+                return;
+            }
+
+            const resultDiv = document.getElementById('resultPUT');
+            try {
+                const dadosAtualizacao = {
+                    status: document.getElementById('updateStatus').value,
+                    data_realizado: document.getElementById('updateDataRealizado').value || null,
+                    resultado: document.getElementById('updateResultado').value || null,
+                    observacoes: document.getElementById('updateObservacoes').value || null
+                };
+
+                resultDiv.innerHTML = `⏳ Atualizando recontato ${id}...`;
+                resultDiv.className = 'result info';
+                
+                const response = await fetch(`/recontatos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dadosAtualizacao)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `✅ Recontato ${id} atualizado com sucesso!\n\nDados atualizados:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                    
+                    // Atualizar lista
+                    setTimeout(testarGET, 1000);
+                } else {
+                    resultDiv.innerHTML = `❌ Erro: ${data.error || 'Erro desconhecido'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Erro de conexão: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testarDELETE() {
+            const id = document.getElementById('deleteId').value;
+            if (!id) {
+                alert('Digite um ID válido');
+                return;
+            }
+
+            if (!confirm(`Tem certeza que deseja deletar o recontato ${id}?`)) {
+                return;
+            }
+
+            const resultDiv = document.getElementById('resultDELETE');
+            try {
+                resultDiv.innerHTML = `⏳ Deletando recontato ${id}...`;
+                resultDiv.className = 'result info';
+                
+                const response = await fetch(`/recontatos/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `✅ Recontato ${id} deletado com sucesso!\n\nResposta:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                    
+                    // Limpar campos e atualizar lista
+                    document.getElementById('deleteId').value = '';
+                    document.getElementById('updateId').value = '';
+                    setTimeout(testarGET, 1000);
+                } else {
+                    resultDiv.innerHTML = `❌ Erro: ${data.error || 'Erro desconhecido'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Erro de conexão: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function executarTesteCRUDCompleto() {
+            const resultDiv = document.getElementById('resultCRUD');
+            resultDiv.innerHTML = '🚀 Iniciando teste CRUD completo...\n\n';
+            resultDiv.className = 'result info';
+
+            let testId = null;
+
+            try {
+                // 1. Criar
+                resultDiv.innerHTML += '1️⃣ Testando CREATE (POST)...\n';
+                const novoRecontato = {
+                    cliente_id: 1,
+                    data_agendada: '2025-02-15',
+                    hora_agendada: '15:00',
+                    tipo_recontato: 'ligacao',
+                    motivo: 'Teste CRUD automático',
+                    status: 'agendado',
+                    funcionario_responsavel: 'Sistema de Teste',
+                    observacoes: 'Recontato criado pelo teste CRUD'
+                };
+
+                const createResponse = await fetch('/recontatos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(novoRecontato)
+                });
+
+                if (!createResponse.ok) {
+                    throw new Error('Falha no CREATE');
+                }
+
+                const createData = await createResponse.json();
+                testId = createData.id;
+                resultDiv.innerHTML += `✅ CREATE OK - ID: ${testId}\n\n`;
+
+                // 2. Ler
+                resultDiv.innerHTML += '2️⃣ Testando READ (GET)...\n';
+                const readResponse = await fetch(`/recontatos?id=${testId}`);
+                if (!readResponse.ok) throw new Error('Falha no READ');
+                resultDiv.innerHTML += '✅ READ OK\n\n';
+
+                // 3. Atualizar
+                resultDiv.innerHTML += '3️⃣ Testando UPDATE (PUT)...\n';
+                const updateResponse = await fetch(`/recontatos/${testId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'realizado',
+                        resultado: 'Cliente confirmou interesse',
+                        observacoes: 'Teste CRUD - Atualizado com sucesso'
+                    })
+                });
+                if (!updateResponse.ok) throw new Error('Falha no UPDATE');
+                resultDiv.innerHTML += '✅ UPDATE OK\n\n';
+
+                // 4. Deletar
+                resultDiv.innerHTML += '4️⃣ Testando DELETE...\n';
+                const deleteResponse = await fetch(`/recontatos/${testId}`, {
+                    method: 'DELETE'
+                });
+                if (!deleteResponse.ok) throw new Error('Falha no DELETE');
+                resultDiv.innerHTML += '✅ DELETE OK\n\n';
+
+                resultDiv.innerHTML += '🎉 TESTE CRUD COMPLETO EXECUTADO COM SUCESSO!\n';
+                resultDiv.innerHTML += 'Todos os endpoints estão funcionando corretamente.\n';
+                resultDiv.className = 'result success';
+
+                // Atualizar lista final
+                setTimeout(testarGET, 1000);
+
+            } catch (error) {
+                resultDiv.innerHTML += `❌ ERRO no teste: ${error.message}\n`;
+                resultDiv.className = 'result error';
+                
+                // Tentar limpar se algo foi criado
+                if (testId) {
+                    try {
+                        await fetch(`/recontatos/${testId}`, { method: 'DELETE' });
+                        resultDiv.innerHTML += '🧹 Limpeza realizada.\n';
+                    } catch (e) {
+                        resultDiv.innerHTML += '⚠️ Erro na limpeza.\n';
+                    }
+                }
+            }
+        }
+
+        // Executar testes iniciais ao carregar a página
+        window.onload = function() {
+            verificarStatus();
+            setTimeout(testarGET, 500);
+        };
+    </script>
+</body>
+</html>

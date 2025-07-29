@@ -6,12 +6,16 @@ require('dotenv').config();
 const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
 const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
+const recontatosRouter = require('./routes/recontatos');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware para parsing JSON
 app.use(express.json());
+
+// Middleware para servir arquivos estáticos
+app.use(express.static('public'));
 
 // Middleware para logging de requests
 app.use((req, res, next) => {
@@ -30,6 +34,9 @@ const pool = new Pool({
 // Inicializar o pool nas rotas
 initClientesPool(pool);
 initServicosPool(pool);
+
+// Disponibilizar o pool para as rotas de recontatos
+app.locals.pool = pool;
 
 // Função para testar a conexão com o banco de dados
 async function testDatabaseConnection() {
@@ -69,6 +76,13 @@ app.get('/', (req, res) => {
         'PUT /servicos/:id': 'Atualiza serviço',
         'DELETE /servicos/:id': 'Remove serviço'
       },
+      recontatos: {
+        'GET /recontatos': 'Lista todos os recontatos',
+        'GET /recontatos/:id': 'Busca recontato por ID',
+        'POST /recontatos': 'Cria novo recontato',
+        'PUT /recontatos/:id': 'Atualiza recontato',
+        'DELETE /recontatos/:id': 'Remove recontato'
+      },
       health: {
         'GET /db-test': 'Testa conexão com banco',
         'GET /health': 'Status do servidor'
@@ -80,6 +94,7 @@ app.get('/', (req, res) => {
 // Rotas da API
 app.use('/clientes', clientesRouter);
 app.use('/servicos', servicosRouter);
+app.use('/recontatos', recontatosRouter);
 
 // Endpoint para testar a conexão com o banco
 app.get('/db-test', async (req, res) => {
@@ -168,6 +183,10 @@ app.listen(port, async () => {
   console.log('   - POST /servicos  - Cria novo serviço');
   console.log('   - PUT /servicos/:id - Atualiza serviço');
   console.log('   - DELETE /servicos/:id - Remove serviço');
+  console.log('   - GET /recontatos - Lista todos os recontatos');
+  console.log('   - POST /recontatos - Cria novo recontato');
+  console.log('   - PUT /recontatos/:id - Atualiza recontato');
+  console.log('   - DELETE /recontatos/:id - Remove recontato');
   console.log('   - GET /db-test    - Teste de conexão com banco');
   console.log('   - GET /health     - Status do servidor');
   console.log('');

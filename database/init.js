@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { createServicosTable, createServicosUpdateTrigger } = require('./servicos');
+const { createRecontatosTable, createRecontatosUpdateTrigger } = require('./recontatos');
 
 // Função para criar a tabela de clientes se ela não existir
 async function createClientesTable(pool) {
@@ -95,6 +96,21 @@ async function initializeDatabase(pool) {
     } else {
       await createServicosTable(pool);
       await createServicosUpdateTrigger(pool);
+    }
+    
+    // Verificar se tabela recontatos existe
+    const recontatosExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'recontatos'
+      );
+    `);
+    
+    if (recontatosExists.rows[0].exists) {
+      console.log('✅ Tabela "recontatos" já existe e está pronta para uso');
+    } else {
+      await createRecontatosTable(pool);
+      await createRecontatosUpdateTrigger(pool);
     }
     
     console.log('✅ Banco de dados inicializado com sucesso!');

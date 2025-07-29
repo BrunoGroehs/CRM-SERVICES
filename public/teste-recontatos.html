@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Recontatos - CRM Services</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 10px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Teste Endpoints Recontatos</h1>
+    
+    <div class="section">
+        <h2>📋 GET /recontatos - Listar todos</h2>
+        <button onclick="testarListarRecontatos()">Testar GET</button>
+        <pre id="resultado-get"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>➕ POST /recontatos - Criar novo</h2>
+        <button onclick="testarCriarRecontato()">Testar POST</button>
+        <pre id="resultado-post"></pre>
+    </div>
+    
+    <script>
+        async function testarListarRecontatos() {
+            const resultado = document.getElementById('resultado-get');
+            resultado.textContent = 'Carregando...';
+            
+            try {
+                const response = await fetch('/recontatos');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultado.className = 'success';
+                    resultado.textContent = `✅ Sucesso!\nTotal de recontatos: ${data.total}\nPrimeiros 3 registros:\n${JSON.stringify(data.data.slice(0, 3), null, 2)}`;
+                } else {
+                    resultado.className = 'error';
+                    resultado.textContent = `❌ Erro: ${data.message}`;
+                }
+            } catch (error) {
+                resultado.className = 'error';
+                resultado.textContent = `❌ Erro de conexão: ${error.message}`;
+            }
+        }
+        
+        async function testarCriarRecontato() {
+            const resultado = document.getElementById('resultado-post');
+            resultado.textContent = 'Criando recontato...';
+            
+            const novoRecontato = {
+                cliente_id: 1,
+                data_agendada: "2025-08-15",
+                hora_agendada: "14:30",
+                tipo_recontato: "proposta",
+                motivo: "Cliente interessado em serviço adicional",
+                funcionario_responsavel: "João Silva",
+                observacoes: "Cliente solicitou orçamento para serviço premium"
+            };
+            
+            try {
+                const response = await fetch('/recontatos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(novoRecontato)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultado.className = 'success';
+                    resultado.textContent = `✅ Recontato criado com sucesso!\nID: ${data.data.id}\nResposta completa:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultado.className = 'error';
+                    resultado.textContent = `❌ Erro ao criar: ${data.message}\nDetalhes:\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultado.className = 'error';
+                resultado.textContent = `❌ Erro de conexão: ${error.message}`;
+            }
+        }
+        
+        // Auto-carregar os recontatos quando a página abrir
+        window.onload = function() {
+            testarListarRecontatos();
+        };
+    </script>
+</body>
+</html>
