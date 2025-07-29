@@ -4,7 +4,8 @@ require('dotenv').config();
 
 // Importar módulos do projeto
 const { initializeDatabase } = require('./database/init');
-const { router: clientesRouter, initializePool } = require('./routes/clientes');
+const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
+const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -27,7 +28,8 @@ const pool = new Pool({
 });
 
 // Inicializar o pool nas rotas
-initializePool(pool);
+initClientesPool(pool);
+initServicosPool(pool);
 
 // Função para testar a conexão com o banco de dados
 async function testDatabaseConnection() {
@@ -60,6 +62,13 @@ app.get('/', (req, res) => {
         'PUT /clientes/:id': 'Atualiza cliente',
         'DELETE /clientes/:id': 'Remove cliente'
       },
+      servicos: {
+        'GET /servicos': 'Lista todos os serviços',
+        'GET /servicos/:id': 'Busca serviço por ID',
+        'POST /servicos': 'Cria novo serviço',
+        'PUT /servicos/:id': 'Atualiza serviço',
+        'DELETE /servicos/:id': 'Remove serviço'
+      },
       health: {
         'GET /db-test': 'Testa conexão com banco',
         'GET /health': 'Status do servidor'
@@ -70,6 +79,7 @@ app.get('/', (req, res) => {
 
 // Rotas da API
 app.use('/clientes', clientesRouter);
+app.use('/servicos', servicosRouter);
 
 // Endpoint para testar a conexão com o banco
 app.get('/db-test', async (req, res) => {
@@ -86,6 +96,46 @@ app.get('/db-test', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: 'Erro na conexão com o banco de dados',
+      error: error.message,
+      status: 'ERROR'
+    });
+  }
+});
+
+// Endpoint para verificar estrutura das tabelas
+app.get('/db-structure', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    
+    // Verificar se tabela servicos existe e sua estrutura
+    const servicosStructure = await client.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'servicos' 
+      ORDER BY ordinal_position;
+    `);
+    
+    // Verificar se tabela clientes existe
+    const clientesStructure = await client.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'clientes' 
+      ORDER BY ordinal_position;
+    `);
+    
+    client.release();
+    
+    res.json({
+      message: 'Estrutura das tabelas',
+      tables: {
+        clientes: clientesStructure.rows,
+        servicos: servicosStructure.rows
+      },
+      status: 'SUCCESS'
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Erro ao verificar estrutura das tabelas',
       error: error.message,
       status: 'ERROR'
     });
@@ -114,6 +164,10 @@ app.listen(port, async () => {
   console.log('   - POST /clientes  - Cria novo cliente');
   console.log('   - PUT /clientes/:id - Atualiza cliente');
   console.log('   - DELETE /clientes/:id - Remove cliente');
+  console.log('   - GET /servicos   - Lista todos os serviços');
+  console.log('   - POST /servicos  - Cria novo serviço');
+  console.log('   - PUT /servicos/:id - Atualiza serviço');
+  console.log('   - DELETE /servicos/:id - Remove serviço');
   console.log('   - GET /db-test    - Teste de conexão com banco');
   console.log('   - GET /health     - Status do servidor');
   console.log('');
