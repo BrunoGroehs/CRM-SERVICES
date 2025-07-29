@@ -10,16 +10,32 @@ async function createClientesTable(pool) {
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         telefone VARCHAR(20) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE,
         endereco TEXT,
         cidade VARCHAR(100),
         cep VARCHAR(10),
+        indicacao TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
     
     await pool.query(createTableQuery);
+    
+    // Adicionar coluna indicacao se não existir (para tabelas existentes)
+    try {
+      await pool.query('ALTER TABLE clientes ADD COLUMN IF NOT EXISTS indicacao TEXT;');
+    } catch (error) {
+      // Ignorar erro se a coluna já existir
+    }
+    
+    // Remover a restrição NOT NULL do email se existir
+    try {
+      await pool.query('ALTER TABLE clientes ALTER COLUMN email DROP NOT NULL;');
+    } catch (error) {
+      // Ignorar erro se a restrição não existir
+    }
+    
     console.log('✅ Tabela "clientes" verificada/criada com sucesso');
     
     // Criar índices para melhor performance

@@ -153,6 +153,66 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET /servicos/cliente/:clienteId - Retorna histórico de serviços de um cliente
+router.get('/cliente/:clienteId', async (req, res) => {
+  try {
+    const { clienteId } = req.params;
+    
+    if (!clienteId || isNaN(clienteId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID do cliente deve ser um número válido'
+      });
+    }
+    
+    // Verificar se cliente existe
+    const clienteExists = await checkClienteExists(clienteId);
+    if (!clienteExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cliente não encontrado'
+      });
+    }
+    
+    const query = `
+      SELECT 
+        s.id,
+        s.cliente_id,
+        c.nome as cliente_nome,
+        c.telefone as cliente_telefone,
+        c.email as cliente_email,
+        s.data,
+        s.hora,
+        s.valor,
+        s.notas,
+        s.status,
+        s.funcionario_responsavel,
+        s.created_at,
+        s.updated_at
+      FROM servicos s
+      LEFT JOIN clientes c ON s.cliente_id = c.id
+      WHERE s.cliente_id = $1
+      ORDER BY s.data DESC, s.hora DESC
+    `;
+    
+    const result = await pool.query(query, [clienteId]);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      total: result.rows.length,
+      message: `Histórico de serviços do cliente ${clienteId} recuperado com sucesso`
+    });
+  } catch (error) {
+    console.error('Erro ao buscar histórico do cliente:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao buscar histórico do cliente',
+      error: error.message
+    });
+  }
+});
+
 // POST /servicos - Cria um novo serviço
 router.post('/', async (req, res) => {
   try {

@@ -23,13 +23,9 @@ const validateClienteFields = (cliente) => {
     errors.push('Telefone é obrigatório');
   }
   
-  if (!cliente.email || cliente.email.trim() === '') {
-    errors.push('Email é obrigatório');
-  }
-  
-  // Validação básica de email
+  // Validação básica de email (apenas se fornecido)
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (cliente.email && !emailRegex.test(cliente.email)) {
+  if (cliente.email && cliente.email.trim() !== '' && !emailRegex.test(cliente.email)) {
     errors.push('Email deve ter um formato válido');
   }
   
@@ -48,6 +44,7 @@ router.get('/', async (req, res) => {
         endereco, 
         cidade, 
         cep, 
+        indicacao,
         created_at,
         updated_at
       FROM clientes 
@@ -126,7 +123,7 @@ router.get('/:id', async (req, res) => {
 // POST /clientes - Cria um novo cliente
 router.post('/', async (req, res) => {
   try {
-    const { nome, telefone, email, endereco, cidade, cep } = req.body;
+    const { nome, telefone, email, endereco, cidade, cep, indicacao } = req.body;
     
     // Validar campos obrigatórios
     const errors = validateClienteFields(req.body);
@@ -139,18 +136,19 @@ router.post('/', async (req, res) => {
     }
     
     const query = `
-      INSERT INTO clientes (nome, telefone, email, endereco, cidade, cep)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, nome, telefone, email, endereco, cidade, cep, created_at, updated_at
+      INSERT INTO clientes (nome, telefone, email, endereco, cidade, cep, indicacao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, nome, telefone, email, endereco, cidade, cep, indicacao, created_at, updated_at
     `;
     
     const values = [
       nome.trim(),
       telefone.trim(),
-      email.trim().toLowerCase(),
+      email && email.trim() !== '' ? email.trim().toLowerCase() : null,
       endereco ? endereco.trim() : null,
       cidade ? cidade.trim() : null,
-      cep ? cep.trim() : null
+      cep ? cep.trim() : null,
+      indicacao ? indicacao.trim() : null
     ];
     
     const result = await pool.query(query, values);

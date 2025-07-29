@@ -7,6 +7,22 @@
   gap: 1rem;
 }
 
+.recontatos-stats .stat-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.recontatos-stats .stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recontatos-stats .stat-item.active {
+  border-color: #2196F3;
+  background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%);
+}
+
 .stat-success {
   color: #4CAF50 !important;
 }
@@ -41,6 +57,11 @@
   background: linear-gradient(135deg, #fff 0%, #fff8e1 100%);
 }
 
+.recontato-card.proximos {
+  border-left-color: #2196F3;
+  background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%);
+}
+
 .recontato-card.agendado {
   border-left-color: #2196F3;
 }
@@ -69,9 +90,210 @@
   animation: glow 2s ease-in-out infinite alternate;
 }
 
+.status-badge.proximos {
+  background: #2196F3;
+  color: white;
+}
+
 .status-badge.agendado {
   background: #2196F3;
   color: white;
+}
+
+/* Botões de Ação */
+.card-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.contatar-btn {
+  background: #25D366; /* WhatsApp green */
+  color: white;
+}
+
+.contatar-btn:hover {
+  background: #22c55e;
+  transform: translateY(-1px);
+}
+
+.marcar-btn {
+  background: #4CAF50;
+  color: white;
+}
+
+.marcar-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.detalhes-btn {
+  background: #2196F3;
+  color: white;
+}
+
+.detalhes-btn:hover {
+  background: #1976D2;
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+/* Modal de Cliente */
+.cliente-modal {
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.cliente-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.cliente-info .info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.cliente-info .info-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.cliente-info .info-value {
+  color: #333;
+}
+
+.historico-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
+  border-bottom: 2px solid #e1e1e1;
+  padding-bottom: 0.5rem;
+}
+
+.loading-historico,
+.empty-historico {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.servicos-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.servico-item {
+  background: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.servico-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.servico-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.servico-data {
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.servico-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.servico-status.agendado {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.servico-status.em_andamento {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.servico-status.concluido {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.servico-status.cancelado {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.servico-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.servico-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.servico-info:last-child {
+  grid-column: 1 / -1;
+}
+
+.servico-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.servico-info span:last-child {
+  color: #333;
+  font-weight: 500;
 }
 
 @keyframes pulse {
@@ -104,6 +326,28 @@
   .card-badges {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .card-actions {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    min-width: auto;
+  }
+
+  .cliente-modal {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+
+  .servico-details {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-info .info-row {
+    flex-direction: column;
     gap: 0.25rem;
   }
 }
