@@ -134,10 +134,11 @@ app.get('/dashboard', async (req, res) => {
     `);
     const servicosRealizados = parseInt(servicosRealizadosQuery.rows[0].total);
     
-    // 3. Soma do valor de todos os serviços (receita total)
+    // 3. Soma do valor de serviços concluídos (receita total)
     const receitaTotalQuery = await client.query(`
       SELECT COALESCE(SUM(valor), 0) as receita_total 
       FROM servicos
+      WHERE status = 'concluido'
     `);
     const receitaTotal = parseFloat(receitaTotalQuery.rows[0].receita_total) || 0;
     
@@ -176,10 +177,6 @@ app.get('/dashboard', async (req, res) => {
     
     client.release();
     
-    // Calcular taxa de conversão de recontatos
-    const taxaConversaoRecontatos = totalRecontatos > 0 ? 
-      ((recontatosRealizados / totalRecontatos) * 100).toFixed(2) : 0;
-    
     // Retornar métricas organizadas
     res.json({
       success: true,
@@ -200,7 +197,6 @@ app.get('/dashboard', async (req, res) => {
           realizados: recontatosRealizados,
           atrasados: recontatosAtrasados,
           proximos: recontatosProximos,
-          taxa_conversao: `${taxaConversaoRecontatos}%`,
           descricao: "Status dos recontatos no sistema"
         }
       },

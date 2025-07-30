@@ -107,6 +107,7 @@ const Dashboard = () => {
               <span className="sub-metric-value">
                 {formatCurrency(metrics?.metricas?.servicos?.receita_total || 0)}
               </span>
+              <span className="sub-metric-note">(apenas concluídos)</span>
             </div>
           </div>
         </div>
@@ -137,10 +138,6 @@ const Dashboard = () => {
               </span>
               <span className="sub-metric-value">{metrics?.metricas?.recontatos?.proximos || 0}</span>
             </div>
-            <div className="sub-metric">
-              <span className="sub-metric-label">Taxa de Conversão:</span>
-              <span className="sub-metric-value">{metrics?.metricas?.recontatos?.taxa_conversao || '0%'}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -159,6 +156,7 @@ const Dashboard = () => {
           <div className="summary-item">
             <div className="value">{formatCurrency(metrics?.resumo?.receita_total || 0)}</div>
             <div className="label">Receita Total</div>
+            <div className="note">(apenas concluídos)</div>
           </div>
           <div className="summary-item">
             <div className="value">{metrics?.resumo?.recontatos_urgentes || 0}</div>
