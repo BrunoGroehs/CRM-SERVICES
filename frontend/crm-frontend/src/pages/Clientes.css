@@ -179,6 +179,7 @@
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #eee;
+  flex-wrap: nowrap;
 }
 
 .card-header h3 {
@@ -200,6 +201,26 @@
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: bold;
+}
+
+.card-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.card-placas {
+  background: #28a745;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .card-paineis {

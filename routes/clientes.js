@@ -45,6 +45,7 @@ router.get('/', async (req, res) => {
         cidade, 
         cep, 
         indicacao,
+        quantidade_placas,
         created_at,
         updated_at
       FROM clientes 
@@ -91,6 +92,7 @@ router.get('/:id', async (req, res) => {
         cidade, 
         cep, 
         indicacao,
+        quantidade_placas,
         created_at,
         updated_at
       FROM clientes 
@@ -125,7 +127,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('📝 Dados recebidos:', req.body);
-    const { nome, telefone, email, endereco, cidade, cep, indicacao } = req.body;
+    const { nome, telefone, email, endereco, cidade, cep, indicacao, quantidade_placas } = req.body;
     
     // Validar campos obrigatórios
     const errors = validateClienteFields(req.body);
@@ -139,9 +141,9 @@ router.post('/', async (req, res) => {
     }
     
     const query = `
-      INSERT INTO clientes (nome, telefone, email, endereco, cidade, cep, indicacao)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, nome, telefone, email, endereco, cidade, cep, indicacao, created_at, updated_at
+      INSERT INTO clientes (nome, telefone, email, endereco, cidade, cep, indicacao, quantidade_placas)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, nome, telefone, email, endereco, cidade, cep, indicacao, quantidade_placas, created_at, updated_at
     `;
     
     const values = [
@@ -151,7 +153,8 @@ router.post('/', async (req, res) => {
       endereco ? endereco.trim() : null,
       cidade ? cidade.trim() : null,
       cep ? cep.trim() : null,
-      indicacao ? indicacao.trim() : null
+      indicacao ? indicacao.trim() : null,
+      quantidade_placas && !isNaN(quantidade_placas) ? parseInt(quantidade_placas) : null
     ];
     
     console.log('🔍 Query SQL:', query);
@@ -196,7 +199,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, telefone, email, endereco, cidade, cep } = req.body;
+    const { nome, telefone, email, endereco, cidade, cep, quantidade_placas } = req.body;
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -235,9 +238,10 @@ router.put('/:id', async (req, res) => {
         endereco = $4, 
         cidade = $5, 
         cep = $6,
+        quantidade_placas = $7,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
-      RETURNING id, nome, telefone, email, endereco, cidade, cep, created_at, updated_at
+      WHERE id = $8
+      RETURNING id, nome, telefone, email, endereco, cidade, cep, quantidade_placas, created_at, updated_at
     `;
     
     const values = [
@@ -247,6 +251,7 @@ router.put('/:id', async (req, res) => {
       endereco ? endereco.trim() : null,
       cidade ? cidade.trim() : null,
       cep ? cep.trim() : null,
+      quantidade_placas && !isNaN(quantidade_placas) ? parseInt(quantidade_placas) : null,
       id
     ];
     

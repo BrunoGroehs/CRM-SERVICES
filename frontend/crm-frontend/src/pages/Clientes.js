@@ -28,7 +28,8 @@ const Clientes = () => {
     endereco: '',
     cidade: '',
     cep: '',
-    indicacao: ''
+    indicacao: '',
+    quantidade_placas: ''
   });
 
   useEffect(() => {
@@ -480,7 +481,12 @@ const Clientes = () => {
             <div key={cliente.id} className="data-card">
               <div className="card-header">
                 <h3>{cliente.nome}</h3>
-                <span className="card-id">ID: {cliente.id}</span>
+                <div className="card-meta">
+                  {cliente.quantidade_placas && (
+                    <span className="card-placas">⚡ {cliente.quantidade_placas}un</span>
+                  )}
+                  <span className="card-id">ID: {cliente.id}</span>
+                </div>
               </div>
               <div className="card-content">
                 <div className="info-row">
@@ -639,6 +645,21 @@ const Clientes = () => {
                     value={formData.indicacao}
                     onChange={handleInputChange}
                     placeholder="Quem indicou este cliente?"
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label htmlFor="quantidade_placas">🔢 Quantidade de Placas Solares</label>
+                  <input
+                    type="number"
+                    id="quantidade_placas"
+                    name="quantidade_placas"
+                    value={formData.quantidade_placas}
+                    onChange={handleInputChange}
+                    placeholder="Ex: 10"
+                    min="0"
                   />
                 </div>
               </div>
