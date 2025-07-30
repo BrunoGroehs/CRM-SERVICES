@@ -800,8 +800,8 @@ const Clientes = () => {
                     <span className="info-value">{selectedCliente.indicacao || 'Não informado'}</span>
                   </div>
                   <div className="info-row">
-                    <span className="info-label">� Quantidade de Painéis:</span>
-                    <span className="info-value">{selectedCliente.quantidade_paineis || 0} painéis</span>
+                    <span className="info-label">🔢 Quantidade de Placas:</span>
+                    <span className="info-value badge badge-primary">{selectedCliente.quantidade_placas || 0} placas</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">�📅 Cadastrado em:</span>
