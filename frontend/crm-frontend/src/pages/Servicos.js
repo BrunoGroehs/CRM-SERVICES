@@ -124,6 +124,21 @@ const Servicos = () => {
     setFormErrors({});
   };
 
+  const handleOpenModal = () => {
+    setEditingServico(null);
+    setFormData({
+      cliente_id: '',
+      data: '',
+      hora: '',
+      valor: '',
+      notas: '',
+      status: 'agendado',
+      funcionario_responsavel: ''
+    });
+    setFormErrors({});
+    setShowModal(true);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -157,7 +172,7 @@ const Servicos = () => {
       } else {
         const [day, month, year] = formData.data.split('/');
         const date = new Date(year, month - 1, day);
-        if (date.getDate() != day || date.getMonth() != month - 1 || date.getFullYear() != year) {
+        if (date.getDate() !== parseInt(day) || date.getMonth() !== parseInt(month) - 1 || date.getFullYear() !== parseInt(year)) {
           errors.data = 'Data inválida';
         }
       }
@@ -183,6 +198,9 @@ const Servicos = () => {
       return;
     }
 
+    // Determinar se é criação ou edição
+    const isEditing = editingServico && editingServico.id;
+
     try {
       // Preparar dados para envio, convertendo a data para formato ISO
       const dataToSend = {
@@ -190,8 +208,13 @@ const Servicos = () => {
         data: formatDateForAPI(formData.data)
       };
 
-      const response = await fetch(`http://localhost:3000/servicos/${editingServico.id}`, {
-        method: 'PUT',
+      const url = isEditing 
+        ? `http://localhost:3000/servicos/${editingServico.id}`
+        : 'http://localhost:3000/servicos';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -200,13 +223,14 @@ const Servicos = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao atualizar serviço');
+        const errorMessage = isEditing ? 'Erro ao atualizar serviço' : 'Erro ao criar serviço';
+        throw new Error(errorData.message || errorMessage);
       }
 
       await fetchServicos(); // Recarregar a lista
       handleCloseModal();
     } catch (err) {
-      console.error('Erro ao atualizar serviço:', err);
+      console.error(isEditing ? 'Erro ao atualizar serviço:' : 'Erro ao criar serviço:', err);
       setFormErrors({ submit: err.message });
     }
   };
@@ -240,6 +264,14 @@ const Servicos = () => {
       <div className="page-header">
         <h1>🔧 Serviços</h1>
         <p>Lista de todos os serviços realizados no sistema</p>
+        <div className="header-buttons">
+          <button className="add-btn" onClick={handleOpenModal}>
+            ➕ NOVO SERVIÇO
+          </button>
+          <button className="refresh-btn" onClick={fetchServicos} disabled={loading}>
+            {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
+          </button>
+        </div>
       </div>
 
       <div className="stats-bar">
@@ -323,16 +355,12 @@ const Servicos = () => {
         </div>
       )}
 
-      <button className="refresh-btn" onClick={fetchServicos} disabled={loading}>
-        {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
-      </button>
-
-      {/* Modal de Edição */}
+      {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>✏️ Editar Serviço</h2>
+              <h2>{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
                 ✕
               </button>
@@ -472,7 +500,7 @@ const Servicos = () => {
                   Cancelar
                 </button>
                 <button type="submit" className="submit-btn">
-                  💾 Salvar Alterações
+                  {editingServico ? '💾 Salvar Alterações' : '➕ Criar Serviço'}
                 </button>
               </div>
             </form>
