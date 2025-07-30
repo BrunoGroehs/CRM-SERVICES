@@ -989,3 +989,95 @@
   content: '👨‍💼 ';
   margin-right: 0.25rem;
 }
+
+/* Estilos específicos para modal de próximo recontato */
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+}
+
+.modal-content .success-message {
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.modal-content .form-group {
+  margin-bottom: -1.5rem;
+}
+
+.modal-content .form-group label {
+  margin-bottom: 0.50rem;
+  display: block;
+  font-weight: 600;
+}
+
+.modal-content input[type="date"] {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  width: 100%;
+  font-size: 1rem;
+}
+
+.modal-content input[type="date"]:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  outline: none;
+}
+
+.modal-content textarea {
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  width: 100%;
+  min-height: 100px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.modal-content textarea:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  outline: none;
+}
+
+/* Melhorar espaçamento dos quick-options */
+.quick-options {
+  margin: 2rem 0;
+}
+
+.quick-option {
+  padding: 1.25rem;
+}
+
+/* Melhorar botões */
+.button-group {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+}
+
+/* Adicionar margens internas ao modal */
+.modal-content {
+  padding: 2rem;
+}
+
+/* Corrigir fundo do modal de serviços */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(8px);
+}
+
+.modal-content.modal-wide {
+  background: #ffffff;
+  padding: 0;
+}
+
+.modal-wide .modal-body-wide {
+  background: transparent;
+}
+
+.modal-form-section {
+  background: #ffffff;
+}
