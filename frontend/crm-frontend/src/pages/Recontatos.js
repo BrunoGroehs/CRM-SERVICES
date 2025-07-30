@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Recontatos.css';
 
 const Recontatos = () => {
@@ -27,6 +27,60 @@ const Recontatos = () => {
   const [servicosHistorico, setServicosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
 
+  // Função para determinar o status do recontato
+  const getStatusInfo = (recontato) => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const dataAgendada = new Date(recontato.data_agendada);
+    dataAgendada.setHours(0, 0, 0, 0);
+    
+    // Removido o status "realizado" - não existe mais
+    
+    if (dataAgendada < hoje) {
+      return { status: 'atrasado', label: 'Atrasado', class: 'atrasado' };
+    }
+    
+    if (dataAgendada.getTime() === hoje.getTime()) {
+      return { status: 'hoje', label: 'Hoje', class: 'hoje' };
+    }
+
+    // Próximos 7 dias
+    const seteDias = new Date(hoje);
+    seteDias.setDate(hoje.getDate() + 7);
+    
+    if (dataAgendada <= seteDias) {
+      return { status: 'proximos', label: 'Próximos 7 dias', class: 'proximos' };
+    }
+    
+    // Se não está atrasado, não é hoje, nem próximos 7 dias = longe demais
+    return { status: 'longe', label: 'Longe demais para se preocupar', class: 'longe' };
+  };
+
+  // Função para aplicar filtros
+  const applyFilter = useCallback(() => {
+    let filtered = recontatos;
+    
+    switch (activeFilter) {
+      case 'atrasados':
+        filtered = recontatos.filter(r => getStatusInfo(r).status === 'atrasado');
+        break;
+      case 'hoje':
+        filtered = recontatos.filter(r => getStatusInfo(r).status === 'hoje');
+        break;
+      case 'proximos':
+        filtered = recontatos.filter(r => getStatusInfo(r).status === 'proximos');
+        break;
+      case 'longe':
+        filtered = recontatos.filter(r => getStatusInfo(r).status === 'longe');
+        break;
+      default:
+        filtered = recontatos;
+    }
+    
+    setFilteredRecontatos(filtered);
+  }, [recontatos, activeFilter]);
+
   useEffect(() => {
     fetchRecontatos();
     fetchClientes();
@@ -34,7 +88,7 @@ const Recontatos = () => {
 
   useEffect(() => {
     applyFilter();
-  }, [recontatos, activeFilter]);
+  }, [applyFilter]);
 
   const fetchRecontatos = async () => {
     try {
@@ -189,11 +243,6 @@ const Recontatos = () => {
     }
   };
 
-  const formatDateForAPI = (dateString) => {
-    // dateString já vem no formato YYYY-MM-DD do input type="date"
-    return dateString;
-  };
-
   // Função auxiliar para formatar datas corretamente
   const formatDateSafe = (dateString) => {
     if (!dateString) return 'Data não disponível';
@@ -345,58 +394,6 @@ const Recontatos = () => {
     }).format(value);
   };
 
-  const getStatusInfo = (recontato) => {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    
-    const dataAgendada = new Date(recontato.data_agendada);
-    dataAgendada.setHours(0, 0, 0, 0);
-    
-    // Removido o status "realizado" - não existe mais
-    
-    if (dataAgendada < hoje) {
-      return { status: 'atrasado', label: 'Atrasado', class: 'atrasado' };
-    }
-    
-    if (dataAgendada.getTime() === hoje.getTime()) {
-      return { status: 'hoje', label: 'Hoje', class: 'hoje' };
-    }
-
-    // Próximos 7 dias
-    const seteDias = new Date(hoje);
-    seteDias.setDate(hoje.getDate() + 7);
-    
-    if (dataAgendada <= seteDias) {
-      return { status: 'proximos', label: 'Próximos 7 dias', class: 'proximos' };
-    }
-    
-    // Se não está atrasado, não é hoje, nem próximos 7 dias = longe demais
-    return { status: 'longe', label: 'Longe demais para se preocupar', class: 'longe' };
-  };
-
-  const applyFilter = () => {
-    let filtered = recontatos;
-    
-    switch (activeFilter) {
-      case 'atrasados':
-        filtered = recontatos.filter(r => getStatusInfo(r).status === 'atrasado');
-        break;
-      case 'hoje':
-        filtered = recontatos.filter(r => getStatusInfo(r).status === 'hoje');
-        break;
-      case 'proximos':
-        filtered = recontatos.filter(r => getStatusInfo(r).status === 'proximos');
-        break;
-      case 'longe':
-        filtered = recontatos.filter(r => getStatusInfo(r).status === 'longe');
-        break;
-      default:
-        filtered = recontatos;
-    }
-    
-    setFilteredRecontatos(filtered);
-  };
-
   const getStats = () => {
     const stats = {
       total: recontatos.length,
@@ -420,7 +417,6 @@ const Recontatos = () => {
           break;
         case 'longe':
           stats.longe++;
-          break;
           break;
         default:
           break;

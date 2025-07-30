@@ -144,6 +144,39 @@
   word-break: break-word;
 }
 
+/* Card Actions */
+.card-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.edit-btn:hover {
+  background: #1976D2;
+  transform: translateY(-1px);
+}
+
+.edit-btn:active {
+  transform: translateY(0);
+}
+
 .loading {
   text-align: center;
   padding: 3rem;

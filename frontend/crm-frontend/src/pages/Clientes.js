@@ -7,6 +7,7 @@ const Clientes = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingCliente, setEditingCliente] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -57,9 +58,16 @@ const Clientes = () => {
     e.preventDefault();
     setSubmitting(true);
 
+    const isEditing = editingCliente && editingCliente.id;
+
     try {
-      const response = await fetch('http://localhost:3000/clientes', {
-        method: 'POST',
+      const url = isEditing 
+        ? `http://localhost:3000/clientes/${editingCliente.id}`
+        : 'http://localhost:3000/clientes';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -83,22 +91,48 @@ const Clientes = () => {
         cep: '',
         indicacao: ''
       });
+      setEditingCliente(null);
       setShowModal(false);
       
     } catch (err) {
-      console.error('Erro ao cadastrar cliente:', err);
-      alert('Erro ao cadastrar cliente: ' + err.message);
+      console.error(isEditing ? 'Erro ao editar cliente:' : 'Erro ao cadastrar cliente:', err);
+      alert(`Erro ao ${isEditing ? 'editar' : 'cadastrar'} cliente: ` + err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
   const openModal = () => {
+    setEditingCliente(null);
+    setFormData({
+      nome: '',
+      telefone: '',
+      email: '',
+      endereco: '',
+      cidade: '',
+      cep: '',
+      indicacao: ''
+    });
+    setShowModal(true);
+  };
+
+  const handleEdit = (cliente) => {
+    setEditingCliente(cliente);
+    setFormData({
+      nome: cliente.nome || '',
+      telefone: cliente.telefone || '',
+      email: cliente.email || '',
+      endereco: cliente.endereco || '',
+      cidade: cliente.cidade || '',
+      cep: cliente.cep || '',
+      indicacao: cliente.indicacao || ''
+    });
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
+    setEditingCliente(null);
     setFormData({
       nome: '',
       telefone: '',
@@ -198,6 +232,15 @@ const Clientes = () => {
                   </div>
                 )}
               </div>
+              <div className="card-actions">
+                <button 
+                  className="edit-btn"
+                  onClick={() => handleEdit(cliente)}
+                  title="Editar cliente"
+                >
+                  ✏️ Editar
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -212,7 +255,7 @@ const Clientes = () => {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>➕ Cadastrar Novo Cliente</h2>
+              <h2>{editingCliente ? '✏️ Editar Cliente' : '➕ Cadastrar Novo Cliente'}</h2>
               <button className="close-btn" onClick={closeModal}>✕</button>
             </div>
             
@@ -314,7 +357,12 @@ const Clientes = () => {
                   ❌ Cancelar
                 </button>
                 <button type="submit" disabled={submitting} className="submit-btn">
-                  {submitting ? '⏳ Salvando...' : '✅ Salvar Cliente'}
+                  {submitting 
+                    ? '⏳ Salvando...' 
+                    : editingCliente 
+                      ? '💾 Salvar Alterações' 
+                      : '✅ Salvar Cliente'
+                  }
                 </button>
               </div>
             </form>
