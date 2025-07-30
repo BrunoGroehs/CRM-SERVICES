@@ -76,22 +76,20 @@ const Servicos = () => {
     return servicos.reduce((total, servico) => total + (servico.valor || 0), 0);
   };
 
-  // Função para converter data ISO para formato brasileiro (dd/mm/yyyy)
+  // Função para converter data ISO para formato do input date (YYYY-MM-DD)
   const formatDateForInput = (isoDateString) => {
     if (!isoDateString) return '';
     const date = new Date(isoDateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${day}/${month}/${year}`;
+    return `${year}-${month}-${day}`;
   };
 
-  // Função para converter data brasileira (dd/mm/yyyy) para formato ISO (YYYY-MM-DD)
-  const formatDateForAPI = (brazilianDateString) => {
-    if (!brazilianDateString) return '';
-    const [day, month, year] = brazilianDateString.split('/');
-    if (!day || !month || !year) return '';
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  // Função para converter data do input date (YYYY-MM-DD) para formato ISO
+  const formatDateForAPI = (dateString) => {
+    // O input type="date" já retorna no formato YYYY-MM-DD, que é o formato ISO
+    return dateString;
   };
 
   const handleEdit = (servico) => {
@@ -125,11 +123,14 @@ const Servicos = () => {
   };
 
   const handleOpenModal = () => {
+    const hoje = new Date();
+    const dataAtual = hoje.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    
     setEditingServico(null);
     setFormData({
       cliente_id: '',
-      data: '',
-      hora: '',
+      data: dataAtual,
+      hora: '09:00',
       valor: '',
       notas: '',
       status: 'agendado',
@@ -164,18 +165,6 @@ const Servicos = () => {
     
     if (!formData.data) {
       errors.data = 'Data é obrigatória';
-    } else {
-      // Validar formato brasileiro dd/mm/yyyy
-      const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-      if (!dateRegex.test(formData.data)) {
-        errors.data = 'Data deve estar no formato dd/mm/yyyy';
-      } else {
-        const [day, month, year] = formData.data.split('/');
-        const date = new Date(year, month - 1, day);
-        if (date.getDate() !== parseInt(day) || date.getMonth() !== parseInt(month) - 1 || date.getFullYear() !== parseInt(year)) {
-          errors.data = 'Data inválida';
-        }
-      }
     }
     
     if (!formData.hora) {
@@ -395,13 +384,12 @@ const Servicos = () => {
                 <div className="form-group">
                   <label htmlFor="data">Data *</label>
                   <input
-                    type="text"
+                    type="date"
                     id="data"
                     name="data"
                     value={formData.data}
                     onChange={handleInputChange}
                     className={formErrors.data ? 'error' : ''}
-                    placeholder="dd/mm/yyyy"
                     required
                   />
                   {formErrors.data && (

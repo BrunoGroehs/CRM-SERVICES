@@ -8,12 +8,25 @@ const Recontatos = () => {
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
+  const [showServicoModal, setShowServicoModal] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [formData, setFormData] = useState({
+    cliente_id: '',
+    data: '',
+    hora: '',
+    valor: '',
+    notas: '',
+    status: 'agendado',
+    funcionario_responsavel: ''
+  });
+  const [formErrors, setFormErrors] = useState({});
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [servicosHistorico, setServicosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
 
   useEffect(() => {
     fetchRecontatos();
+    fetchClientes();
   }, []);
 
   useEffect(() => {
@@ -57,6 +70,125 @@ const Recontatos = () => {
     } finally {
       setLoadingHistorico(false);
     }
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/clientes');
+      if (response.ok) {
+        const data = await response.json();
+        setClientes(data.data || []);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err);
+    }
+  };
+
+  // Funções do modal de serviço
+  const handleCriarServico = (recontato) => {
+    const hoje = new Date();
+    const dataFormatada = hoje.toISOString().split('T')[0];
+    
+    setFormData({
+      cliente_id: recontato.cliente_id,
+      data: dataFormatada,
+      hora: '09:00',
+      valor: '',
+      notas: `Recontato realizado - ${recontato.observacoes || ''}`,
+      status: 'agendado',
+      funcionario_responsavel: ''
+    });
+    setFormErrors({});
+    setShowServicoModal(true);
+  };
+
+  const handleCloseServicoModal = () => {
+    setShowServicoModal(false);
+    setFormData({
+      cliente_id: '',
+      data: '',
+      hora: '',
+      valor: '',
+      notas: '',
+      status: 'agendado',
+      funcionario_responsavel: ''
+    });
+    setFormErrors({});
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Limpar erro do campo quando o usuário começar a digitar
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.cliente_id) {
+      errors.cliente_id = 'Cliente é obrigatório';
+    }
+    
+    if (!formData.data) {
+      errors.data = 'Data é obrigatória';
+    }
+    
+    if (!formData.hora) {
+      errors.hora = 'Hora é obrigatória';
+    }
+    
+    if (formData.valor && isNaN(formData.valor)) {
+      errors.valor = 'Valor deve ser um número válido';
+    }
+    
+    return errors;
+  };
+
+  const handleSubmitServico = async (e) => {
+    e.preventDefault();
+    
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3000/servicos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao criar serviço');
+      }
+
+      alert('Serviço criado com sucesso!');
+      handleCloseServicoModal();
+      // Opcional: marcar o recontato como realizado após criar o serviço
+    } catch (err) {
+      console.error('Erro ao criar serviço:', err);
+      setFormErrors({ submit: err.message });
+    }
+  };
+
+  const formatDateForAPI = (dateString) => {
+    // dateString já vem no formato YYYY-MM-DD do input type="date"
+    return dateString;
   };
 
   const formatDate = (dateString) => {
@@ -367,10 +499,10 @@ const Recontatos = () => {
                   {recontato.status !== 'realizado' && (
                     <button 
                       className="action-btn marcar-btn"
-                      onClick={() => handleMarcarRealizado(recontato)}
-                      title="Marcar como realizado"
+                      onClick={() => handleCriarServico(recontato)}
+                      title="Criar novo serviço para este cliente"
                     >
-                      ✅ Marcar
+                      📅 Agendar Serviço
                     </button>
                   )}
                   
@@ -391,6 +523,157 @@ const Recontatos = () => {
       <button className="refresh-btn" onClick={fetchRecontatos} disabled={loading}>
         {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
       </button>
+
+      {/* Modal de Criação de Serviço */}
+      {showServicoModal && (
+        <div className="modal-overlay" onClick={handleCloseServicoModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📅 Novo Serviço</h2>
+              <button className="close-btn" onClick={handleCloseServicoModal}>
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmitServico} className="modal-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="cliente_id">Cliente *</label>
+                  <select
+                    id="cliente_id"
+                    name="cliente_id"
+                    value={formData.cliente_id}
+                    onChange={handleInputChange}
+                    className={formErrors.cliente_id ? 'error' : ''}
+                    required
+                  >
+                    <option value="">Selecione um cliente</option>
+                    {clientes.map((cliente) => (
+                      <option key={cliente.id} value={cliente.id}>
+                        {cliente.nome} - {cliente.telefone}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.cliente_id && (
+                    <span className="error-message">{formErrors.cliente_id}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="data">Data *</label>
+                  <input
+                    type="date"
+                    id="data"
+                    name="data"
+                    value={formData.data}
+                    onChange={handleInputChange}
+                    className={formErrors.data ? 'error' : ''}
+                    required
+                  />
+                  {formErrors.data && (
+                    <span className="error-message">{formErrors.data}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="hora">Hora *</label>
+                  <input
+                    type="time"
+                    id="hora"
+                    name="hora"
+                    value={formData.hora}
+                    onChange={handleInputChange}
+                    className={formErrors.hora ? 'error' : ''}
+                    required
+                  />
+                  {formErrors.hora && (
+                    <span className="error-message">{formErrors.hora}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="valor">Valor (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    id="valor"
+                    name="valor"
+                    value={formData.valor}
+                    onChange={handleInputChange}
+                    className={formErrors.valor ? 'error' : ''}
+                    placeholder="0,00"
+                  />
+                  {formErrors.valor && (
+                    <span className="error-message">{formErrors.valor}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="status">Status</label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                  >
+                    <option value="agendado">Agendado</option>
+                    <option value="em_andamento">Em Andamento</option>
+                    <option value="concluido">Concluído</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label htmlFor="notas">Observações</label>
+                  <textarea
+                    id="notas"
+                    name="notas"
+                    value={formData.notas}
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Descreva o serviço a ser realizado..."
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
+                  <input
+                    type="text"
+                    id="funcionario_responsavel"
+                    name="funcionario_responsavel"
+                    value={formData.funcionario_responsavel}
+                    onChange={handleInputChange}
+                    placeholder="Nome do funcionário responsável"
+                  />
+                </div>
+              </div>
+
+              {formErrors.submit && (
+                <div className="form-error">
+                  {formErrors.submit}
+                </div>
+              )}
+
+              <div className="form-actions">
+                <button type="button" onClick={handleCloseServicoModal} className="cancel-btn">
+                  Cancelar
+                </button>
+                <button type="submit" className="submit-btn">
+                  📅 Criar Serviço
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Detalhes do Cliente */}
       {showModal && selectedCliente && (
