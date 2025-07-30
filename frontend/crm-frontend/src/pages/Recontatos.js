@@ -352,9 +352,7 @@ const Recontatos = () => {
     const dataAgendada = new Date(recontato.data_agendada);
     dataAgendada.setHours(0, 0, 0, 0);
     
-    if (recontato.status === 'realizado') {
-      return { status: 'realizado', label: 'Realizado', class: 'realizado' };
-    }
+    // Removido o status "realizado" - não existe mais
     
     if (dataAgendada < hoje) {
       return { status: 'atrasado', label: 'Atrasado', class: 'atrasado' };
@@ -372,7 +370,8 @@ const Recontatos = () => {
       return { status: 'proximos', label: 'Próximos 7 dias', class: 'proximos' };
     }
     
-    return { status: 'agendado', label: 'Agendado', class: 'agendado' };
+    // Se não está atrasado, não é hoje, nem próximos 7 dias = longe demais
+    return { status: 'longe', label: 'Longe demais para se preocupar', class: 'longe' };
   };
 
   const applyFilter = () => {
@@ -388,11 +387,8 @@ const Recontatos = () => {
       case 'proximos':
         filtered = recontatos.filter(r => getStatusInfo(r).status === 'proximos');
         break;
-      case 'realizados':
-        filtered = recontatos.filter(r => getStatusInfo(r).status === 'realizado');
-        break;
-      case 'agendados':
-        filtered = recontatos.filter(r => ['agendado', 'proximos'].includes(getStatusInfo(r).status));
+      case 'longe':
+        filtered = recontatos.filter(r => getStatusInfo(r).status === 'longe');
         break;
       default:
         filtered = recontatos;
@@ -404,19 +400,15 @@ const Recontatos = () => {
   const getStats = () => {
     const stats = {
       total: recontatos.length,
-      realizados: 0,
       atrasados: 0,
       hoje: 0,
       proximos: 0,
-      agendados: 0
+      longe: 0
     };
 
     recontatos.forEach(recontato => {
       const statusInfo = getStatusInfo(recontato);
       switch (statusInfo.status) {
-        case 'realizado':
-          stats.realizados++;
-          break;
         case 'atrasado':
           stats.atrasados++;
           break;
@@ -426,8 +418,9 @@ const Recontatos = () => {
         case 'proximos':
           stats.proximos++;
           break;
-        case 'agendado':
-          stats.agendados++;
+        case 'longe':
+          stats.longe++;
+          break;
           break;
         default:
           break;
@@ -443,43 +436,6 @@ const Recontatos = () => {
     const message = `Olá ${recontato.cliente_nome}, estou entrando em contato conforme agendado. Como posso ajudá-lo?`;
     const whatsappUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-  };
-
-  const handleMarcarRealizado = async (recontato) => {
-    try {
-      console.log('Marcando recontato como realizado:', recontato.id);
-      
-      const requestBody = {
-        status: 'realizado',
-        data_realizado: new Date().toISOString().split('T')[0]
-      };
-      
-      console.log('Dados enviados:', requestBody);
-      
-      const response = await fetch(`http://localhost:3000/recontatos/${recontato.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('Resposta do servidor:', response.status, response.statusText);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Recontato atualizado com sucesso:', data);
-        await fetchRecontatos(); // Recarregar lista
-        alert('Recontato marcado como realizado com sucesso!');
-      } else {
-        const errorData = await response.text();
-        console.error('Erro na resposta:', errorData);
-        alert(`Erro ao marcar como realizado: ${response.status} ${response.statusText}`);
-      }
-    } catch (err) {
-      console.error('Erro ao marcar como realizado:', err);
-      alert(`Erro de conexão: ${err.message}`);
-    }
   };
 
   const handleVerDetalhes = async (recontato) => {
@@ -557,11 +513,11 @@ const Recontatos = () => {
           <span className="stat-label">Próximos 7 dias</span>
         </div>
         <div 
-          className={`stat-item ${activeFilter === 'realizados' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('realizados')}
+          className={`stat-item ${activeFilter === 'longe' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('longe')}
         >
-          <span className="stat-value stat-success">{stats.realizados}</span>
-          <span className="stat-label">Realizados</span>
+          <span className="stat-value stat-secondary">{stats.longe}</span>
+          <span className="stat-label">Longe demais</span>
         </div>
       </div>
 
@@ -634,25 +590,21 @@ const Recontatos = () => {
                     💬 Contatar
                   </button>
                   
-                  {recontato.status !== 'realizado' && (
-                    <button 
-                      className="action-btn marcar-btn"
-                      onClick={() => handleCriarServico(recontato)}
-                      title="Criar novo serviço para este cliente"
-                    >
-                      📅 Agendar Serviço
-                    </button>
-                  )}
+                  <button 
+                    className="action-btn marcar-btn"
+                    onClick={() => handleCriarServico(recontato)}
+                    title="Criar novo serviço para este cliente"
+                  >
+                    📅 Agendar Serviço
+                  </button>
                   
-                  {recontato.status !== 'realizado' && (
-                    <button 
-                      className="action-btn prorrogar-btn"
-                      onClick={() => handleProrrogar(recontato)}
-                      title="Prorrogar recontato"
-                    >
-                      ⏳ Prorrogar
-                    </button>
-                  )}
+                  <button 
+                    className="action-btn prorrogar-btn"
+                    onClick={() => handleProrrogar(recontato)}
+                    title="Prorrogar recontato"
+                  >
+                    ⏳ Prorrogar
+                  </button>
                   
                   <button 
                     className="action-btn detalhes-btn"

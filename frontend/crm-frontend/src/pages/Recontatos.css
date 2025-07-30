@@ -39,12 +39,17 @@
   color: #2196F3 !important;
 }
 
+.stat-secondary {
+  color: #9E9E9E !important;
+}
+
 .recontato-card {
   border-left-color: #FF9800;
 }
 
-.recontato-card.realizado {
-  border-left-color: #4CAF50;
+.recontato-card.longe {
+  border-left-color: #9E9E9E;
+  background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
 }
 
 .recontato-card.atrasado {
@@ -73,8 +78,8 @@
   flex-wrap: wrap;
 }
 
-.status-badge.realizado {
-  background: #4CAF50;
+.status-badge.longe {
+  background: #9E9E9E;
   color: white;
 }
 
