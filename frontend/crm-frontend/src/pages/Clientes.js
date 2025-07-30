@@ -559,7 +559,7 @@ const Clientes = () => {
             <form onSubmit={handleSubmit} className="cliente-form">
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="nome">Nome Completo *</label>
+                  <label htmlFor="nome">👤 Nome Completo</label>
                   <input
                     type="text"
                     id="nome"
@@ -571,7 +571,7 @@ const Clientes = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="telefone">Telefone *</label>
+                  <label htmlFor="telefone">📱 Telefone</label>
                   <input
                     type="tel"
                     id="telefone"
@@ -586,7 +586,7 @@ const Clientes = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="email">Email</label>
+                  <label htmlFor="email">📧 Email</label>
                   <input
                     type="email"
                     id="email"
@@ -597,7 +597,7 @@ const Clientes = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="cidade">Cidade *</label>
+                  <label htmlFor="cidade">🌍 Cidade</label>
                   <input
                     type="text"
                     id="cidade"
@@ -612,7 +612,7 @@ const Clientes = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="endereco">Endereço</label>
+                  <label htmlFor="endereco">🏠 Endereço</label>
                   <input
                     type="text"
                     id="endereco"
@@ -623,7 +623,7 @@ const Clientes = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="cep">CEP</label>
+                  <label htmlFor="cep">📮 CEP</label>
                   <input
                     type="text"
                     id="cep"
@@ -636,7 +636,7 @@ const Clientes = () => {
               </div>
 
               <div className="form-row">
-                <div className="form-group full-width">
+                <div className="form-group">
                   <label htmlFor="indicacao">👥 Indicação</label>
                   <input
                     type="text"
@@ -647,11 +647,8 @@ const Clientes = () => {
                     placeholder="Quem indicou este cliente?"
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group full-width">
-                  <label htmlFor="quantidade_placas">🔢 Quantidade de Placas Solares</label>
+                <div className="form-group">
+                  <label htmlFor="quantidade_placas">⚡ Quantidade de Placas</label>
                   <input
                     type="number"
                     id="quantidade_placas"

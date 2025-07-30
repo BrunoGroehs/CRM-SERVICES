@@ -1060,7 +1060,7 @@
 
 /* Adicionar margens internas ao modal */
 .modal-content {
-  padding: 2rem;
+  padding: 0rem;
 }
 
 /* Corrigir fundo do modal de serviços */

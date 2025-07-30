@@ -458,13 +458,13 @@
 
 .modal-content {
   background: white;
-  border-radius: 15px;
+  border-radius: 20px;
   padding: 0;
   width: 90%;
-  max-width: 600px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -482,16 +482,19 @@
 .modal-header {
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   color: white;
-  padding: 1.5rem;
-  border-radius: 15px 15px 0 0;
+  padding: 2rem;
+  border-radius: 20px 20px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn {
@@ -516,9 +519,17 @@
 
 .cliente-form {
   padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-row.single-column {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -543,24 +554,43 @@
 }
 
 .form-group label {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group label::after {
+  content: "";
+}
+
+.form-group input[required] + label::after,
+.form-group label[for="nome"]::after,
+.form-group label[for="telefone"]::after,
+.form-group label[for="cidade"]::after {
+  content: " *";
+  color: #e74c3c;
   font-weight: bold;
-  color: #333;
-  font-size: 0.9rem;
 }
 
 .form-group input {
-  padding: 0.8rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
+  padding: 1rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .form-group input:focus {
   outline: none;
   border-color: #4facfe;
-  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+  box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .form-group input::placeholder {
@@ -569,11 +599,11 @@
 
 .form-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e1e5e9;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e9ecef;
 }
 
 .form-actions button {
@@ -627,9 +657,9 @@
     margin: 1rem;
   }
   
-  .form-row,
-  .form-row-horizontal {
-    gap: 0;
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
     margin-bottom: 1rem;
   }
   
@@ -1021,11 +1051,11 @@
 }
 
 .cliente-info-detalhada {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .cliente-info-detalhada h3 {
