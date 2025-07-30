@@ -10,7 +10,14 @@ const Recontatos = () => {
   const [showModal, setShowModal] = useState(false);
   const [showServicoModal, setShowServicoModal] = useState(false);
   const [showProrrogarModal, setShowProrrogarModal] = useState(false);
+  const [showProximoRecontatoModal, setShowProximoRecontatoModal] = useState(false);
   const [recontatoParaProrrogar, setRecontatoParaProrrogar] = useState(null);
+  const [servicoCriado, setServicoCriado] = useState(null);
+  const [proximoRecontatoData, setProximoRecontatoData] = useState({
+    periodo: '',
+    data_personalizada: '',
+    observacoes: ''
+  });
   const [prorrogacaoTempo, setProrrogacaoTempo] = useState({ tipo: 'dias', quantidade: 7 });
   const [clientes, setClientes] = useState([]);
   const [formData, setFormData] = useState({
@@ -234,9 +241,22 @@ const Recontatos = () => {
         throw new Error(errorData.message || 'Erro ao criar serviço');
       }
 
+      const servicoResult = await response.json();
+      
+      // Armazenar informações do serviço criado e do cliente
+      const clienteInfo = clientes.find(c => c.id === formData.cliente_id);
+      setServicoCriado({
+        ...servicoResult,
+        cliente_nome: clienteInfo?.nome || 'Cliente',
+        cliente_id: formData.cliente_id
+      });
+
       alert('Serviço criado com sucesso!');
       handleCloseServicoModal();
-      // Opcional: marcar o recontato como realizado após criar o serviço
+      
+      // Abrir modal para próximo recontato
+      setShowProximoRecontatoModal(true);
+      
     } catch (err) {
       console.error('Erro ao criar serviço:', err);
       setFormErrors({ submit: err.message });
@@ -376,6 +396,127 @@ const Recontatos = () => {
       console.error('Erro ao prorrogar recontato:', err);
       alert(`Erro ao prorrogar recontato: ${err.message}`);
     }
+  };
+
+  // Funções para próximo recontato
+  const getProximoRecontatoOptions = () => {
+    const hoje = new Date();
+    const options = [];
+    
+    // 6 meses
+    const seisMeses = new Date(hoje);
+    seisMeses.setMonth(hoje.getMonth() + 6);
+    options.push({
+      label: '6 Meses',
+      value: '6_meses',
+      data: seisMeses.toISOString().split('T')[0],
+      description: seisMeses.toLocaleDateString('pt-BR')
+    });
+    
+    // 1 ano
+    const umAno = new Date(hoje);
+    umAno.setFullYear(hoje.getFullYear() + 1);
+    options.push({
+      label: '1 Ano',
+      value: '1_ano',
+      data: umAno.toISOString().split('T')[0],
+      description: umAno.toLocaleDateString('pt-BR')
+    });
+    
+    // 1 ano e meio
+    const umAnoEMeio = new Date(hoje);
+    umAnoEMeio.setMonth(hoje.getMonth() + 18);
+    options.push({
+      label: '1 Ano e Meio',
+      value: '1_ano_meio',
+      data: umAnoEMeio.toISOString().split('T')[0],
+      description: umAnoEMeio.toLocaleDateString('pt-BR')
+    });
+    
+    return options;
+  };
+
+  const handleProximoRecontatoOptionClick = (option) => {
+    setProximoRecontatoData(prev => ({
+      ...prev,
+      periodo: option.value,
+      data_personalizada: option.data
+    }));
+  };
+
+  const handleProximoRecontatoInputChange = (e) => {
+    const { name, value } = e.target;
+    setProximoRecontatoData(prev => ({
+      ...prev,
+      [name]: value,
+      // Se escolher data personalizada, limpar período pré-definido
+      ...(name === 'data_personalizada' ? { periodo: 'personalizada' } : {})
+    }));
+  };
+
+  const handleSubmitProximoRecontato = async (e) => {
+    e.preventDefault();
+
+    if (!servicoCriado) {
+      alert('Erro: informações do serviço não encontradas');
+      return;
+    }
+
+    try {
+      const dataRecontato = proximoRecontatoData.data_personalizada;
+      
+      if (!dataRecontato) {
+        alert('Por favor, selecione uma data para o próximo recontato');
+        return;
+      }
+
+      // Encontrar o recontato atual do cliente para atualizar
+      const recontatoAtual = recontatos.find(r => r.cliente_id === servicoCriado.cliente_id);
+      
+      if (!recontatoAtual) {
+        alert('Erro: recontato atual não encontrado para este cliente');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:3000/recontatos/${recontatoAtual.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data_agendada: dataRecontato,
+          observacoes: proximoRecontatoData.observacoes || `Recontato pós-serviço - Acompanhamento do serviço realizado`,
+          status: 'agendado'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      alert('Recontato reagendado com sucesso!');
+      handleCloseProximoRecontatoModal();
+      await fetchRecontatos(); // Recarregar lista
+      
+    } catch (err) {
+      console.error('Erro ao reagendar recontato:', err);
+      alert('Erro ao reagendar recontato: ' + err.message);
+    }
+  };
+
+  const handleCloseProximoRecontatoModal = () => {
+    setShowProximoRecontatoModal(false);
+    setServicoCriado(null);
+    setProximoRecontatoData({
+      periodo: '',
+      data_personalizada: '',
+      observacoes: ''
+    });
+  };
+
+  const handleSkipProximoRecontato = () => {
+    alert('Serviço criado com sucesso! Recontato não foi reagendado.');
+    handleCloseProximoRecontatoModal();
   };
 
   const formatDate = (dateString) => {
@@ -952,6 +1093,80 @@ const Recontatos = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Próximo Recontato */}
+      {showProximoRecontatoModal && (
+        <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && handleCloseProximoRecontatoModal()}>
+          <div className="beautiful-modal">
+            <div className="modal-header">
+              <h3>🎯 Reagendar Recontato</h3>
+              <button className="close-btn" onClick={handleCloseProximoRecontatoModal}>×</button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="success-message">
+                <p>✅ Serviço criado com sucesso!</p>
+                <p>Agora vamos reagendar o recontato deste cliente para dar continuidade ao relacionamento.</p>
+              </div>
+
+              <form onSubmit={handleSubmitProximoRecontato}>
+                <div className="form-group">
+                  <label>📅 Quando fazer o próximo recontato?</label>
+                  <div className="quick-options">
+                    {getProximoRecontatoOptions().map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`quick-option ${proximoRecontatoData.periodo === option.value ? 'active' : ''}`}
+                        onClick={() => handleProximoRecontatoOptionClick(option)}
+                      >
+                        <span className="option-label">{option.label}</span>
+                        <span className="option-date">{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="data_personalizada">Ou escolha uma data personalizada:</label>
+                  <input
+                    type="date"
+                    id="data_personalizada"
+                    name="data_personalizada"
+                    value={proximoRecontatoData.data_personalizada}
+                    onChange={handleProximoRecontatoInputChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="observacoes_proximo">Observações (opcional):</label>
+                  <textarea
+                    id="observacoes_proximo"
+                    name="observacoes"
+                    value={proximoRecontatoData.observacoes}
+                    onChange={handleProximoRecontatoInputChange}
+                    placeholder="Ex: Verificar satisfação com o serviço, apresentar novos produtos..."
+                    rows="3"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="button-group">
+                  <button type="button" className="btn-secondary" onClick={handleSkipProximoRecontato}>
+                    Pular Reagendamento
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Reagendar Recontato
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
