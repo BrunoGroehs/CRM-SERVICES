@@ -1081,3 +1081,159 @@
 .modal-form-section {
   background: #ffffff;
 }
+
+/* Estilos para alinhamento consistente dos campos de recontatos */
+.recontato-card .info-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: -1rem;
+  padding: 0.5rem 0;
+}
+
+.recontato-card .info-label {
+  font-weight: 500;
+  color: #555;
+  min-width: 150px; /* Largura fixa para alinhamento */
+  font-size: 0.9rem;
+  flex-shrink: 0; /* Não encolhe */
+}
+
+.recontato-card .info-value {
+  color: #333;
+  font-size: 0.9rem;
+  flex: 1;
+  /* Trunca texto longo e mostra ... */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: help; /* Indica que há tooltip */
+  max-width: 120px; /* Largura máxima reduzida para texto mais curto */
+}
+
+/* Tooltip para mostrar texto completo */
+.recontato-card .info-value[title]:hover {
+  position: relative;
+}
+
+.recontato-card .info-value[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: #333;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+.recontato-card .info-value[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 95%;
+  left: 10px;
+  border: 5px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Estilos para modal de detalhes também */
+.cliente-info .info-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.cliente-info .info-label {
+  font-weight: 500;
+  color: #555;
+  min-width: 150px; /* Largura fixa para alinhamento */
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.cliente-info .info-value {
+  color: #333;
+  font-size: 0.9rem;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: help;
+  max-width: 120px; /* Largura máxima reduzida para texto mais curto */
+}
+
+.cliente-info .info-value[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: #333;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+.cliente-info .info-value[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 95%;
+  left: 10px;
+  border: 5px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Responsividade para alinhamento */
+@media (max-width: 768px) {
+  .recontato-card .info-label,
+  .cliente-info .info-label {
+    min-width: 120px; /* Menor em mobile */
+    font-size: 0.85rem;
+  }
+  
+  .recontato-card .info-value,
+  .cliente-info .info-value {
+    font-size: 0.85rem;
+    max-width: 100px; /* Muito menor em tablets */
+  }
+  
+  .recontato-card .info-row,
+  .cliente-info .info-row {
+    margin-bottom: 0.6rem;
+    padding: 0.4rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .recontato-card .info-row,
+  .cliente-info .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .recontato-card .info-label,
+  .cliente-info .info-label {
+    min-width: auto;
+    margin-bottom: 0.25rem;
+  }
+  
+  .recontato-card .info-value,
+  .cliente-info .info-value {
+    width: 100%;
+    max-width: 150px; /* Reduzido em mobile vertical */
+  }
+}
