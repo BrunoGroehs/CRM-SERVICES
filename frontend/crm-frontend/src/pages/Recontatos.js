@@ -187,6 +187,13 @@ const Recontatos = () => {
       [name]: value
     }));
     
+    // Se o cliente foi alterado, buscar histórico de serviços
+    if (name === 'cliente_id' && value) {
+      fetchServicosHistorico(value);
+    } else if (name === 'cliente_id' && !value) {
+      setServicosHistorico([]);
+    }
+    
     // Limpar erro do campo quando o usuário começar a digitar
     if (formErrors[name]) {
       setFormErrors(prev => ({
@@ -889,7 +896,7 @@ const Recontatos = () => {
       {/* Modal de Criação de Serviço */}
       {showServicoModal && (
         <div className="modal-overlay" onClick={handleCloseServicoModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>📅 Novo Serviço</h2>
               <button className="close-btn" onClick={handleCloseServicoModal}>
@@ -1033,6 +1040,48 @@ const Recontatos = () => {
                 </button>
               </div>
             </form>
+            
+            {/* Seção do Histórico do Cliente */}
+            {formData.cliente_id && (
+              <div className="modal-historico">
+                <h3>📋 Histórico de Serviços</h3>
+                {servicosHistorico.length > 0 ? (
+                  <div className="historico-modal-lista">
+                    {servicosHistorico.map((servico) => (
+                      <div key={servico.id} className="historico-modal-item">
+                        <div className="historico-modal-header">
+                          <span className="servico-data-modal">
+                            📅 {formatDate(servico.data)} - {servico.hora}
+                          </span>
+                          <span className={`status-badge-modal ${servico.status}`}>
+                            {servico.status}
+                          </span>
+                        </div>
+                        {servico.valor && (
+                          <div className="servico-valor-modal">
+                            💰 {formatCurrency(parseFloat(servico.valor))}
+                          </div>
+                        )}
+                        {servico.funcionario_responsavel && (
+                          <div className="servico-funcionario-modal">
+                            👤 {servico.funcionario_responsavel}
+                          </div>
+                        )}
+                        {servico.notas && (
+                          <div className="servico-notas-modal">
+                            📝 {servico.notas}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sem-historico-modal">
+                    <p>🔍 Nenhum serviço encontrado para este cliente</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

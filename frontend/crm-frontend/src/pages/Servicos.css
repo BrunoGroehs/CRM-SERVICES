@@ -420,3 +420,166 @@
     gap: 0.25rem;
   }
 }
+
+/* Modal largo para incluir histórico do cliente */
+.modal-wide {
+  max-width: 1200px !important;
+  width: 95% !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-wide .modal-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Seção do histórico no modal */
+.modal-historico {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #2196F3;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.modal-historico h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.historico-modal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.historico-modal-item {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.historico-modal-item:hover {
+  border-color: #2196F3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.historico-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.servico-data-modal {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.status-badge-modal {
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.status-badge-modal.concluido {
+  background: #4CAF50;
+  color: white;
+}
+
+.status-badge-modal.agendado {
+  background: #FF9800;
+  color: white;
+}
+
+.status-badge-modal.cancelado {
+  background: #f44336;
+  color: white;
+}
+
+.status-badge-modal.em_andamento {
+  background: #2196F3;
+  color: white;
+}
+
+.servico-valor-modal,
+.servico-funcionario-modal,
+.servico-notas-modal {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.servico-valor-modal {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.sem-historico-modal {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.sem-historico-modal p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Responsivo para modal largo */
+@media (max-width: 1024px) {
+  .modal-wide {
+    max-width: 95% !important;
+  }
+  
+  .modal-wide .modal-form {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .modal-historico {
+    order: 2;
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-wide {
+    margin: 1rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-historico {
+    padding: 1rem;
+    max-height: 250px;
+  }
+  
+  .historico-modal-item {
+    padding: 0.75rem;
+  }
+  
+  .historico-modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}

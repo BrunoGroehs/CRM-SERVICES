@@ -18,6 +18,7 @@ const Servicos = () => {
     funcionario_responsavel: ''
   });
   const [formErrors, setFormErrors] = useState({});
+  const [servicosDoCliente, setServicosDoCliente] = useState([]);
 
   useEffect(() => {
     fetchServicos();
@@ -53,6 +54,30 @@ const Servicos = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
+    }
+  };
+
+  const fetchServicosDoCliente = async (clienteId) => {
+    if (!clienteId) {
+      setServicosDoCliente([]);
+      return;
+    }
+    
+    console.log('Buscando serviços para cliente:', clienteId);
+    
+    try {
+      const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Dados recebidos:', data);
+        setServicosDoCliente(data.data || []);
+      } else {
+        console.log('Resposta não ok:', response.status);
+        setServicosDoCliente([]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar serviços do cliente:', error);
+      setServicosDoCliente([]);
     }
   };
 
@@ -104,6 +129,12 @@ const Servicos = () => {
       funcionario_responsavel: servico.funcionario_responsavel || ''
     });
     setFormErrors({});
+    
+    // Buscar histórico se há cliente selecionado
+    if (servico.cliente_id) {
+      fetchServicosDoCliente(servico.cliente_id);
+    }
+    
     setShowModal(true);
   };
 
@@ -120,6 +151,7 @@ const Servicos = () => {
       funcionario_responsavel: ''
     });
     setFormErrors({});
+    setServicosDoCliente([]); // Limpar histórico ao fechar modal
   };
 
   const handleOpenModal = () => {
@@ -146,6 +178,13 @@ const Servicos = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Se o cliente foi alterado, buscar histórico de serviços
+    if (name === 'cliente_id' && value) {
+      fetchServicosDoCliente(value);
+    } else if (name === 'cliente_id' && !value) {
+      setServicosDoCliente([]);
+    }
     
     // Limpar erro específico quando o usuário digitar
     if (formErrors[name]) {
@@ -381,7 +420,7 @@ const Servicos = () => {
       {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
@@ -538,6 +577,49 @@ const Servicos = () => {
                 </button>
               </div>
             </form>
+            
+            {/* Seção do Histórico do Cliente */}
+            {formData.cliente_id && (
+              <div className="modal-historico">
+                <h3>📋 Histórico de Serviços</h3>
+                {console.log('Renderizando histórico, servicosDoCliente:', servicosDoCliente)}
+                {servicosDoCliente.length > 0 ? (
+                  <div className="historico-modal-lista">
+                    {servicosDoCliente.map((servico) => (
+                      <div key={servico.id} className="historico-modal-item">
+                        <div className="historico-modal-header">
+                          <span className="servico-data-modal">
+                            📅 {formatDate(servico.data)} - {formatTime(servico.hora)}
+                          </span>
+                          <span className={`status-badge-modal ${servico.status}`}>
+                            {servico.status}
+                          </span>
+                        </div>
+                        {servico.valor && (
+                          <div className="servico-valor-modal">
+                            💰 {formatCurrency(parseFloat(servico.valor))}
+                          </div>
+                        )}
+                        {servico.funcionario_responsavel && (
+                          <div className="servico-funcionario-modal">
+                            👤 {servico.funcionario_responsavel}
+                          </div>
+                        )}
+                        {servico.notas && (
+                          <div className="servico-notas-modal">
+                            📝 {servico.notas}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="sem-historico-modal">
+                    <p>🔍 Nenhum serviço encontrado para este cliente</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
