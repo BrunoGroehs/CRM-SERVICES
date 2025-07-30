@@ -713,22 +713,15 @@ const Recontatos = () => {
                   <h3>{recontato.cliente_nome}</h3>
                   <div className="card-badges">
                     <span className="card-id">ID: {recontato.id}</span>
-                    <span className={`status-badge ${statusInfo.class}`}>
-                      {statusInfo.label}
-                    </span>
                   </div>
                 </div>
                 <div className="card-content">
-                  <div className="info-row">
-                    <span className="info-label">👤 Cliente ID:</span>
-                    <span className="info-value">{recontato.cliente_id}</span>
-                  </div>
                   <div className="info-row">
                     <span className="info-label">📱 Telefone:</span>
                     <span className="info-value">{recontato.cliente_telefone}</span>
                   </div>
                   <div className="info-row">
-                    <span className="info-label">📅 Data Agendada:</span>
+                    <span className="info-label">📞 Recontato:</span>
                     <span className="info-value">{formatDate(recontato.data_agendada)}</span>
                   </div>
                   {recontato.hora_agendada && (
@@ -742,12 +735,8 @@ const Recontatos = () => {
                     <span className="info-value">{recontato.motivo || 'Não informado'}</span>
                   </div>
                   <div className="info-row">
-                    <span className="info-label">📝 Observações:</span>
-                    <span className="info-value">{recontato.observacoes || 'Sem observações'}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📊 Status:</span>
-                    <span className="info-value">{recontato.status || 'Pendente'}</span>
+                    <span className="info-label">📝 Nota:</span>
+                    <span className="info-value">{recontato.observacoes || 'Sem nota'}</span>
                   </div>
                   {recontato.criado_em && (
                     <div className="info-row">
@@ -1120,7 +1109,7 @@ const Recontatos = () => {
                   <span className="info-value">{selectedCliente.cliente_telefone}</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">📞 Recontato agendado:</span>
+                  <span className="info-label">📞 Recontato:</span>
                   <span className="info-value">{formatDate(selectedCliente.data_agendada)}</span>
                 </div>
                 <div className="info-row">
@@ -1167,7 +1156,7 @@ const Recontatos = () => {
                           )}
                           {servico.notas && (
                             <div className="servico-info">
-                              <span className="servico-label">📝 Observações:</span>
+                              <span className="servico-label">📝 Nota:</span>
                               <span>{servico.notas}</span>
                             </div>
                           )}
