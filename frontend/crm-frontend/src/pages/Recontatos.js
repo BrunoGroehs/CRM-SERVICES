@@ -1094,48 +1094,6 @@ const Recontatos = () => {
                 )}
               </div>
             </div>
-            
-            {/* Seção do Histórico do Cliente */}
-            {formData.cliente_id && (
-              <div className="modal-historico">
-                <h3>📋 Histórico de Serviços</h3>
-                {servicosHistorico.length > 0 ? (
-                  <div className="historico-modal-lista">
-                    {servicosHistorico.map((servico) => (
-                      <div key={servico.id} className="historico-modal-item">
-                        <div className="historico-modal-header">
-                          <span className="servico-data-modal">
-                            📅 {formatDate(servico.data)} - {servico.hora}
-                          </span>
-                          <span className={`status-badge-modal ${servico.status}`}>
-                            {servico.status}
-                          </span>
-                        </div>
-                        {servico.valor && (
-                          <div className="servico-valor-modal">
-                            💰 {formatCurrency(parseFloat(servico.valor))}
-                          </div>
-                        )}
-                        {servico.funcionario_responsavel && (
-                          <div className="servico-funcionario-modal">
-                            👤 {servico.funcionario_responsavel}
-                          </div>
-                        )}
-                        {servico.notas && (
-                          <div className="servico-notas-modal">
-                            📝 {servico.notas}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="sem-historico-modal">
-                    <p>🔍 Nenhum serviço encontrado para este cliente</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}

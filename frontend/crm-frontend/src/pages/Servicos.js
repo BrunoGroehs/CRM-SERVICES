@@ -429,7 +429,7 @@ const Servicos = () => {
                 <form onSubmit={handleSubmit} className="modal-form">
                   {/* CLIENTE */}
                   <div className="form-group">
-                    <label htmlFor="cliente_id">🧑‍💼 Cliente *</label>
+                    <label htmlFor="cliente_id">Cliente *</label>
                     <select
                       id="cliente_id"
                       name="cliente_id"
@@ -453,7 +453,7 @@ const Servicos = () => {
                   {/* DATA E HORA */}
                   <div className="form-group-row-horizontal">
                     <div className="form-group">
-                      <label htmlFor="data">📅 Data *</label>
+                      <label htmlFor="data">Data *</label>
                       <input
                         type="date"
                         id="data"
@@ -469,7 +469,7 @@ const Servicos = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="hora">⏰ Hora *</label>
+                      <label htmlFor="hora">Hora *</label>
                       <input
                         type="time"
                         id="hora"
@@ -488,7 +488,7 @@ const Servicos = () => {
                   {/* VALOR E STATUS */}
                   <div className="form-group-row-horizontal">
                     <div className="form-group">
-                      <label htmlFor="valor">💰 Valor (R$)</label>
+                      <label htmlFor="valor">Valor (R$)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -506,7 +506,7 @@ const Servicos = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="status">📊 Status</label>
+                      <label htmlFor="status">Status</label>
                       <select
                         id="status"
                         name="status"
@@ -523,7 +523,7 @@ const Servicos = () => {
 
                   {/* FUNCIONÁRIO RESPONSÁVEL */}
                   <div className="form-group">
-                    <label htmlFor="funcionario_responsavel">👤 Funcionário Responsável</label>
+                    <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
                     <input
                       type="text"
                       id="funcionario_responsavel"
@@ -536,7 +536,7 @@ const Servicos = () => {
 
                   {/* OBSERVAÇÕES */}
                   <div className="form-group">
-                    <label htmlFor="notas">📝 Observações</label>
+                    <label htmlFor="notas">Observações</label>
                     <textarea
                       id="notas"
                       name="notas"

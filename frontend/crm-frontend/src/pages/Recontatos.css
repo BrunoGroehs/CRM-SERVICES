@@ -829,7 +829,7 @@
 }
 
 .modal-form-section .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: -1rem;
   position: relative;
 }
 
