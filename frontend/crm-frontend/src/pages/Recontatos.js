@@ -9,6 +9,9 @@ const Recontatos = () => {
   const [activeFilter, setActiveFilter] = useState('todos');
   const [showModal, setShowModal] = useState(false);
   const [showServicoModal, setShowServicoModal] = useState(false);
+  const [showProrrogarModal, setShowProrrogarModal] = useState(false);
+  const [recontatoParaProrrogar, setRecontatoParaProrrogar] = useState(null);
+  const [prorrogacaoTempo, setProrrogacaoTempo] = useState({ tipo: 'dias', quantidade: 7 });
   const [clientes, setClientes] = useState([]);
   const [formData, setFormData] = useState({
     cliente_id: '',
@@ -189,6 +192,141 @@ const Recontatos = () => {
   const formatDateForAPI = (dateString) => {
     // dateString já vem no formato YYYY-MM-DD do input type="date"
     return dateString;
+  };
+
+  // Função auxiliar para formatar datas corretamente
+  const formatDateSafe = (dateString) => {
+    if (!dateString) return 'Data não disponível';
+    
+    try {
+      // Se for uma string de data ISO, converter
+      const date = new Date(dateString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Erro na data';
+    }
+  };
+
+  // Funções para prorrogação
+  const handleProrrogar = (recontato) => {
+    console.log('Recontato selecionado para prorrogação:', recontato);
+    console.log('Data do recontato:', recontato.data_agendada);
+    
+    setRecontatoParaProrrogar(recontato);
+    setProrrogacaoTempo({ tipo: 'dias', quantidade: 7 });
+    setShowProrrogarModal(true);
+  };
+
+  const handleCloseProrrogarModal = () => {
+    setShowProrrogarModal(false);
+    setRecontatoParaProrrogar(null);
+    setProrrogacaoTempo({ tipo: 'dias', quantidade: 7 });
+  };
+
+  const handleProrrogacaoChange = (campo, valor) => {
+    setProrrogacaoTempo(prev => ({
+      ...prev,
+      [campo]: valor
+    }));
+  };
+
+  const calcularNovaData = () => {
+    if (!recontatoParaProrrogar) return null;
+    
+    try {
+      // Criar data a partir da string ISO
+      const dataAtual = new Date(recontatoParaProrrogar.data_agendada);
+      
+      // Verificar se a data é válida
+      if (isNaN(dataAtual.getTime())) {
+        console.error('Data inválida:', recontatoParaProrrogar.data_agendada);
+        return null;
+      }
+      
+      const novaData = new Date(dataAtual);
+      const quantidade = parseInt(prorrogacaoTempo.quantidade);
+      
+      if (isNaN(quantidade) || quantidade <= 0) {
+        return null;
+      }
+      
+      switch (prorrogacaoTempo.tipo) {
+        case 'dias':
+          novaData.setDate(novaData.getDate() + quantidade);
+          break;
+        case 'semanas':
+          novaData.setDate(novaData.getDate() + (quantidade * 7));
+          break;
+        case 'meses':
+          novaData.setMonth(novaData.getMonth() + quantidade);
+          break;
+        default:
+          return null;
+      }
+      
+      return novaData;
+    } catch (error) {
+      console.error('Erro ao calcular nova data:', error);
+      return null;
+    }
+  };
+
+  const confirmarProrrogacao = async () => {
+    if (!recontatoParaProrrogar) return;
+    
+    try {
+      const novaData = calcularNovaData();
+      
+      if (!novaData) {
+        alert('Erro ao calcular a nova data. Verifique os valores inseridos.');
+        return;
+      }
+      
+      const dataFormatada = novaData.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      console.log('Enviando prorrogação:', {
+        id: recontatoParaProrrogar.id,
+        data_antiga: recontatoParaProrrogar.data_agendada,
+        data_nova: dataFormatada
+      });
+      
+      const response = await fetch(`http://localhost:3000/recontatos/${recontatoParaProrrogar.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data_agendada: dataFormatada,
+          status: 'agendado' // Resetar status para agendado (status válido)
+        }),
+      });
+
+      if (!response.ok) {
+        // Tentar obter detalhes do erro
+        let errorMessage = 'Erro ao prorrogar recontato';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error('Erro ao parsear resposta de erro:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      alert(`Recontato prorrogado para ${formatDateSafe(novaData.toISOString())} com sucesso!`);
+      handleCloseProrrogarModal();
+      await fetchRecontatos(); // Recarregar lista
+    } catch (err) {
+      console.error('Erro ao prorrogar recontato:', err);
+      alert(`Erro ao prorrogar recontato: ${err.message}`);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -506,6 +644,16 @@ const Recontatos = () => {
                     </button>
                   )}
                   
+                  {recontato.status !== 'realizado' && (
+                    <button 
+                      className="action-btn prorrogar-btn"
+                      onClick={() => handleProrrogar(recontato)}
+                      title="Prorrogar recontato"
+                    >
+                      ⏳ Prorrogar
+                    </button>
+                  )}
+                  
                   <button 
                     className="action-btn detalhes-btn"
                     onClick={() => handleVerDetalhes(recontato)}
@@ -523,6 +671,104 @@ const Recontatos = () => {
       <button className="refresh-btn" onClick={fetchRecontatos} disabled={loading}>
         {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
       </button>
+
+      {/* Modal de Prorrogação */}
+      {showProrrogarModal && recontatoParaProrrogar && (
+        <div className="modal-overlay" onClick={handleCloseProrrogarModal}>
+          <div className="modal-content prorrogar-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>⏳ Prorrogar Recontato</h2>
+              <button className="close-btn" onClick={handleCloseProrrogarModal}>
+                ✕
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="prorrogar-info">
+                <h3>Cliente: {recontatoParaProrrogar.cliente_nome}</h3>
+                <p>Data atual: {formatDateSafe(recontatoParaProrrogar.data_agendada)}</p>
+              </div>
+              
+              <div className="prorrogar-form">
+                <h4>Por quanto tempo deseja prorrogar?</h4>
+                
+                <div className="prorrogar-options">
+                  <div className="quick-options">
+                    <button 
+                      className={`quick-btn ${prorrogacaoTempo.tipo === 'dias' && prorrogacaoTempo.quantidade === 1 ? 'active' : ''}`}
+                      onClick={() => setProrrogacaoTempo({ tipo: 'dias', quantidade: 1 })}
+                    >
+                      1 Dia
+                    </button>
+                    <button 
+                      className={`quick-btn ${prorrogacaoTempo.tipo === 'dias' && prorrogacaoTempo.quantidade === 3 ? 'active' : ''}`}
+                      onClick={() => setProrrogacaoTempo({ tipo: 'dias', quantidade: 3 })}
+                    >
+                      3 Dias
+                    </button>
+                    <button 
+                      className={`quick-btn ${prorrogacaoTempo.tipo === 'dias' && prorrogacaoTempo.quantidade === 7 ? 'active' : ''}`}
+                      onClick={() => setProrrogacaoTempo({ tipo: 'dias', quantidade: 7 })}
+                    >
+                      1 Semana
+                    </button>
+                    <button 
+                      className={`quick-btn ${prorrogacaoTempo.tipo === 'semanas' && prorrogacaoTempo.quantidade === 2 ? 'active' : ''}`}
+                      onClick={() => setProrrogacaoTempo({ tipo: 'semanas', quantidade: 2 })}
+                    >
+                      2 Semanas
+                    </button>
+                    <button 
+                      className={`quick-btn ${prorrogacaoTempo.tipo === 'meses' && prorrogacaoTempo.quantidade === 1 ? 'active' : ''}`}
+                      onClick={() => setProrrogacaoTempo({ tipo: 'meses', quantidade: 1 })}
+                    >
+                      1 Mês
+                    </button>
+                  </div>
+                  
+                  <div className="custom-option">
+                    <h5>Ou defina um período personalizado:</h5>
+                    <div className="custom-inputs">
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={prorrogacaoTempo.quantidade}
+                        onChange={(e) => handleProrrogacaoChange('quantidade', e.target.value)}
+                        className="quantidade-input"
+                      />
+                      <select
+                        value={prorrogacaoTempo.tipo}
+                        onChange={(e) => handleProrrogacaoChange('tipo', e.target.value)}
+                        className="tipo-select"
+                      >
+                        <option value="dias">Dias</option>
+                        <option value="semanas">Semanas</option>
+                        <option value="meses">Meses</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                {calcularNovaData() && (
+                  <div className="nova-data-preview">
+                    <strong>Nova data do recontato: {formatDateSafe(calcularNovaData().toISOString())}</strong>
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-actions">
+                <button className="cancel-btn" onClick={handleCloseProrrogarModal}>
+                  Cancelar
+                </button>
+                <button className="confirm-btn" onClick={confirmarProrrogacao}>
+                  ⏳ Confirmar Prorrogação
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Criação de Serviço */}
       {showServicoModal && (

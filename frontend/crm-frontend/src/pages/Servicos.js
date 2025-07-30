@@ -224,6 +224,40 @@ const Servicos = () => {
     }
   };
 
+  const handleDeleteServico = async () => {
+    if (!editingServico) return;
+    
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja excluir o serviço do cliente "${editingServico.cliente_nome}"?\n\n` +
+      `Data: ${formatDate(editingServico.data)}\n` +
+      `Valor: ${formatCurrency(editingServico.valor || 0)}\n\n` +
+      `Esta ação não pode ser desfeita!`
+    );
+    
+    if (!confirmDelete) return;
+    
+    try {
+      const response = await fetch(`http://localhost:3000/servicos/${editingServico.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao excluir serviço');
+      }
+
+      alert('Serviço excluído com sucesso!');
+      await fetchServicos(); // Recarregar a lista
+      handleCloseModal();
+    } catch (err) {
+      console.error('Erro ao excluir serviço:', err);
+      alert(`Erro ao excluir serviço: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="page-container">
@@ -255,7 +289,7 @@ const Servicos = () => {
         <p>Lista de todos os serviços realizados no sistema</p>
         <div className="header-buttons">
           <button className="add-btn" onClick={handleOpenModal}>
-            ➕ NOVO SERVIÇO
+            ➕
           </button>
           <button className="refresh-btn" onClick={fetchServicos} disabled={loading}>
             {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
@@ -487,6 +521,18 @@ const Servicos = () => {
                 <button type="button" onClick={handleCloseModal} className="cancel-btn">
                   Cancelar
                 </button>
+                
+                {editingServico && (
+                  <button 
+                    type="button" 
+                    onClick={handleDeleteServico} 
+                    className="delete-btn"
+                    title="Excluir este serviço permanentemente"
+                  >
+                    🗑️ Excluir
+                  </button>
+                )}
+                
                 <button type="submit" className="submit-btn">
                   {editingServico ? '💾 Salvar Alterações' : '➕ Criar Serviço'}
                 </button>
