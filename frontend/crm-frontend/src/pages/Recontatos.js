@@ -519,6 +519,33 @@ const Recontatos = () => {
     handleCloseProximoRecontatoModal();
   };
 
+  const handleDeleteRecontato = async (recontato) => {
+    if (!window.confirm(`Tem certeza que deseja deletar o recontato de ${recontato.cliente_nome}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/recontatos/${recontato.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      alert('Recontato deletado com sucesso!');
+      handleCloseModal(); // Fechar modal de detalhes
+      await fetchRecontatos(); // Recarregar lista
+      
+    } catch (err) {
+      console.error('Erro ao deletar recontato:', err);
+      alert('Erro ao deletar recontato: ' + err.message);
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -1088,6 +1115,17 @@ const Recontatos = () => {
                     ))}
                   </div>
                 )}
+              </div>
+              
+              {/* Ações do Recontato */}
+              <div className="recontato-actions">
+                <button 
+                  className="delete-recontato-btn"
+                  onClick={() => handleDeleteRecontato(selectedCliente)}
+                  title="Deletar este recontato permanentemente"
+                >
+                  🗑️ Deletar Recontato
+                </button>
               </div>
             </div>
           </div>
