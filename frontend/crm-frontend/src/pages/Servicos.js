@@ -63,16 +63,12 @@ const Servicos = () => {
       return;
     }
     
-    console.log('Buscando serviços para cliente:', clienteId);
-    
     try {
       const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Dados recebidos:', data);
         setServicosDoCliente(data.data || []);
       } else {
-        console.log('Resposta não ok:', response.status);
         setServicosDoCliente([]);
       }
     } catch (error) {
@@ -428,198 +424,203 @@ const Servicos = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="cliente_id">Cliente *</label>
-                  <select
-                    id="cliente_id"
-                    name="cliente_id"
-                    value={formData.cliente_id}
-                    onChange={handleInputChange}
-                    className={formErrors.cliente_id ? 'error' : ''}
-                    required
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {clientes.map((cliente) => (
-                      <option key={cliente.id} value={cliente.id}>
-                        {cliente.nome} - {cliente.telefone}
-                      </option>
-                    ))}
-                  </select>
-                  {formErrors.cliente_id && (
-                    <span className="error-message">{formErrors.cliente_id}</span>
+            <div className="modal-body-wide">
+              <div className="modal-form-section">
+                <form onSubmit={handleSubmit} className="modal-form">
+                  {/* CLIENTE */}
+                  <div className="form-group">
+                    <label htmlFor="cliente_id">🧑‍💼 Cliente *</label>
+                    <select
+                      id="cliente_id"
+                      name="cliente_id"
+                      value={formData.cliente_id}
+                      onChange={handleInputChange}
+                      className={formErrors.cliente_id ? 'error' : ''}
+                      required
+                    >
+                      <option value="">Selecione um cliente</option>
+                      {clientes.map((cliente) => (
+                        <option key={cliente.id} value={cliente.id}>
+                          {cliente.nome} - {cliente.telefone}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.cliente_id && (
+                      <span className="error-message">{formErrors.cliente_id}</span>
+                    )}
+                  </div>
+
+                  {/* DATA E HORA */}
+                  <div className="form-group-row-horizontal">
+                    <div className="form-group">
+                      <label htmlFor="data">📅 Data *</label>
+                      <input
+                        type="date"
+                        id="data"
+                        name="data"
+                        value={formData.data}
+                        onChange={handleInputChange}
+                        className={formErrors.data ? 'error' : ''}
+                        required
+                      />
+                      {formErrors.data && (
+                        <span className="error-message">{formErrors.data}</span>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="hora">⏰ Hora *</label>
+                      <input
+                        type="time"
+                        id="hora"
+                        name="hora"
+                        value={formData.hora}
+                        onChange={handleInputChange}
+                        className={formErrors.hora ? 'error' : ''}
+                        required
+                      />
+                      {formErrors.hora && (
+                        <span className="error-message">{formErrors.hora}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* VALOR E STATUS */}
+                  <div className="form-group-row-horizontal">
+                    <div className="form-group">
+                      <label htmlFor="valor">💰 Valor (R$)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        id="valor"
+                        name="valor"
+                        value={formData.valor}
+                        onChange={handleInputChange}
+                        className={formErrors.valor ? 'error' : ''}
+                        placeholder="0,00"
+                      />
+                      {formErrors.valor && (
+                        <span className="error-message">{formErrors.valor}</span>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="status">📊 Status</label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                      >
+                        <option value="agendado">Agendado</option>
+                        <option value="em_andamento">Em Andamento</option>
+                        <option value="concluido">Concluído</option>
+                        <option value="cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* FUNCIONÁRIO RESPONSÁVEL */}
+                  <div className="form-group">
+                    <label htmlFor="funcionario_responsavel">👤 Funcionário Responsável</label>
+                    <input
+                      type="text"
+                      id="funcionario_responsavel"
+                      name="funcionario_responsavel"
+                      value={formData.funcionario_responsavel}
+                      onChange={handleInputChange}
+                      placeholder="Ex: João Silva, Maria Santos..."
+                    />
+                  </div>
+
+                  {/* OBSERVAÇÕES */}
+                  <div className="form-group">
+                    <label htmlFor="notas">📝 Observações</label>
+                    <textarea
+                      id="notas"
+                      name="notas"
+                      value={formData.notas}
+                      onChange={handleInputChange}
+                      placeholder="Descreva detalhes do serviço, materiais utilizados, observações importantes..."
+                      rows="4"
+                    />
+                  </div>
+
+                  {formErrors.submit && (
+                    <div className="form-error">
+                      ⚠️ {formErrors.submit}
+                    </div>
                   )}
-                </div>
+
+                  {/* BOTÕES */}
+                  <div className="form-actions">
+                    <button type="button" onClick={handleCloseModal} className="btn-secondary">
+                      ↩️ Cancelar
+                    </button>
+                    
+                    {editingServico && (
+                      <button 
+                        type="button" 
+                        onClick={handleDeleteServico} 
+                        className="btn-danger"
+                        title="Excluir este serviço permanentemente"
+                      >
+                        🗑️ Excluir
+                      </button>
+                    )}
+                    
+                    <button type="submit" className="btn-primary">
+                      {editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço'}
+                    </button>
+                  </div>
+                </form>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="data">Data *</label>
-                  <input
-                    type="date"
-                    id="data"
-                    name="data"
-                    value={formData.data}
-                    onChange={handleInputChange}
-                    className={formErrors.data ? 'error' : ''}
-                    required
-                  />
-                  {formErrors.data && (
-                    <span className="error-message">{formErrors.data}</span>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="hora">Hora *</label>
-                  <input
-                    type="time"
-                    id="hora"
-                    name="hora"
-                    value={formData.hora}
-                    onChange={handleInputChange}
-                    className={formErrors.hora ? 'error' : ''}
-                    required
-                  />
-                  {formErrors.hora && (
-                    <span className="error-message">{formErrors.hora}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="valor">Valor (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    id="valor"
-                    name="valor"
-                    value={formData.valor}
-                    onChange={handleInputChange}
-                    className={formErrors.valor ? 'error' : ''}
-                    placeholder="0.00"
-                  />
-                  {formErrors.valor && (
-                    <span className="error-message">{formErrors.valor}</span>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="status">Status</label>
-                  <select
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                  >
-                    <option value="agendado">Agendado</option>
-                    <option value="em_andamento">Em Andamento</option>
-                    <option value="concluido">Concluído</option>
-                    <option value="cancelado">Cancelado</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group full-width">
-                  <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
-                  <input
-                    type="text"
-                    id="funcionario_responsavel"
-                    name="funcionario_responsavel"
-                    value={formData.funcionario_responsavel}
-                    onChange={handleInputChange}
-                    placeholder="Nome do funcionário responsável"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group full-width">
-                  <label htmlFor="notas">Observações</label>
-                  <textarea
-                    id="notas"
-                    name="notas"
-                    value={formData.notas}
-                    onChange={handleInputChange}
-                    placeholder="Observações sobre o serviço..."
-                    rows="3"
-                  />
-                </div>
-              </div>
-
-              {formErrors.submit && (
-                <div className="form-error">
-                  {formErrors.submit}
-                </div>
-              )}
-
-              <div className="form-actions">
-                <button type="button" onClick={handleCloseModal} className="cancel-btn">
-                  Cancelar
-                </button>
-                
-                {editingServico && (
-                  <button 
-                    type="button" 
-                    onClick={handleDeleteServico} 
-                    className="delete-btn"
-                    title="Excluir este serviço permanentemente"
-                  >
-                    🗑️ Excluir
-                  </button>
-                )}
-                
-                <button type="submit" className="submit-btn">
-                  {editingServico ? '💾 Salvar Alterações' : '➕ Criar Serviço'}
-                </button>
-              </div>
-            </form>
-            
-            {/* Seção do Histórico do Cliente */}
-            {formData.cliente_id && (
-              <div className="modal-historico">
-                <h3>📋 Histórico de Serviços</h3>
-                {console.log('Renderizando histórico, servicosDoCliente:', servicosDoCliente)}
-                {servicosDoCliente.length > 0 ? (
-                  <div className="historico-modal-lista">
-                    {servicosDoCliente.map((servico) => (
-                      <div key={servico.id} className="historico-modal-item">
-                        <div className="historico-modal-header">
-                          <span className="servico-data-modal">
-                            📅 {formatDate(servico.data)} - {formatTime(servico.hora)}
-                          </span>
-                          <span className={`status-badge-modal ${servico.status}`}>
-                            {servico.status}
-                          </span>
-                        </div>
-                        {servico.valor && (
-                          <div className="servico-valor-modal">
-                            💰 {formatCurrency(parseFloat(servico.valor))}
+              
+              <div className="modal-historico-section">
+                {/* Seção do Histórico do Cliente */}
+                {formData.cliente_id && (
+                  <div className="modal-historico">
+                    <h3>📋 Histórico de Serviços</h3>
+                    {servicosDoCliente.length > 0 ? (
+                      <div className="historico-modal-lista">
+                        {servicosDoCliente.map((servico) => (
+                          <div key={servico.id} className="historico-modal-item">
+                            <div className="historico-modal-header">
+                              <span className="servico-data-modal">
+                                📅 {formatDate(servico.data)} - {formatTime(servico.hora)}
+                              </span>
+                              <span className={`status-badge-modal ${servico.status}`}>
+                                {servico.status}
+                              </span>
+                            </div>
+                            {servico.valor && (
+                              <div className="servico-valor-modal">
+                                💰 {formatCurrency(parseFloat(servico.valor))}
+                              </div>
+                            )}
+                            {servico.funcionario_responsavel && (
+                              <div className="servico-funcionario-modal">
+                                👤 {servico.funcionario_responsavel}
+                              </div>
+                            )}
+                            {servico.notas && (
+                              <div className="servico-notas-modal">
+                                📝 {servico.notas}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {servico.funcionario_responsavel && (
-                          <div className="servico-funcionario-modal">
-                            👤 {servico.funcionario_responsavel}
-                          </div>
-                        )}
-                        {servico.notas && (
-                          <div className="servico-notas-modal">
-                            📝 {servico.notas}
-                          </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="sem-historico-modal">
-                    <p>🔍 Nenhum serviço encontrado para este cliente</p>
+                    ) : (
+                      <div className="sem-historico-modal">
+                        <p>🔍 Nenhum serviço encontrado para este cliente</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}

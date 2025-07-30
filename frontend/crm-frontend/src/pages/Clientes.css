@@ -370,6 +370,14 @@
 
 .form-row {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-row-horizontal {
+  display: flex;
+  flex-direction: row;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -412,10 +420,15 @@
 .form-actions {
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  justify-content: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e1e5e9;
+}
+
+.form-actions button {
+  flex: 1;
+  min-width: 0;
 }
 
 .cancel-btn {
@@ -464,10 +477,14 @@
     margin: 1rem;
   }
   
-  .form-row {
-    flex-direction: column;
+  .form-row,
+  .form-row-horizontal {
     gap: 0;
     margin-bottom: 1rem;
+  }
+  
+  .form-row-horizontal {
+    flex-direction: column;
   }
   
   .form-group {
@@ -770,10 +787,15 @@
 .form-actions {
   display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  justify-content: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 2px solid #f0f0f0;
+}
+
+.form-actions button {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Responsive para modal de recontato */

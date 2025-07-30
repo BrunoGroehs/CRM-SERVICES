@@ -163,6 +163,12 @@ const Recontatos = () => {
       funcionario_responsavel: ''
     });
     setFormErrors({});
+    
+    // Buscar histórico do cliente automaticamente
+    if (recontato.cliente_id) {
+      fetchServicosHistorico(recontato.cliente_id);
+    }
+    
     setShowServicoModal(true);
   };
 
@@ -904,7 +910,9 @@ const Recontatos = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSubmitServico} className="modal-form">
+            <div className="modal-body-wide">
+              <div className="modal-form-section">
+                <form onSubmit={handleSubmitServico} className="modal-form">
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="cliente_id">Cliente *</label>
@@ -929,7 +937,7 @@ const Recontatos = () => {
                 </div>
               </div>
 
-              <div className="form-row">
+              <div className="form-row-horizontal">
                 <div className="form-group">
                   <label htmlFor="data">Data *</label>
                   <input
@@ -963,7 +971,7 @@ const Recontatos = () => {
                 </div>
               </div>
 
-              <div className="form-row">
+              <div className="form-row-horizontal">
                 <div className="form-group">
                   <label htmlFor="valor">Valor (R$)</label>
                   <input
@@ -1040,6 +1048,52 @@ const Recontatos = () => {
                 </button>
               </div>
             </form>
+              </div>
+              
+              <div className="modal-historico-section">
+                {/* Seção do Histórico do Cliente */}
+                {formData.cliente_id && (
+                  <div className="modal-historico">
+                    <h3>📋 Histórico de Serviços</h3>
+                    {servicosHistorico.length > 0 ? (
+                      <div className="historico-modal-lista">
+                        {servicosHistorico.map((servico) => (
+                          <div key={servico.id} className="historico-modal-item">
+                            <div className="historico-modal-header">
+                              <span className="servico-data-modal">
+                                📅 {formatDate(servico.data)} - {servico.hora}
+                              </span>
+                              <span className={`status-badge-modal ${servico.status}`}>
+                                {servico.status}
+                              </span>
+                            </div>
+                            {servico.valor && (
+                              <div className="servico-valor-modal">
+                                💰 {formatCurrency(parseFloat(servico.valor))}
+                              </div>
+                            )}
+                            {servico.funcionario_responsavel && (
+                              <div className="servico-funcionario-modal">
+                                👤 {servico.funcionario_responsavel}
+                              </div>
+                            )}
+                            {servico.notas && (
+                              <div className="servico-notas-modal">
+                                📝 {servico.notas}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="sem-historico-modal">
+                        <p>🔍 Nenhum serviço encontrado para este cliente</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             
             {/* Seção do Histórico do Cliente */}
             {formData.cliente_id && (
