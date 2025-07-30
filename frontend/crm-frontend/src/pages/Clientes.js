@@ -6,8 +6,15 @@ const Clientes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showRecontatoModal, setShowRecontatoModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
+  const [novoClienteId, setNovoClienteId] = useState(null);
+  const [recontatoData, setRecontatoData] = useState({
+    data_agendada: '',
+    observacoes: '',
+    status: 'agendado'
+  });
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
@@ -78,21 +85,42 @@ const Clientes = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      const result = await response.json();
+      
       // Atualizar a lista de clientes
       await fetchClientes();
       
-      // Limpar formulário e fechar modal
-      setFormData({
-        nome: '',
-        telefone: '',
-        email: '',
-        endereco: '',
-        cidade: '',
-        cep: '',
-        indicacao: ''
-      });
-      setEditingCliente(null);
-      setShowModal(false);
+      if (isEditing) {
+        // Se está editando, apenas fechar o modal
+        setFormData({
+          nome: '',
+          telefone: '',
+          email: '',
+          endereco: '',
+          cidade: '',
+          cep: '',
+          indicacao: ''
+        });
+        setEditingCliente(null);
+        setShowModal(false);
+      } else {
+        // Se é um novo cliente, abrir modal de recontato
+        const clienteId = result.data?.id || result.id;
+        setNovoClienteId(clienteId);
+        setShowModal(false);
+        setShowRecontatoModal(true);
+        
+        // Limpar apenas o formulário de cliente
+        setFormData({
+          nome: '',
+          telefone: '',
+          email: '',
+          endereco: '',
+          cidade: '',
+          cep: '',
+          indicacao: ''
+        });
+      }
       
     } catch (err) {
       console.error(isEditing ? 'Erro ao editar cliente:' : 'Erro ao cadastrar cliente:', err);
@@ -142,6 +170,127 @@ const Clientes = () => {
       cep: '',
       indicacao: ''
     });
+  };
+
+  // Funções para o modal de recontato
+  const getDataOptions = () => {
+    const hoje = new Date();
+    const options = [];
+    
+    // Hoje
+    options.push({
+      label: 'Hoje',
+      value: hoje.toISOString().split('T')[0],
+      description: hoje.toLocaleDateString('pt-BR')
+    });
+    
+    // Amanhã
+    const amanha = new Date(hoje);
+    amanha.setDate(hoje.getDate() + 1);
+    options.push({
+      label: 'Amanhã',
+      value: amanha.toISOString().split('T')[0],
+      description: amanha.toLocaleDateString('pt-BR')
+    });
+    
+    // Em 3 dias
+    const tresDias = new Date(hoje);
+    tresDias.setDate(hoje.getDate() + 3);
+    options.push({
+      label: 'Em 3 dias',
+      value: tresDias.toISOString().split('T')[0],
+      description: tresDias.toLocaleDateString('pt-BR')
+    });
+    
+    // Em 1 semana
+    const umaSemana = new Date(hoje);
+    umaSemana.setDate(hoje.getDate() + 7);
+    options.push({
+      label: 'Em 1 semana',
+      value: umaSemana.toISOString().split('T')[0],
+      description: umaSemana.toLocaleDateString('pt-BR')
+    });
+    
+    // Em 2 semanas
+    const duasSemanas = new Date(hoje);
+    duasSemanas.setDate(hoje.getDate() + 14);
+    options.push({
+      label: 'Em 2 semanas',
+      value: duasSemanas.toISOString().split('T')[0],
+      description: duasSemanas.toLocaleDateString('pt-BR')
+    });
+    
+    // Em 1 mês
+    const umMes = new Date(hoje);
+    umMes.setMonth(hoje.getMonth() + 1);
+    options.push({
+      label: 'Em 1 mês',
+      value: umMes.toISOString().split('T')[0],
+      description: umMes.toLocaleDateString('pt-BR')
+    });
+    
+    return options;
+  };
+
+  const handleDataOptionClick = (dataValue) => {
+    setRecontatoData(prev => ({
+      ...prev,
+      data_agendada: dataValue
+    }));
+  };
+
+  const handleRecontatoInputChange = (e) => {
+    const { name, value } = e.target;
+    setRecontatoData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitRecontato = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('http://localhost:3000/recontatos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cliente_id: novoClienteId,
+          ...recontatoData
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      alert('Cliente e recontato criados com sucesso!');
+      handleCloseRecontatoModal();
+      
+    } catch (err) {
+      console.error('Erro ao criar recontato:', err);
+      alert('Erro ao criar recontato: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseRecontatoModal = () => {
+    setShowRecontatoModal(false);
+    setNovoClienteId(null);
+    setRecontatoData({
+      data_agendada: '',
+      observacoes: '',
+      status: 'agendado'
+    });
+  };
+
+  const handleSkipRecontato = () => {
+    alert('Cliente criado com sucesso!');
+    handleCloseRecontatoModal();
   };
 
   if (loading) {
@@ -363,6 +512,83 @@ const Clientes = () => {
                       ? '💾 Salvar Alterações' 
                       : '✅ Salvar Cliente'
                   }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para criação de recontato */}
+      {showRecontatoModal && (
+        <div className="modal-overlay" onClick={handleCloseRecontatoModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>� Agendar Primeiro Recontato</h2>
+              <button className="close-btn" onClick={handleCloseRecontatoModal}>✕</button>
+            </div>
+            
+            <form onSubmit={handleSubmitRecontato} className="recontato-form">
+              <div className="recontato-intro">
+                <p>Cliente criado com sucesso!</p>
+                <p>Agora vamos agendar o primeiro recontato para manter o relacionamento ativo e identificar novas oportunidades de negócio.</p>
+              </div>
+
+              <div className="data-options">
+                <h3>Escolha uma data rápida:</h3>
+                <div className="quick-dates">
+                  {getDataOptions().map((option, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`date-option ${recontatoData.data_agendada === option.value ? 'selected' : ''}`}
+                      onClick={() => handleDataOptionClick(option.value)}
+                    >
+                      <span className="date-label">{option.label}</span>
+                      <span className="date-description">{option.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="custom-date-section">
+                <h3>Ou escolha uma data personalizada:</h3>
+                <div className="form-group">
+                  <label htmlFor="data_agendada">📅 Data Personalizada</label>
+                  <input
+                    type="date"
+                    id="data_agendada"
+                    name="data_agendada"
+                    value={recontatoData.data_agendada}
+                    onChange={handleRecontatoInputChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    placeholder="Selecione uma data específica"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="observacoes">� Observações (opcional)</label>
+                <textarea
+                  id="observacoes"
+                  name="observacoes"
+                  value={recontatoData.observacoes}
+                  onChange={handleRecontatoInputChange}
+                  placeholder="Ex: Verificar interesse em novos serviços, apresentar promoções, acompanhar satisfação..."
+                  rows="4"
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="button" onClick={handleSkipRecontato} className="skip-btn">
+                  ⏭️ Finalizar sem Agendar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting || !recontatoData.data_agendada} 
+                  className="submit-btn"
+                >
+                  {submitting ? '⏳ Agendando...' : '� Agendar Recontato'}
                 </button>
               </div>
             </form>
