@@ -819,3 +819,243 @@
     font-size: 0.85rem;
   }
 }
+
+/* Estilos para botão Ver Detalhes */
+.details-btn {
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
+}
+
+.details-btn:hover {
+  background: linear-gradient(135deg, #138496, #117a8b);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+/* Estilos para modal de detalhes */
+.detalhes-modal {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.cliente-info-detalhada {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #dee2e6;
+}
+
+.cliente-info-detalhada h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.historico-section {
+  margin-bottom: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.historico-section h3 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-historico,
+.empty-historico {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.servicos-list,
+.recontatos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.servico-item,
+.recontato-item {
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.servico-item:hover,
+.recontato-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #dee2e6;
+}
+
+.servico-header,
+.recontato-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.servico-data,
+.recontato-data {
+  font-weight: 600;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.servico-status,
+.recontato-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.servico-status.agendado {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.servico-status.em_andamento {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.servico-status.concluido {
+  background: #e8f5e8;
+  color: #388e3c;
+}
+
+.servico-status.cancelado {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.recontato-status.atrasado {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.recontato-status.hoje {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.recontato-status.proximos {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.recontato-status.longe {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.servico-details,
+.recontato-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.servico-info,
+.recontato-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.servico-label,
+.recontato-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.servico-info span:last-child,
+.recontato-info span:last-child {
+  font-size: 0.9rem;
+  color: #333;
+  word-break: break-word;
+}
+
+/* Responsivo para modal de detalhes */
+@media (max-width: 768px) {
+  .detalhes-modal {
+    width: 98%;
+    margin: 1rem;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .servico-details,
+  .recontato-details {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .servico-header,
+  .recontato-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .historico-section {
+    padding: 1rem;
+  }
+  
+  .cliente-info-detalhada {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .edit-btn,
+  .details-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

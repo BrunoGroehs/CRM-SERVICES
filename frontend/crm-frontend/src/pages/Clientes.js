@@ -7,8 +7,13 @@ const Clientes = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showRecontatoModal, setShowRecontatoModal] = useState(false);
+  const [showDetalhesModal, setShowDetalhesModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
+  const [selectedCliente, setSelectedCliente] = useState(null);
+  const [servicosHistorico, setServicosHistorico] = useState([]);
+  const [recontatosHistorico, setRecontatosHistorico] = useState([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [novoClienteId, setNovoClienteId] = useState(null);
   const [recontatoData, setRecontatoData] = useState({
     data_agendada: '',
@@ -49,8 +54,101 @@ const Clientes = () => {
     }
   };
 
+  const fetchHistoricoServicos = async (clienteId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setServicosHistorico(data.data || []);
+    } catch (err) {
+      console.error('Erro ao carregar histórico de serviços:', err);
+      setServicosHistorico([]);
+    }
+  };
+
+  const fetchHistoricoRecontatos = async (clienteId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/recontatos`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      // Filtrar recontatos pelo cliente específico
+      const recontatosCliente = data.data?.filter(r => r.cliente_id === clienteId) || [];
+      setRecontatosHistorico(recontatosCliente);
+    } catch (err) {
+      console.error('Erro ao carregar histórico de recontatos:', err);
+      setRecontatosHistorico([]);
+    }
+  };
+
+  const handleVerDetalhes = async (cliente) => {
+    setSelectedCliente(cliente);
+    setShowDetalhesModal(true);
+    setLoadingHistorico(true);
+    
+    try {
+      await Promise.all([
+        fetchHistoricoServicos(cliente.id),
+        fetchHistoricoRecontatos(cliente.id)
+      ]);
+    } finally {
+      setLoadingHistorico(false);
+    }
+  };
+
+  const handleCloseDetalhesModal = () => {
+    setShowDetalhesModal(false);
+    setSelectedCliente(null);
+    setServicosHistorico([]);
+    setRecontatosHistorico([]);
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '-';
+    return timeString.substring(0, 5); // HH:MM
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const getStatusRecontato = (recontato) => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const dataAgendada = new Date(recontato.data_agendada);
+    dataAgendada.setHours(0, 0, 0, 0);
+    
+    if (dataAgendada < hoje) {
+      return { status: 'atrasado', label: 'Atrasado', class: 'atrasado' };
+    }
+    
+    if (dataAgendada.getTime() === hoje.getTime()) {
+      return { status: 'hoje', label: 'Hoje', class: 'hoje' };
+    }
+
+    const seteDias = new Date(hoje);
+    seteDias.setDate(hoje.getDate() + 7);
+    
+    if (dataAgendada <= seteDias) {
+      return { status: 'proximos', label: 'Próximos 7 dias', class: 'proximos' };
+    }
+    
+    return { status: 'longe', label: 'Longe demais', class: 'longe' };
   };
 
   const handleInputChange = (e) => {
@@ -389,6 +487,13 @@ const Clientes = () => {
                 >
                   ✏️ Editar
                 </button>
+                <button 
+                  className="details-btn"
+                  onClick={() => handleVerDetalhes(cliente)}
+                  title="Ver histórico e detalhes"
+                >
+                  📋 Ver Detalhes
+                </button>
               </div>
             </div>
           ))}
@@ -595,6 +700,165 @@ const Clientes = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Detalhes do Cliente */}
+      {showDetalhesModal && selectedCliente && (
+        <div className="modal-overlay" onClick={handleCloseDetalhesModal}>
+          <div className="modal-content detalhes-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📋 Detalhes do Cliente - {selectedCliente.nome}</h2>
+              <button className="close-btn" onClick={handleCloseDetalhesModal}>
+                ✕
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              {/* Informações do Cliente */}
+              <div className="cliente-info-detalhada">
+                <h3>👤 Informações do Cliente</h3>
+                <div className="info-grid">
+                  <div className="info-row">
+                    <span className="info-label">📱 Telefone:</span>
+                    <span className="info-value">{selectedCliente.telefone}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📧 Email:</span>
+                    <span className="info-value">{selectedCliente.email || 'Não informado'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">🏠 Endereço:</span>
+                    <span className="info-value">{selectedCliente.endereco || 'Não informado'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">🏙️ Cidade:</span>
+                    <span className="info-value">{selectedCliente.cidade || 'Não informado'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📮 CEP:</span>
+                    <span className="info-value">{selectedCliente.cep || 'Não informado'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">👥 Indicação:</span>
+                    <span className="info-value">{selectedCliente.indicacao || 'Não informado'}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">📅 Cadastrado em:</span>
+                    <span className="info-value">{formatDate(selectedCliente.criado_em)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Histórico de Serviços */}
+              <div className="historico-section">
+                <h3>🔧 Histórico de Serviços ({servicosHistorico.length})</h3>
+                
+                {loadingHistorico ? (
+                  <div className="loading-historico">
+                    <p>Carregando histórico de serviços...</p>
+                  </div>
+                ) : servicosHistorico.length === 0 ? (
+                  <div className="empty-historico">
+                    <p>Nenhum serviço encontrado para este cliente.</p>
+                  </div>
+                ) : (
+                  <div className="servicos-list">
+                    {servicosHistorico.map((servico) => (
+                      <div key={servico.id} className="servico-item">
+                        <div className="servico-header">
+                          <span className="servico-data">{formatDate(servico.data)}</span>
+                          <span className={`servico-status ${servico.status}`}>
+                            {servico.status || 'Agendado'}
+                          </span>
+                        </div>
+                        <div className="servico-details">
+                          <div className="servico-info">
+                            <span className="servico-label">⏰ Hora:</span>
+                            <span>{formatTime(servico.hora)}</span>
+                          </div>
+                          <div className="servico-info">
+                            <span className="servico-label">💰 Valor:</span>
+                            <span>{formatCurrency(servico.valor || 0)}</span>
+                          </div>
+                          {servico.funcionario_responsavel && (
+                            <div className="servico-info">
+                              <span className="servico-label">👤 Responsável:</span>
+                              <span>{servico.funcionario_responsavel}</span>
+                            </div>
+                          )}
+                          {servico.notas && (
+                            <div className="servico-info">
+                              <span className="servico-label">📝 Observações:</span>
+                              <span>{servico.notas}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Histórico de Recontatos */}
+              <div className="historico-section">
+                <h3>📞 Histórico de Recontatos ({recontatosHistorico.length})</h3>
+                
+                {loadingHistorico ? (
+                  <div className="loading-historico">
+                    <p>Carregando histórico de recontatos...</p>
+                  </div>
+                ) : recontatosHistorico.length === 0 ? (
+                  <div className="empty-historico">
+                    <p>Nenhum recontato encontrado para este cliente.</p>
+                  </div>
+                ) : (
+                  <div className="recontatos-list">
+                    {recontatosHistorico.map((recontato) => {
+                      const statusInfo = getStatusRecontato(recontato);
+                      return (
+                        <div key={recontato.id} className="recontato-item">
+                          <div className="recontato-header">
+                            <span className="recontato-data">{formatDate(recontato.data_agendada)}</span>
+                            <span className={`recontato-status ${statusInfo.class}`}>
+                              {statusInfo.label}
+                            </span>
+                          </div>
+                          <div className="recontato-details">
+                            {recontato.hora_agendada && (
+                              <div className="recontato-info">
+                                <span className="recontato-label">⏰ Hora:</span>
+                                <span>{formatTime(recontato.hora_agendada)}</span>
+                              </div>
+                            )}
+                            <div className="recontato-info">
+                              <span className="recontato-label">🎯 Motivo:</span>
+                              <span>{recontato.motivo || 'Não informado'}</span>
+                            </div>
+                            <div className="recontato-info">
+                              <span className="recontato-label">📊 Status:</span>
+                              <span>{recontato.status || 'Pendente'}</span>
+                            </div>
+                            {recontato.observacoes && (
+                              <div className="recontato-info">
+                                <span className="recontato-label">📝 Observações:</span>
+                                <span>{recontato.observacoes}</span>
+                              </div>
+                            )}
+                            <div className="recontato-info">
+                              <span className="recontato-label">📅 Criado em:</span>
+                              <span>{formatDate(recontato.created_at || recontato.criado_em)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
