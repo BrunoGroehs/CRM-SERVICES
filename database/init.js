@@ -29,6 +29,13 @@ async function createClientesTable(pool) {
       // Ignorar erro se a coluna já existir
     }
     
+    // Adicionar coluna quantidade_paineis se não existir
+    try {
+      await pool.query('ALTER TABLE clientes ADD COLUMN IF NOT EXISTS quantidade_paineis INTEGER DEFAULT 0;');
+    } catch (error) {
+      // Ignorar erro se a coluna já existir
+    }
+    
     // Remover a restrição NOT NULL do email se existir
     try {
       await pool.query('ALTER TABLE clientes ALTER COLUMN email DROP NOT NULL;');

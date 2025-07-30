@@ -90,6 +90,7 @@ router.get('/:id', async (req, res) => {
         endereco, 
         cidade, 
         cep, 
+        indicacao,
         created_at,
         updated_at
       FROM clientes 
@@ -123,11 +124,13 @@ router.get('/:id', async (req, res) => {
 // POST /clientes - Cria um novo cliente
 router.post('/', async (req, res) => {
   try {
+    console.log('📝 Dados recebidos:', req.body);
     const { nome, telefone, email, endereco, cidade, cep, indicacao } = req.body;
     
     // Validar campos obrigatórios
     const errors = validateClienteFields(req.body);
     if (errors.length > 0) {
+      console.log('❌ Erro de validação:', errors);
       return res.status(400).json({
         success: false,
         message: 'Dados inválidos',
@@ -151,7 +154,11 @@ router.post('/', async (req, res) => {
       indicacao ? indicacao.trim() : null
     ];
     
+    console.log('🔍 Query SQL:', query);
+    console.log('🔍 Values para inserção:', values);
+
     const result = await pool.query(query, values);
+    console.log('✅ Cliente criado com sucesso:', result.rows[0]);
     
     res.status(201).json({
       success: true,
@@ -159,10 +166,18 @@ router.post('/', async (req, res) => {
       message: 'Cliente criado com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao criar cliente:', error);
+    console.error('❌ Erro ao criar cliente:', error);
+    console.error('📝 Detalhes do erro:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: error.stack.split('\n').slice(0, 5).join('\n')  // Apenas as primeiras 5 linhas do stack
+    });
     
     // Tratamento de erro de email duplicado
-    if (error.code === '23505' && error.constraint === 'clientes_email_key') {
+    if (error.code === '23505' && (error.constraint === 'clientes_email_key' || error.constraint === 'clientes_email_unique')) {
       return res.status(409).json({
         success: false,
         message: 'Email já está sendo usado por outro cliente'

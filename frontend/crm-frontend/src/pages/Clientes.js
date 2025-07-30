@@ -15,6 +15,7 @@ const Clientes = () => {
   const [recontatosHistorico, setRecontatosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [novoClienteId, setNovoClienteId] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [recontatoData, setRecontatoData] = useState({
     data_agendada: '',
     observacoes: '',
@@ -33,6 +34,23 @@ const Clientes = () => {
   useEffect(() => {
     fetchClientes();
   }, []);
+
+  // Função para mostrar toast
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    const newToast = { id, message, type };
+    setToasts(prev => [...prev, newToast]);
+    
+    // Auto-remover após 5 segundos
+    setTimeout(() => {
+      removeToast(id);
+    }, 5000);
+  };
+
+  // Função para remover toast
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   const fetchClientes = async () => {
     try {
@@ -179,11 +197,17 @@ const Clientes = () => {
         body: JSON.stringify(formData)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
+      // Primeiro verificar se a resposta tem conteúdo antes de tentar parsear
       const result = await response.json();
+
+      if (!response.ok) {
+        // Verificar se é erro de email duplicado
+        if (response.status === 409 && result.message) {
+          showToast(result.message, 'error');
+          return;
+        }
+        throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
       
       // Atualizar a lista de clientes
       await fetchClientes();
@@ -201,12 +225,14 @@ const Clientes = () => {
         });
         setEditingCliente(null);
         setShowModal(false);
+        showToast('Cliente editado com sucesso!', 'success');
       } else {
         // Se é um novo cliente, abrir modal de recontato
         const clienteId = result.data?.id || result.id;
         setNovoClienteId(clienteId);
         setShowModal(false);
         setShowRecontatoModal(true);
+        showToast('Cliente cadastrado com sucesso!', 'success');
         
         // Limpar apenas o formulário de cliente
         setFormData({
@@ -222,7 +248,18 @@ const Clientes = () => {
       
     } catch (err) {
       console.error(isEditing ? 'Erro ao editar cliente:' : 'Erro ao cadastrar cliente:', err);
-      alert(`Erro ao ${isEditing ? 'editar' : 'cadastrar'} cliente: ` + err.message);
+      
+      // Mensagem de erro mais amigável
+      let errorMessage = err.message;
+      if (err.message.includes('duplicate key') || err.message.includes('already exists')) {
+        errorMessage = 'Este email já está sendo usado por outro cliente. Por favor, use um email diferente.';
+      } else if (err.message.includes('HTTP 500')) {
+        errorMessage = 'Erro interno do servidor. Tente novamente em alguns momentos.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
+      }
+      
+      showToast(`Erro ao ${isEditing ? 'editar' : 'cadastrar'} cliente: ${errorMessage}`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -742,7 +779,11 @@ const Clientes = () => {
                     <span className="info-value">{selectedCliente.indicacao || 'Não informado'}</span>
                   </div>
                   <div className="info-row">
-                    <span className="info-label">📅 Cadastrado em:</span>
+                    <span className="info-label">� Quantidade de Painéis:</span>
+                    <span className="info-value">{selectedCliente.quantidade_paineis || 0} painéis</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">�📅 Cadastrado em:</span>
                     <span className="info-value">{formatDate(selectedCliente.criado_em)}</span>
                   </div>
                 </div>
@@ -856,6 +897,29 @@ const Clientes = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Sistema de Toast Notifications */}
+      {toasts.length > 0 && (
+        <div className="toast-container">
+          {toasts.map(toast => (
+            <div key={toast.id} className={`toast ${toast.type}`}>
+              <span className="toast-icon">
+                {toast.type === 'success' && '✅'}
+                {toast.type === 'error' && '❌'}
+                {toast.type === 'warning' && '⚠️'}
+              </span>
+              <span className="toast-message">{toast.message}</span>
+              <button 
+                className="toast-close" 
+                onClick={() => removeToast(toast.id)}
+                aria-label="Fechar notificação"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
