@@ -78,10 +78,11 @@ const Servicos = () => {
   };
 
   const formatCurrency = (value) => {
+    const numericValue = parseFloat(value) || 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(numericValue);
   };
 
   const formatDate = (dateString) => {
@@ -94,7 +95,12 @@ const Servicos = () => {
   };
 
   const getTotalReceita = () => {
-    return servicos.reduce((total, servico) => total + (servico.valor || 0), 0);
+    return servicos
+      .filter(servico => servico.status === 'concluido')
+      .reduce((total, servico) => {
+        const valor = parseFloat(servico.valor) || 0;
+        return total + valor;
+      }, 0);
   };
 
   // Função para converter data ISO para formato do input date (YYYY-MM-DD)
@@ -340,6 +346,7 @@ const Servicos = () => {
         <div className="stat-item">
           <span className="stat-value">{formatCurrency(getTotalReceita())}</span>
           <span className="stat-label">Receita Total</span>
+          <span className="stat-note">(apenas serviços concluídos)</span>
         </div>
       </div>
 

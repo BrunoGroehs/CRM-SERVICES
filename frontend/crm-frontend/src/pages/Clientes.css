@@ -151,6 +151,14 @@
   margin-top: 0.25rem;
 }
 
+.stat-note {
+  display: block;
+  font-size: 0.75rem;
+  color: #999;
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
 .data-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
