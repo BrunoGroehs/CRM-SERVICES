@@ -1,12 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './Navigation.css';
 
 const Navigation = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link';
+  };
+
+  const handleLogout = () => {
+    logout();
   };
 
   return (
@@ -37,6 +43,14 @@ const Navigation = () => {
             </Link>
           </li>
         </ul>
+        <div className="nav-user">
+          <span className="user-info">
+            👤 {user?.nome || user?.email}
+          </span>
+          <button className="logout-btn" onClick={handleLogout}>
+            🚪 Sair
+          </button>
+        </div>
       </div>
     </nav>
   );

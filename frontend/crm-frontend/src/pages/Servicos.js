@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Servicos.css';
+import { getApiUrl } from '../utils/api';
+import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Servicos = () => {
   const [servicos, setServicos] = useState([]);
@@ -8,6 +10,7 @@ const Servicos = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingServico, setEditingServico] = useState(null);
+  const authenticatedFetch = useAuthenticatedFetch();
   const [formData, setFormData] = useState({
     cliente_id: '',
     data: '',
@@ -28,7 +31,7 @@ const Servicos = () => {
   const fetchServicos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/servicos');
+      const response = await authenticatedFetch(getApiUrl('servicos'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -47,7 +50,7 @@ const Servicos = () => {
 
   const fetchClientes = async () => {
     try {
-      const response = await fetch('http://localhost:3000/clientes');
+      const response = await authenticatedFetch(getApiUrl('clientes'));
       if (response.ok) {
         const data = await response.json();
         setClientes(data.data || []);
@@ -64,7 +67,7 @@ const Servicos = () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
+      const response = await authenticatedFetch(getApiUrl(`servicos/cliente/${clienteId}`));
       if (response.ok) {
         const data = await response.json();
         setServicosDoCliente(data.data || []);
@@ -238,12 +241,12 @@ const Servicos = () => {
         data: formatDateForAPI(formData.data)
       };
 
-      const url = isEditing 
-        ? `http://localhost:3000/servicos/${editingServico.id}`
-        : 'http://localhost:3000/servicos';
+      const url = isEditing
+        ? getApiUrl(`servicos/${editingServico.id}`)
+        : getApiUrl('servicos');
       const method = isEditing ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
@@ -278,7 +281,7 @@ const Servicos = () => {
     if (!confirmDelete) return;
     
     try {
-      const response = await fetch(`http://localhost:3000/servicos/${editingServico.id}`, {
+      const response = await authenticatedFetch(getApiUrl(`servicos/${editingServico.id}`), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

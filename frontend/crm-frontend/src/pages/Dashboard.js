@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
+import { getApiUrl } from '../utils/api';
+import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const authenticatedFetch = useAuthenticatedFetch();
 
   useEffect(() => {
     fetchDashboardData();
@@ -16,7 +19,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/dashboard');
+      const response = await authenticatedFetch(getApiUrl('dashboard'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

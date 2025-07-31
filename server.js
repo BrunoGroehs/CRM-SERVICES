@@ -1,5 +1,11 @@
 const express = require('express');
+const path = require('path');
 const { Pool } = require('pg');
+const passport = require('passport');
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
+const cors = require('cors');
 require('dotenv').config();
 
 // Importar módulos do projeto
@@ -7,25 +13,64 @@ const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
 const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
 const recontatosRouter = require('./routes/recontatos');
+const { router: authRouter, initializePool: initAuthPool } = require('./routes/auth');
+const { router: usuariosRouter, initializePool: initUsuariosPool } = require('./routes/usuarios');
+
+// Importar configurações de autenticação
+const { configureGoogleStrategy } = require('./auth/passport');
+const { apiLimiter } = require('./middleware/rateLimiter');
+const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware para CORS (permitir requisições do frontend React)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+// Configurações de segurança
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", "accounts.google.com"]
+    }
   }
-});
+}));
+
+// Configurar CORS
+app.use(cors({
+  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+}));
+
+// Middleware para cookies
+app.use(cookieParser());
+
+// Configurar sessões
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
+// Inicializar Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Middleware para parsing JSON
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rate limiting geral
+app.use('/api/', apiLimiter);
 
 // Middleware para servir arquivos estáticos
 app.use(express.static('public'));
@@ -47,6 +92,11 @@ const pool = new Pool({
 // Inicializar o pool nas rotas
 initClientesPool(pool);
 initServicosPool(pool);
+initAuthPool(pool);
+initUsuariosPool(pool);
+
+// Configurar estratégias de autenticação
+configureGoogleStrategy(pool);
 
 // Disponibilizar o pool para as rotas de recontatos
 app.locals.pool = pool;
@@ -113,12 +163,21 @@ app.get('/', (req, res) => {
 });
 
 // Rotas da API
-app.use('/clientes', clientesRouter);
-app.use('/servicos', servicosRouter);
-app.use('/recontatos', recontatosRouter);
+app.use('/auth', authRouter);
+app.use('/usuarios', usuariosRouter);
 
-// Endpoint Dashboard - Métricas do Sistema
-app.get('/dashboard', async (req, res) => {
+// Rota para guia de configuração OAuth
+app.get('/oauth-setup', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'oauth-setup.html'));
+});
+
+// Rotas protegidas (requerem autenticação)
+app.use('/clientes', authenticateToken, clientesRouter);
+app.use('/servicos', authenticateToken, servicosRouter);
+app.use('/recontatos', authenticateToken, recontatosRouter);
+
+// Endpoint Dashboard - Métricas do Sistema (protegido)
+app.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     const client = await pool.connect();
     
