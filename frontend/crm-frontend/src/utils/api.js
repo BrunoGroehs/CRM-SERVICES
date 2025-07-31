@@ -28,4 +28,5 @@ export const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-export default { getApiUrl, apiRequest };
+const apiUtils = { getApiUrl, apiRequest };
+export default apiUtils;

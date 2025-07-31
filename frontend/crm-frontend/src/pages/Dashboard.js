@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Dashboard.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
@@ -14,9 +14,9 @@ const Dashboard = () => {
     // Auto-refresh a cada 30 segundos
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboardData]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await authenticatedFetch(getApiUrl('dashboard'));
@@ -39,7 +39,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authenticatedFetch]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {

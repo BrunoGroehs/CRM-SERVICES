@@ -56,8 +56,7 @@ app.use(cors({
 // Middleware para cookies
 app.use(cookieParser());
 
-// Configurar sessões - TEMPORARIAMENTE DESABILITADO PARA DEBUG
-/*
+// Configurar sessões
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -68,13 +67,10 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 horas
   }
 }));
-*/
 
-// Inicializar Passport - TEMPORARIAMENTE DESABILITADO PARA DEBUG
-/*
+// Inicializar Passport
 app.use(passport.initialize());
 app.use(passport.session());
-*/
 
 // Middleware para parsing JSON
 app.use(express.json({ limit: '10mb' }));
@@ -107,8 +103,8 @@ initAuthPool(pool);
 initUsuariosPool(pool);
 initAdminPool(pool);
 
-// Configurar estratégias de autenticação - TEMPORARIAMENTE DESABILITADO
-// configureGoogleStrategy(pool);
+// Configurar estratégias de autenticação
+configureGoogleStrategy(pool);
 
 // Disponibilizar o pool para as rotas de recontatos
 app.locals.pool = pool;
@@ -174,9 +170,9 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rotas da API - Temporariamente limitadas para debug
+// Rotas da API
 try {
-  // app.use('/auth', authRouter);  // COMENTADO PARA DEBUG
+  app.use('/auth', authRouter);
   app.use('/usuarios', usuariosRouter);
   app.use('/admin', adminRouter);
 } catch (error) {
@@ -372,21 +368,35 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Servir arquivos estáticos do React (apenas em produção)
-if (process.env.NODE_ENV === 'production') {
+// Servir arquivos estáticos do React 
+// Verificar se o build existe
+const fs = require('fs');
+const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+const buildExists = fs.existsSync(buildPath);
+
+console.log(`🔍 Verificando build do React:`);
+console.log(`   - Build path: ${buildPath}`);
+console.log(`   - Build exists: ${buildExists}`);
+console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
+
+if (buildExists) {
+  console.log('✅ Servindo arquivos estáticos do React');
   // Servir arquivos estáticos do React build
-  app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
+  app.use(express.static(buildPath));
   
   // Rota catch-all para o React Router (deve ser a última rota)
   app.get('/*', (req, res) => {
     try {
-      res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
+      const indexPath = path.join(buildPath, 'index.html');
+      console.log(`📄 Servindo index.html: ${indexPath}`);
+      res.sendFile(indexPath);
     } catch (error) {
       console.error('❌ Erro ao servir index.html:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 } else {
+  console.log('⚠️ Build do React não encontrado - modo desenvolvimento');
   // Em desenvolvimento, redirecionar para o servidor do React
   app.get('/*', (req, res) => {
     res.json({

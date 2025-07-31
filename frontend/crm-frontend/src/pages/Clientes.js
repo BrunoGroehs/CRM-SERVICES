@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Clientes.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
@@ -38,7 +38,7 @@ const Clientes = () => {
 
   useEffect(() => {
     fetchClientes();
-  }, []);
+  }, [fetchClientes]);
 
   // Função para mostrar toast
   const showToast = (message, type = 'success') => {
@@ -57,7 +57,7 @@ const Clientes = () => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  const fetchClientes = async () => {
+  const fetchClientes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await authenticatedFetch(getApiUrl('clientes'));
@@ -75,7 +75,7 @@ const Clientes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authenticatedFetch]);
 
   const fetchHistoricoServicos = async (clienteId) => {
     try {
