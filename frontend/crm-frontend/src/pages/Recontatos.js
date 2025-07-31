@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './Recontatos.css';
+import { getApiUrl } from '../utils/api';
+import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Recontatos = () => {
   const [recontatos, setRecontatos] = useState([]);
@@ -13,6 +15,7 @@ const Recontatos = () => {
   const [showProximoRecontatoModal, setShowProximoRecontatoModal] = useState(false);
   const [recontatoParaProrrogar, setRecontatoParaProrrogar] = useState(null);
   const [servicoCriado, setServicoCriado] = useState(null);
+  const authenticatedFetch = useAuthenticatedFetch();
   const [proximoRecontatoData, setProximoRecontatoData] = useState({
     periodo: '',
     data_personalizada: '',
@@ -100,7 +103,7 @@ const Recontatos = () => {
   const fetchRecontatos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/recontatos');
+      const response = await authenticatedFetch(getApiUrl('recontatos'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -120,7 +123,7 @@ const Recontatos = () => {
   const fetchServicosHistorico = async (clienteId) => {
     try {
       setLoadingHistorico(true);
-      const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
+      const response = await authenticatedFetch(getApiUrl(`servicos/cliente/${clienteId}`));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -138,7 +141,7 @@ const Recontatos = () => {
 
   const fetchClientes = async () => {
     try {
-      const response = await fetch('http://localhost:3000/clientes');
+      const response = await authenticatedFetch(getApiUrl('clientes'));
       if (response.ok) {
         const data = await response.json();
         setClientes(data.data || []);
@@ -241,7 +244,7 @@ const Recontatos = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/servicos', {
+      const response = await authenticatedFetch(getApiUrl('servicos'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -379,7 +382,7 @@ const Recontatos = () => {
         data_nova: dataFormatada
       });
       
-      const response = await fetch(`http://localhost:3000/recontatos/${recontatoParaProrrogar.id}`, {
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoParaProrrogar.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -491,7 +494,7 @@ const Recontatos = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:3000/recontatos/${recontatoAtual.id}`, {
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoAtual.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -538,7 +541,7 @@ const Recontatos = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/recontatos/${recontato.id}`, {
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontato.id}`), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

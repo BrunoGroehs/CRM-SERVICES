@@ -1,27 +1,48 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import Navigation from './components/Navigation';
-import Dashboard from './pages/Dashboard';
+import AuthAwareDashboard from './pages/AuthAwareDashboard';
 import Clientes from './pages/Clientes';
 import Servicos from './pages/Servicos';
 import Recontatos from './pages/Recontatos';
+import AdminPanel from './pages/AdminPanel';
+import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
+import ProtectedRoute from './components/ProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute';
 import './App.css';
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Navigation />
-        <main className="main-content">
+    <AuthProvider>
+      <Router>
+        <div className="App">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/servicos" element={<Servicos />} />
-            <Route path="/recontatos" element={<Recontatos />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <Navigation />
+                <main className="main-content">
+                  <Routes>
+                    <Route path="/" element={<AuthAwareDashboard />} />
+                    <Route path="/clientes" element={<Clientes />} />
+                    <Route path="/servicos" element={<Servicos />} />
+                    <Route path="/recontatos" element={<Recontatos />} />
+                    <Route path="/admin" element={
+                      <RoleProtectedRoute allowedRoles={['admin', 'manager']}>
+                        <AdminPanel />
+                      </RoleProtectedRoute>
+                    } />
+                  </Routes>
+                </main>
+              </ProtectedRoute>
+            } />
           </Routes>
-        </main>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

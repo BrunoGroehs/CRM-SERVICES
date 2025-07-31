@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuário Não Cadastrado - CRM Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+
+        h1 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.3em;
+            margin-bottom: 30px;
+        }
+
+        .message {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .steps {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .steps h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .step-number {
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+            font-size: 0.9em;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .step-description {
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .contact-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .contact-info h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .contact-item {
+            margin-bottom: 8px;
+            color: #856404;
+        }
+
+        .contact-item strong {
+            color: #533f03;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-tertiary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-tertiary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🚫</div>
+        <h1>Acesso Negado</h1>
+        <p class="subtitle">Usuário não cadastrado no sistema</p>
+        
+        <div class="message">
+            <p>Você não possui permissão para acessar este sistema.</p>
+            <p>Para obter acesso, siga o processo de solicitação abaixo:</p>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Como solicitar acesso</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-title">Entre em contato</div>
+                    <div class="step-description">Envie um email para o administrador do sistema</div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-title">Forneça seus dados</div>
+                    <div class="step-description">Nome completo, email, função e motivo do acesso</div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-title">Aguarde aprovação</div>
+                    <div class="step-description">O administrador analisará sua solicitação</div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <div class="step-title">Receba as credenciais</div>
+                    <div class="step-description">Você receberá instruções para primeiro acesso</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-info">
+            <h3>📞 Informações de contato</h3>
+            <div class="contact-item">
+                <strong>📧 Email:</strong> admin@crmservices.com
+            </div>
+            <div class="contact-item">
+                <strong>📱 Telefone:</strong> (11) 9999-9999
+            </div>
+            <div class="contact-item">
+                <strong>⏰ Horário:</strong> Segunda a Sexta, 8h às 18h
+            </div>
+            <div class="contact-item">
+                <strong>⏱️ Prazo:</strong> Até 2 dias úteis para resposta
+            </div>
+        </div>
+
+        <div class="buttons">
+            <a href="mailto:admin@crmservices.com?subject=Solicitação de Acesso ao CRM&body=Olá,%0D%0A%0D%0AGostaria de solicitar acesso ao sistema CRM.%0D%0A%0D%0ANome completo:%0D%0AEmail:%0D%0AFunção:%0D%0AMotivo do acesso:%0D%0A%0D%0AObrigado!" class="btn btn-primary">
+                📧 Solicitar Acesso
+            </a>
+            <a href="tel:+5511999999999" class="btn btn-secondary">
+                📱 Ligar Agora
+            </a>
+            <a href="/" class="btn btn-tertiary">
+                🏠 Voltar ao Início
+            </a>
+        </div>
+
+        <div class="footer">
+            <p><strong>CRM Services</strong> - Sistema de Gerenciamento</p>
+            <p>🔒 Sistema restrito a usuários autorizados</p>
+        </div>
+    </div>
+
+    <script>
+        // Adicionar alguns efeitos visuais
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+
+            // Efeito de hover nos botões
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px) scale(1.05)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Animação dos steps
+            const steps = document.querySelectorAll('.step');
+            steps.forEach((step, index) => {
+                setTimeout(() => {
+                    step.style.opacity = '0';
+                    step.style.transform = 'translateX(-20px)';
+                    step.style.transition = 'all 0.4s ease';
+                    
+                    setTimeout(() => {
+                        step.style.opacity = '1';
+                        step.style.transform = 'translateX(0)';
+                    }, 100);
+                }, index * 150);
+            });
+        });
+    </script>
+</body>
+</html>

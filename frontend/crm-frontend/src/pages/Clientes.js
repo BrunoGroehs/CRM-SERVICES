@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Clientes.css';
+import { getApiUrl } from '../utils/api';
+import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
@@ -32,6 +34,8 @@ const Clientes = () => {
     quantidade_placas: ''
   });
 
+  const authenticatedFetch = useAuthenticatedFetch();
+
   useEffect(() => {
     fetchClientes();
   }, []);
@@ -56,7 +60,7 @@ const Clientes = () => {
   const fetchClientes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/clientes');
+      const response = await authenticatedFetch(getApiUrl('clientes'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -75,7 +79,7 @@ const Clientes = () => {
 
   const fetchHistoricoServicos = async (clienteId) => {
     try {
-      const response = await fetch(`http://localhost:3000/servicos/cliente/${clienteId}`);
+      const response = await authenticatedFetch(getApiUrl(`servicos/cliente/${clienteId}`));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -91,7 +95,7 @@ const Clientes = () => {
 
   const fetchHistoricoRecontatos = async (clienteId) => {
     try {
-      const response = await fetch(`http://localhost:3000/recontatos`);
+      const response = await authenticatedFetch(getApiUrl('recontatos'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -186,11 +190,11 @@ const Clientes = () => {
 
     try {
       const url = isEditing 
-        ? `http://localhost:3000/clientes/${editingCliente.id}`
-        : 'http://localhost:3000/clientes';
+        ? getApiUrl(`clientes/${editingCliente.id}`)
+        : getApiUrl('clientes');
       const method = isEditing ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +226,8 @@ const Clientes = () => {
           endereco: '',
           cidade: '',
           cep: '',
-          indicacao: ''
+          indicacao: '',
+          quantidade_placas: ''
         });
         setEditingCliente(null);
         setShowModal(false);
@@ -243,7 +248,8 @@ const Clientes = () => {
           endereco: '',
           cidade: '',
           cep: '',
-          indicacao: ''
+          indicacao: '',
+          quantidade_placas: ''
         });
       }
       
@@ -275,7 +281,8 @@ const Clientes = () => {
       endereco: '',
       cidade: '',
       cep: '',
-      indicacao: ''
+      indicacao: '',
+      quantidade_placas: ''
     });
     setShowModal(true);
   };
@@ -289,7 +296,8 @@ const Clientes = () => {
       endereco: cliente.endereco || '',
       cidade: cliente.cidade || '',
       cep: cliente.cep || '',
-      indicacao: cliente.indicacao || ''
+      indicacao: cliente.indicacao || '',
+      quantidade_placas: cliente.quantidade_placas || ''
     });
     setShowModal(true);
   };
@@ -304,7 +312,8 @@ const Clientes = () => {
       endereco: '',
       cidade: '',
       cep: '',
-      indicacao: ''
+      indicacao: '',
+      quantidade_placas: ''
     });
   };
 
@@ -388,7 +397,7 @@ const Clientes = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:3000/recontatos', {
+      const response = await authenticatedFetch(getApiUrl('recontatos'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
