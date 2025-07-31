@@ -1,5 +1,21 @@
 // API utility functions
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Detecta automaticamente a URL base da API
+const getBaseUrl = () => {
+  // Se estiver definido nas variáveis de ambiente, use
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Se estiver em produção (mesmo domínio), use a URL atual
+  if (window.location.hostname === 'crm-services.onrender.com') {
+    return window.location.origin;
+  }
+  
+  // Para desenvolvimento local
+  return 'http://localhost:3001';
+};
+
+const API_BASE_URL = getBaseUrl();
 
 export const getApiUrl = (endpoint) => {
   // Remove leading slash if present to avoid double slashes

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiUrl } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
+      const response = await fetch(getApiUrl('/auth/me'), {
         credentials: 'include'
       });
       
@@ -51,12 +52,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = () => {
     // Redirecionar para Google OAuth
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    window.location.href = getApiUrl('/auth/google');
   };
 
   const logout = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/auth/logout`, {
+      await fetch(getApiUrl('/auth/logout'), {
         method: 'POST',
         credentials: 'include'
       });
@@ -73,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshAuth = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
+      const response = await fetch(getApiUrl('/auth/refresh'), {
         method: 'POST',
         credentials: 'include'
       });
