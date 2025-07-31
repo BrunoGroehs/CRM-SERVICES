@@ -56,7 +56,8 @@ app.use(cors({
 // Middleware para cookies
 app.use(cookieParser());
 
-// Configurar sessões
+// Configurar sessões - TEMPORARIAMENTE DESABILITADO PARA DEBUG
+/*
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -67,10 +68,13 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 horas
   }
 }));
+*/
 
-// Inicializar Passport
+// Inicializar Passport - TEMPORARIAMENTE DESABILITADO PARA DEBUG
+/*
 app.use(passport.initialize());
 app.use(passport.session());
+*/
 
 // Middleware para parsing JSON
 app.use(express.json({ limit: '10mb' }));
@@ -103,8 +107,8 @@ initAuthPool(pool);
 initUsuariosPool(pool);
 initAdminPool(pool);
 
-// Configurar estratégias de autenticação
-configureGoogleStrategy(pool);
+// Configurar estratégias de autenticação - TEMPORARIAMENTE DESABILITADO
+// configureGoogleStrategy(pool);
 
 // Disponibilizar o pool para as rotas de recontatos
 app.locals.pool = pool;
@@ -170,9 +174,9 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rotas da API
+// Rotas da API - Temporariamente limitadas para debug
 try {
-  app.use('/auth', authRouter);
+  // app.use('/auth', authRouter);  // COMENTADO PARA DEBUG
   app.use('/usuarios', usuariosRouter);
   app.use('/admin', adminRouter);
 } catch (error) {
