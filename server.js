@@ -125,8 +125,8 @@ async function testDatabaseConnection() {
   }
 }
 
-// Endpoint de teste principal
-app.get('/', (req, res) => {
+// Endpoint de status da API (mudado de '/' para '/api/status' para não conflitar com React)
+app.get('/api/status', (req, res) => {
   res.json({
     message: 'Servidor rodando',
     status: 'OK',
@@ -377,7 +377,7 @@ app.listen(port, async () => {
   console.log(`📡 Servidor rodando na porta ${port}`);
   console.log(`🌐 Acesse: http://localhost:${port}`);
   console.log('📋 Endpoints disponíveis:');
-  console.log('   - GET /           - Endpoint principal');
+  console.log('   - GET /api/status - Status da API');
   console.log('   - GET /clientes   - Lista todos os clientes');
   console.log('   - POST /clientes  - Cria novo cliente');
   console.log('   - PUT /clientes/:id - Atualiza cliente');
