@@ -365,8 +365,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Servir arquivos estáticos do React em produção - TEMPORARIAMENTE DESABILITADO
-/*
+// Servir arquivos estáticos do React em produção
 if (process.env.NODE_ENV === 'production') {
   // Servir arquivos estáticos do build do React
   app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
@@ -376,18 +375,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
   });
 }
-*/
-
-// Rota de teste básica para verificar se servidor está funcionando
-app.get('/', (req, res) => {
-  res.json({
-    message: 'CRM Services Backend funcionando!',
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    note: 'Frontend temporariamente desabilitado para debug'
-  });
-});
 
 // Inicialização do servidor
 app.listen(port, async () => {
