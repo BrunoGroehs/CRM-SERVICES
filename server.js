@@ -25,6 +25,11 @@ const { authenticateToken } = require('./middleware/auth');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configurar trust proxy para Render.com
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Configurações de segurança
 app.use(helmet({
   contentSecurityPolicy: {
