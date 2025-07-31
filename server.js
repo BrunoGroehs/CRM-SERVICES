@@ -43,7 +43,7 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:3001', 
   'http://localhost:3000',
-  process.env.FRONTEND_URL // URL do Render em produção
+  process.env.FRONTEND_URL || 'https://crm-services.onrender.com' // URL do Render em produção
 ].filter(Boolean);
 
 app.use(cors({
@@ -171,9 +171,13 @@ app.get('/', (req, res) => {
 });
 
 // Rotas da API
-app.use('/auth', authRouter);
-app.use('/usuarios', usuariosRouter);
-app.use('/admin', adminRouter);
+try {
+  app.use('/auth', authRouter);
+  app.use('/usuarios', usuariosRouter);
+  app.use('/admin', adminRouter);
+} catch (error) {
+  console.error('❌ Erro ao configurar rotas da API:', error);
+}
 
 // Rota para guia de configuração OAuth
 app.get('/oauth-setup', (req, res) => {
@@ -181,9 +185,13 @@ app.get('/oauth-setup', (req, res) => {
 });
 
 // Rotas protegidas (requerem autenticação)
-app.use('/clientes', authenticateToken, clientesRouter);
-app.use('/servicos', authenticateToken, servicosRouter);
-app.use('/recontatos', authenticateToken, recontatosRouter);
+try {
+  app.use('/clientes', authenticateToken, clientesRouter);
+  app.use('/servicos', authenticateToken, servicosRouter);
+  app.use('/recontatos', authenticateToken, recontatosRouter);
+} catch (error) {
+  console.error('❌ Erro ao configurar rotas protegidas:', error);
+}
 
 // Endpoint Dashboard - Métricas do Sistema (protegido)
 app.get('/dashboard', authenticateToken, async (req, res) => {
@@ -366,12 +374,17 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
   
   // Rota catch-all para o React Router (deve ser a última rota)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
+  app.get('/*', (req, res) => {
+    try {
+      res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
+    } catch (error) {
+      console.error('❌ Erro ao servir index.html:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
   });
 } else {
   // Em desenvolvimento, redirecionar para o servidor do React
-  app.get('*', (req, res) => {
+  app.get('/*', (req, res) => {
     res.json({
       message: 'Em desenvolvimento - Acesse o frontend em http://localhost:3001',
       backend: `http://localhost:${port}`,
