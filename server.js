@@ -370,8 +370,21 @@ if (process.env.NODE_ENV === 'production') {
   // Servir arquivos estáticos do build do React
   app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
   
-  // Rota catch-all para o React Router (deve ser a última rota)
-  app.get('*', (req, res) => {
+  // Rota catch-all para o React Router (APENAS para rotas que NÃO são API)
+  app.get('*', (req, res, next) => {
+    // Se a rota começar com /api, /auth, /clientes, etc., não interceptar
+    if (req.path.startsWith('/api') || 
+        req.path.startsWith('/auth') || 
+        req.path.startsWith('/clientes') || 
+        req.path.startsWith('/servicos') || 
+        req.path.startsWith('/recontatos') || 
+        req.path.startsWith('/usuarios') || 
+        req.path.startsWith('/admin') || 
+        req.path.startsWith('/dashboard')) {
+      return next();
+    }
+    
+    // Para todas as outras rotas, servir o React
     res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
   });
 }
