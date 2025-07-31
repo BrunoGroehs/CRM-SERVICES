@@ -392,9 +392,19 @@ router.delete('/users/:id', requireAdminOrManager, async (req, res) => {
 });
 
 // GET /admin/roles - Listar roles disponíveis e suas permissões
-router.get('/roles', requireAdmin, async (req, res) => {
+router.get('/roles', requireAdminOrManager, async (req, res) => {
   try {
-    const rolesInfo = VALID_ROLES.map(role => ({
+    // Para admins, mostrar todas as roles
+    // Para managers, mostrar apenas manager e user
+    let rolesToShow = [];
+    
+    if (req.user.role === ROLES.ADMIN) {
+      rolesToShow = VALID_ROLES;
+    } else if (req.user.role === ROLES.MANAGER) {
+      rolesToShow = [ROLES.MANAGER, ROLES.USER];
+    }
+    
+    const rolesInfo = rolesToShow.map(role => ({
       name: role,
       permissions: getRolePermissions(role)
     }));

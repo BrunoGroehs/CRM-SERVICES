@@ -7,7 +7,8 @@ import './AdminPanel.css';
 const AdminPanel = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [roles, setRoles] = useState([]); // Para mostrar na seção de roles e permissões
+  const [availableRoles, setAvailableRoles] = useState([]); // Para criar usuários
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -35,9 +36,10 @@ const AdminPanel = () => {
       setLoading(true);
       setError('');
 
-      const [usersResponse, availableRolesResponse, statsResponse] = await Promise.all([
+      const [usersResponse, availableRolesResponse, rolesResponse, statsResponse] = await Promise.all([
         authenticatedFetch(getApiUrl('admin/users')),
         authenticatedFetch(getApiUrl('admin/available-roles')),
+        authenticatedFetch(getApiUrl('admin/roles')),
         authenticatedFetch(getApiUrl('admin/stats'))
       ]);
 
@@ -48,20 +50,29 @@ const AdminPanel = () => {
 
       if (availableRolesResponse.ok) {
         const rolesData = await availableRolesResponse.json();
-        const availableRoles = rolesData.roles || [];
-        console.log('🔧 Frontend - Roles recebidos:', availableRoles);
-        setRoles(availableRoles);
+        const availableRolesData = rolesData.roles || [];
+        console.log('🔧 Frontend - Available roles recebidos:', availableRolesData);
+        setAvailableRoles(availableRolesData);
         
         // Definir o role padrão como o primeiro disponível
-        if (availableRoles.length > 0) {
-          console.log('🔧 Frontend - Definindo role padrão:', availableRoles[0].value);
+        if (availableRolesData.length > 0) {
+          console.log('🔧 Frontend - Definindo role padrão:', availableRolesData[0].value);
           setNewUser(prev => ({
             ...prev,
-            role: availableRoles[0].value
+            role: availableRolesData[0].value
           }));
         }
       } else {
-        console.error('🔧 Frontend - Erro ao carregar roles:', availableRolesResponse.status);
+        console.error('🔧 Frontend - Erro ao carregar available roles:', availableRolesResponse.status);
+      }
+
+      if (rolesResponse.ok) {
+        const rolesData = await rolesResponse.json();
+        const allRoles = rolesData.roles || [];
+        console.log('🔧 Frontend - All roles recebidos:', allRoles);
+        setRoles(allRoles);
+      } else {
+        console.error('🔧 Frontend - Erro ao carregar roles:', rolesResponse.status);
       }
 
       if (statsResponse.ok) {
@@ -523,7 +534,7 @@ const AdminPanel = () => {
                     onChange={(e) => setNewUser({...newUser, role: e.target.value})}
                     className="form-control"
                   >
-                    {roles.map(role => (
+                    {availableRoles.map(role => (
                       <option key={role.value} value={role.value}>
                         {role.label}
                       </option>
