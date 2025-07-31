@@ -4,12 +4,13 @@ async function createUsuariosTable(pool) {
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
-        google_id VARCHAR(255) UNIQUE NOT NULL,
+        google_id VARCHAR(255) UNIQUE,
         email VARCHAR(255) UNIQUE NOT NULL,
         nome VARCHAR(255) NOT NULL,
         foto_perfil TEXT,
         role VARCHAR(20) DEFAULT 'user',
         ativo BOOLEAN DEFAULT true,
+        created_by INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
         ultimo_login TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -17,6 +18,13 @@ async function createUsuariosTable(pool) {
     `;
     
     await pool.query(createTableQuery);
+    
+    // Adicionar coluna created_by se não existir (para tabelas existentes)
+    try {
+      await pool.query('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES usuarios(id) ON DELETE SET NULL;');
+    } catch (error) {
+      // Ignorar erro se a coluna já existir
+    }
     
     console.log('✅ Tabela "usuarios" verificada/criada com sucesso');
     

@@ -15,6 +15,7 @@ const { router: servicosRouter, initializePool: initServicosPool } = require('./
 const recontatosRouter = require('./routes/recontatos');
 const { router: authRouter, initializePool: initAuthPool } = require('./routes/auth');
 const { router: usuariosRouter, initializePool: initUsuariosPool } = require('./routes/usuarios');
+const { router: adminRouter, initializePool: initAdminPool } = require('./routes/admin');
 
 // Importar configurações de autenticação
 const { configureGoogleStrategy } = require('./auth/passport');
@@ -94,6 +95,7 @@ initClientesPool(pool);
 initServicosPool(pool);
 initAuthPool(pool);
 initUsuariosPool(pool);
+initAdminPool(pool);
 
 // Configurar estratégias de autenticação
 configureGoogleStrategy(pool);
@@ -165,6 +167,7 @@ app.get('/', (req, res) => {
 // Rotas da API
 app.use('/auth', authRouter);
 app.use('/usuarios', usuariosRouter);
+app.use('/admin', adminRouter);
 
 // Rota para guia de configuração OAuth
 app.get('/oauth-setup', (req, res) => {

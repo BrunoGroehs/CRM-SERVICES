@@ -73,8 +73,26 @@ router.get('/google/callback',
   }),
   async (req, res) => {
     try {
-      // req.user contém os dados do usuário e tokens
+      // req.user contém os dados do usuário e possível status especial
       const user = req.user;
+      
+      // Verificar se usuário tem status especial
+      if (user.status_auth === 'inativo') {
+        console.log(`⚠️ Redirecionando usuário inativo: ${user.email}`);
+        return res.redirect('/usuario-inativo.html');
+      }
+      
+      if (user.status_auth === 'nao_cadastrado') {
+        console.log(`⚠️ Redirecionando usuário não cadastrado: ${user.email}`);
+        return res.redirect('/usuario-nao-cadastrado.html');
+      }
+      
+      // Usuário válido - continuar com autenticação normal
+      if (!user.token || !user.refreshToken) {
+        console.error('❌ Tokens não gerados para usuário válido');
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        return res.redirect(`${frontendUrl}/login?error=token_failed`);
+      }
       
       // Definir cookies seguros com os tokens
       const cookieOptions = {

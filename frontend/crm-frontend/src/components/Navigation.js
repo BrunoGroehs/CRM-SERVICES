@@ -1,11 +1,14 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Navigation.css';
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link';
@@ -13,7 +16,31 @@ const Navigation = () => {
 
   const handleLogout = () => {
     logout();
+    setIsDropdownOpen(false);
   };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleAdminClick = () => {
+    navigate('/admin');
+    setIsDropdownOpen(false);
+  };
+
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <nav className="navbar">
@@ -44,12 +71,28 @@ const Navigation = () => {
           </li>
         </ul>
         <div className="nav-user">
-          <span className="user-info">
-            👤 {user?.nome || user?.email}
-          </span>
-          <button className="logout-btn" onClick={handleLogout}>
-            🚪 Sair
-          </button>
+          <div className="user-menu" ref={dropdownRef}>
+            <div className="user-avatar" onClick={toggleDropdown}>
+              {user?.foto_perfil ? (
+                <img src={user.foto_perfil} alt="Avatar" />
+              ) : (
+                <span className="user-avatar-fallback">👤</span>
+              )}
+            </div>
+            <div className={`dropdown-menu ${isDropdownOpen ? 'show' : ''}`}>
+              <div className="dropdown-item user-name">
+                👤 {user?.nome || user?.email}
+              </div>
+              {(user?.role === 'admin' || user?.role === 'manager') && (
+                <button className="dropdown-item admin-link" onClick={handleAdminClick}>
+                  🛡️ Admin
+                </button>
+              )}
+              <button className="dropdown-item logout" onClick={handleLogout}>
+                🚪 Sair
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </nav>

@@ -13,17 +13,17 @@ const configureGoogleStrategy = (pool) => {
     try {
       const client = await pool.connect();
       
-      // Verificar se usuário já existe
-      const existingUserQuery = await client.query(
+      // Primeiro, verificar se usuário já existe pelo google_id
+      const existingUserByGoogleId = await client.query(
         'SELECT * FROM usuarios WHERE google_id = $1',
         [profile.id]
       );
       
       let user;
       
-      if (existingUserQuery.rows.length > 0) {
-        // Usuário existe - atualizar último login
-        user = existingUserQuery.rows[0];
+      if (existingUserByGoogleId.rows.length > 0) {
+        // Usuário já existe com google_id - atualizar último login
+        user = existingUserByGoogleId.rows[0];
         
         await client.query(
           'UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1',
@@ -32,33 +32,71 @@ const configureGoogleStrategy = (pool) => {
         
         console.log(`✅ Login realizado: ${user.email}`);
       } else {
-        // Criar novo usuário
-        const newUserQuery = await client.query(
-          `INSERT INTO usuarios (google_id, email, nome, foto_perfil, role, ativo, created_at, updated_at) 
-           VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
-           RETURNING *`,
-          [
-            profile.id,
-            profile.emails[0].value,
-            profile.displayName,
-            profile.photos && profile.photos[0] ? profile.photos[0].value : null,
-            'user', // role padrão
-            true    // ativo por padrão
-          ]
+        // Verificar se existe usuário com o mesmo email (criado manualmente)
+        const existingUserByEmail = await client.query(
+          'SELECT * FROM usuarios WHERE email = $1',
+          [profile.emails[0].value]
         );
         
-        user = newUserQuery.rows[0];
-        console.log(`✅ Novo usuário criado: ${user.email}`);
+        if (existingUserByEmail.rows.length > 0) {
+          // Usuário existe por email - vincular google_id
+          user = existingUserByEmail.rows[0];
+          
+          await client.query(
+            `UPDATE usuarios 
+             SET google_id = $1, 
+                 nome = $2, 
+                 foto_perfil = $3, 
+                 ultimo_login = CURRENT_TIMESTAMP,
+                 updated_at = CURRENT_TIMESTAMP 
+             WHERE id = $4`,
+            [
+              profile.id,
+              profile.displayName,
+              profile.photos && profile.photos[0] ? profile.photos[0].value : user.foto_perfil,
+              user.id
+            ]
+          );
+          
+          // Buscar usuário atualizado
+          const updatedUserQuery = await client.query(
+            'SELECT * FROM usuarios WHERE id = $1',
+            [user.id]
+          );
+          user = updatedUserQuery.rows[0];
+          
+          console.log(`✅ Usuário existente vinculado ao Google: ${user.email}`);
+        } else {
+          // Usuário não cadastrado no sistema
+          // Ao invés de criar automaticamente, vamos retornar um indicador
+          user = {
+            google_id: profile.id,
+            email: profile.emails[0].value,
+            nome: profile.displayName,
+            foto_perfil: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
+            status_auth: 'nao_cadastrado'
+          };
+          
+          console.log(`⚠️ Usuário não cadastrado tentou fazer login: ${user.email}`);
+        }
       }
       
       client.release();
       
       // Verificar se usuário está ativo
-      if (!user.ativo) {
-        return done(new Error('Usuário inativo'), null);
+      if (!user.ativo && !user.status_auth) {
+        // Ao invés de retornar erro, vamos marcar o usuário como inativo
+        // para ser tratado na rota de callback
+        user.status_auth = 'inativo';
+        return done(null, user);
       }
-      
-      // Gerar tokens
+
+      // Se usuário tem status especial (inativo ou não cadastrado), não gerar tokens
+      if (user.status_auth) {
+        return done(null, user);
+      }
+
+      // Gerar tokens apenas para usuários válidos
       const tokenPayload = {
         id: user.id,
         google_id: user.google_id,
@@ -73,9 +111,7 @@ const configureGoogleStrategy = (pool) => {
       
       // Adicionar tokens ao objeto user
       user.token = token;
-      user.refreshToken = refreshTokenJWT;
-      
-      return done(null, user);
+      user.refreshToken = refreshTokenJWT;      return done(null, user);
       
     } catch (error) {
       console.error('❌ Erro na autenticação Google:', error);

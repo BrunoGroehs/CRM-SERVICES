@@ -226,7 +226,8 @@ const Clientes = () => {
           endereco: '',
           cidade: '',
           cep: '',
-          indicacao: ''
+          indicacao: '',
+          quantidade_placas: ''
         });
         setEditingCliente(null);
         setShowModal(false);
@@ -247,7 +248,8 @@ const Clientes = () => {
           endereco: '',
           cidade: '',
           cep: '',
-          indicacao: ''
+          indicacao: '',
+          quantidade_placas: ''
         });
       }
       
@@ -279,7 +281,8 @@ const Clientes = () => {
       endereco: '',
       cidade: '',
       cep: '',
-      indicacao: ''
+      indicacao: '',
+      quantidade_placas: ''
     });
     setShowModal(true);
   };
@@ -293,7 +296,8 @@ const Clientes = () => {
       endereco: cliente.endereco || '',
       cidade: cliente.cidade || '',
       cep: cliente.cep || '',
-      indicacao: cliente.indicacao || ''
+      indicacao: cliente.indicacao || '',
+      quantidade_placas: cliente.quantidade_placas || ''
     });
     setShowModal(true);
   };
@@ -308,7 +312,8 @@ const Clientes = () => {
       endereco: '',
       cidade: '',
       cep: '',
-      indicacao: ''
+      indicacao: '',
+      quantidade_placas: ''
     });
   };
 

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { ROLES, hasPermission, isValidRole } = require('../config/roles');
 
 // Middleware de autenticação JWT
 const authenticateToken = async (req, res, next) => {
@@ -77,6 +78,36 @@ const checkRole = (allowedRoles) => {
   };
 };
 
+// Middleware para verificar permissões específicas
+const checkPermission = (permission) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user.role || !hasPermission(req.user.role, permission)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Permissão insuficiente para esta operação'
+        });
+      }
+      next();
+    } catch (error) {
+      console.error('Erro ao verificar permissão:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro interno no servidor'
+      });
+    }
+  };
+};
+
+// Middleware para verificar se é administrador
+const requireAdmin = checkRole([ROLES.ADMIN]);
+
+// Middleware para verificar se é administrador ou gerente
+const requireManagerOrAdmin = checkRole([ROLES.ADMIN, ROLES.MANAGER]);
+
+// Middleware para verificar qualquer usuário autenticado
+const requireAnyRole = checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]);
+
 // Middleware opcional - não bloqueia se não houver token
 const optionalAuth = (req, res, next) => {
   try {
@@ -110,5 +141,9 @@ module.exports = {
   authenticateToken,
   checkActiveUser,
   checkRole,
+  checkPermission,
+  requireAdmin,
+  requireManagerOrAdmin,
+  requireAnyRole,
   optionalAuth
 };
