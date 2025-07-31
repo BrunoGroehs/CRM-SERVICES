@@ -42,3 +42,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+.env.production
+frontend/crm-frontend/.env copy
+.env copy

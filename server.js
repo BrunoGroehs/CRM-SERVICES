@@ -40,8 +40,14 @@ app.use(helmet({
 }));
 
 // Configurar CORS
+const allowedOrigins = [
+  'http://localhost:3001', 
+  'http://localhost:3000',
+  process.env.FRONTEND_URL // URL do Render em produção
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
@@ -353,6 +359,17 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Servir arquivos estáticos do React em produção
+if (process.env.NODE_ENV === 'production') {
+  // Servir arquivos estáticos do build do React
+  app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
+  
+  // Rota catch-all para o React Router (deve ser a última rota)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build/index.html'));
+  });
+}
 
 // Inicialização do servidor
 app.listen(port, async () => {
