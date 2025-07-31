@@ -24,16 +24,32 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl('/auth/me'), {
+      const apiUrl = getApiUrl('/auth/me');
+      console.log('🔍 DEBUG: Calling API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         credentials: 'include'
       });
       
+      console.log('🔍 DEBUG: Response status:', response.status);
+      console.log('🔍 DEBUG: Response headers:', response.headers.get('content-type'));
+      
       if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setUser(data.user);
-          setAuthenticated(true);
-        } else {
+        const textResponse = await response.text();
+        console.log('🔍 DEBUG: Raw response:', textResponse.substring(0, 200));
+        
+        try {
+          const data = JSON.parse(textResponse);
+          if (data.success) {
+            setUser(data.user);
+            setAuthenticated(true);
+          } else {
+            setUser(null);
+            setAuthenticated(false);
+          }
+        } catch (parseError) {
+          console.error('🚨 JSON Parse Error:', parseError);
+          console.error('🚨 Response was:', textResponse);
           setUser(null);
           setAuthenticated(false);
         }

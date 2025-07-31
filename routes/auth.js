@@ -68,7 +68,7 @@ router.get('/google',
 // Callback do Google OAuth
 router.get('/google/callback',
   passport.authenticate('google', { 
-    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=auth_failed`,
+    failureRedirect: `${process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://crm-services.onrender.com' : 'http://localhost:3000')}/login?error=auth_failed`,
     session: false 
   }),
   async (req, res) => {
@@ -90,7 +90,7 @@ router.get('/google/callback',
       // Usuário válido - continuar com autenticação normal
       if (!user.token || !user.refreshToken) {
         console.error('❌ Tokens não gerados para usuário válido');
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://crm-services.onrender.com' : 'http://localhost:3000');
         return res.redirect(`${frontendUrl}/login?error=token_failed`);
       }
       
@@ -115,12 +115,12 @@ router.get('/google/callback',
       });
       
       // Redirecionar para o frontend com sucesso
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://crm-services.onrender.com' : 'http://localhost:3000');
       res.redirect(`${frontendUrl}/?auth=success&user=${encodeURIComponent(user.nome)}`);
       
     } catch (error) {
       console.error('❌ Erro no callback do Google:', error);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://crm-services.onrender.com' : 'http://localhost:3000');
       res.redirect(`${frontendUrl}/login?error=callback_failed`);
     }
   }
