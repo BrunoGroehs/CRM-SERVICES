@@ -368,27 +368,100 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Endpoint de debug para verificar build
+app.get('/debug/build', (req, res) => {
+  const fs = require('fs');
+  const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+  const indexPath = path.join(buildPath, 'index.html');
+  
+  let buildContents = [];
+  let frontendExists = false;
+  let frontendContents = [];
+  
+  try {
+    if (fs.existsSync(buildPath)) {
+      buildContents = fs.readdirSync(buildPath);
+    }
+  } catch (error) {
+    buildContents = [`Error: ${error.message}`];
+  }
+  
+  try {
+    const frontendPath = path.join(__dirname, 'frontend');
+    if (fs.existsSync(frontendPath)) {
+      frontendExists = true;
+      frontendContents = fs.readdirSync(frontendPath);
+    }
+  } catch (error) {
+    frontendContents = [`Error: ${error.message}`];
+  }
+  
+  res.json({
+    message: 'Debug do Build React',
+    paths: {
+      __dirname: __dirname,
+      buildPath: buildPath,
+      indexPath: indexPath
+    },
+    checks: {
+      buildExists: fs.existsSync(buildPath),
+      indexExists: fs.existsSync(indexPath),
+      frontendExists: frontendExists
+    },
+    contents: {
+      build: buildContents,
+      frontend: frontendContents
+    },
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT
+    }
+  });
+});
+
 // Servir arquivos estáticos do React 
 // Verificar se o build existe
 const fs = require('fs');
 const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+const indexPath = path.join(buildPath, 'index.html');
 const buildExists = fs.existsSync(buildPath);
+const indexExists = fs.existsSync(indexPath);
 
 console.log(`🔍 Verificando build do React:`);
 console.log(`   - Build path: ${buildPath}`);
 console.log(`   - Build exists: ${buildExists}`);
+console.log(`   - Index exists: ${indexExists}`);
 console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
 
-if (buildExists) {
+// Sempre tentar servir o React em produção, independente da variável NODE_ENV
+if (buildExists && indexExists) {
   console.log('✅ Servindo arquivos estáticos do React');
+  
   // Servir arquivos estáticos do React build
-  app.use(express.static(buildPath));
+  app.use(express.static(buildPath, {
+    maxAge: '1d', // Cache por 1 dia
+    etag: true
+  }));
   
   // Rota catch-all para o React Router (deve ser a última rota)
-  app.get('/*', (req, res) => {
+  app.get('/*', (req, res, next) => {
+    // Ignorar rotas da API
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/auth/') || 
+        req.path.startsWith('/usuarios/') || 
+        req.path.startsWith('/admin/') ||
+        req.path.startsWith('/clientes/') ||
+        req.path.startsWith('/servicos/') ||
+        req.path.startsWith('/recontatos/') ||
+        req.path.startsWith('/dashboard') ||
+        req.path.startsWith('/db-test') ||
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/oauth-setup')) {
+      return next();
+    }
+    
     try {
-      const indexPath = path.join(buildPath, 'index.html');
-      console.log(`📄 Servindo index.html: ${indexPath}`);
+      console.log(`📄 Servindo React App para: ${req.path}`);
       res.sendFile(indexPath);
     } catch (error) {
       console.error('❌ Erro ao servir index.html:', error);
@@ -396,13 +469,35 @@ if (buildExists) {
     }
   });
 } else {
-  console.log('⚠️ Build do React não encontrado - modo desenvolvimento');
-  // Em desenvolvimento, redirecionar para o servidor do React
-  app.get('/*', (req, res) => {
+  console.log('⚠️ Build do React não encontrado - servindo apenas API');
+  console.log('   Para servir o frontend, execute: npm run build');
+  
+  // Endpoint de fallback para informar sobre o build
+  app.get('/*', (req, res, next) => {
+    // Ignorar rotas da API (mesmo check de cima)
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/auth/') || 
+        req.path.startsWith('/usuarios/') || 
+        req.path.startsWith('/admin/') ||
+        req.path.startsWith('/clientes/') ||
+        req.path.startsWith('/servicos/') ||
+        req.path.startsWith('/recontatos/') ||
+        req.path.startsWith('/dashboard') ||
+        req.path.startsWith('/db-test') ||
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/oauth-setup')) {
+      return next();
+    }
+    
     res.json({
-      message: 'Em desenvolvimento - Acesse o frontend em http://localhost:3001',
-      backend: `http://localhost:${port}`,
-      frontend: 'http://localhost:3001'
+      message: 'CRM Services API - Frontend não disponível',
+      reason: 'Build do React não encontrado',
+      buildPath: buildPath,
+      buildExists: buildExists,
+      indexExists: indexExists,
+      solution: 'Execute: npm run build',
+      backend: `Servidor rodando na porta ${port}`,
+      endpoints: 'Veja GET / para lista completa de endpoints'
     });
   });
 }
