@@ -1,0 +1,25 @@
+# Render Deploy Configuration
+
+## Build Command:
+npm run build:full
+
+## Start Command:
+node server.js
+
+## Environment Variables Required:
+NODE_ENV=production
+DATABASE_URL=your-postgresql-database-url
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+SESSION_SECRET=your-session-secret-key
+JWT_SECRET=your-jwt-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
+
+## Auto-Deploy:
+✅ Enable auto-deploy from GitHub branch: main
+
+## Root Directory:
+.
+
+## Node Version:
+18.x or higher

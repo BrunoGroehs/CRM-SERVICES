@@ -8,6 +8,9 @@ const helmet = require('helmet');
 const cors = require('cors');
 require('dotenv').config();
 
+// Importar sistema de logging
+const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger');
+
 // Importar módulos do projeto
 const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
@@ -22,67 +25,122 @@ const { configureGoogleStrategy } = require('./auth/passport');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { authenticateToken } = require('./middleware/auth');
 
+logger.info('🚀 Iniciando CRM Services...', {
+  nodeEnv: process.env.NODE_ENV,
+  port: process.env.PORT || 3000,
+  timestamp: new Date().toISOString()
+});
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Configurações de segurança
+logger.info('🔒 Configurando segurança com Helmet...');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "accounts.google.com"]
+      imgSrc: ["'self'", "data:", "https:", "*.googleusercontent.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Para React em produção
+      connectSrc: ["'self'", "accounts.google.com", "*.googleapis.com"],
+      frameSrc: ["'self'", "accounts.google.com"]
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false // Para OAuth
 }));
 
 // Configurar CORS
+const isProd = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProd 
+  ? [
+      process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://crm-services.onrender.com',
+      'https://accounts.google.com'
+    ]
+  : [
+      'http://localhost:3001', 
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ];
+
+logger.info('🌐 Configurando CORS', {
+  environment: isProd ? 'PRODUÇÃO' : 'DESENVOLVIMENTO',
+  allowedOrigins
+});
+
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 // Middleware para cookies
+logger.debug('🍪 Configurando cookies...');
 app.use(cookieParser());
 
 // Configurar sessões
+logger.info('📝 Configurando sessões', {
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+});
+
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // HTTPS em produção
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Para CORS em produção
   }
 }));
 
 // Inicializar Passport
+authLogger.info('🔐 Inicializando Passport...');
 app.use(passport.initialize());
 app.use(passport.session());
 
 // Middleware para parsing JSON
+logger.debug('📄 Configurando middleware de parsing...');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting geral
+logger.debug('⏱️ Configurando rate limiting...');
 app.use('/api/', apiLimiter);
 
 // Middleware para servir arquivos estáticos
+logger.debug('📁 Configurando arquivos estáticos...');
 app.use(express.static('public'));
+
+// Servir frontend React em produção
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+  logger.info('📦 Modo produção: servindo frontend React', { buildPath });
+  app.use(express.static(buildPath));
+}
 
 // Middleware para logging de requests
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  logger.debug('🔄 Request recebido', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
   next();
 });
 
 // Configuração da conexão com PostgreSQL
+dbLogger.info('🗄️ Configurando conexão com PostgreSQL...', {
+  hasConnectionString: !!process.env.DATABASE_URL,
+  ssl: true
+});
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -91,6 +149,7 @@ const pool = new Pool({
 });
 
 // Inicializar o pool nas rotas
+dbLogger.info('🔗 Inicializando pool de conexões nas rotas...');
 initClientesPool(pool);
 initServicosPool(pool);
 initAuthPool(pool);
@@ -98,6 +157,7 @@ initUsuariosPool(pool);
 initAdminPool(pool);
 
 // Configurar estratégias de autenticação
+googleLogger.info('🔧 Configurando estratégias de autenticação...');
 configureGoogleStrategy(pool);
 
 // Disponibilizar o pool para as rotas de recontatos
@@ -106,7 +166,16 @@ app.locals.pool = pool;
 // Função para testar a conexão com o banco de dados
 async function testDatabaseConnection() {
   try {
+    dbLogger.info('🔄 Testando conexão com banco de dados...');
     const client = await pool.connect();
+    
+    dbLogger.info('✅ Conexão com PostgreSQL estabelecida', {
+      host: client.host,
+      port: client.port,
+      database: client.database,
+      user: client.user
+    });
+    
     console.log('✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!');
     console.log('📊 Informações da conexão:');
     console.log(`   - Host: ${client.host}`);
@@ -114,7 +183,13 @@ async function testDatabaseConnection() {
     console.log(`   - Banco: ${client.database}`);
     console.log(`   - Usuário: ${client.user}`);
     client.release();
+    
+    dbLogger.debug('🔌 Conexão de teste liberada');
   } catch (error) {
+    dbLogger.error('❌ Erro ao conectar com banco', {
+      error: error.message,
+      stack: error.stack
+    });
     console.error('❌ Erro ao conectar com o banco de dados:', error.message);
   }
 }

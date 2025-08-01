@@ -3,6 +3,7 @@ const passport = require('passport');
 const { verifyRefreshToken, generateToken, generateRefreshToken } = require('../auth/jwt');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { authLogger, googleLogger } = require('../config/logger');
 
 const router = express.Router();
 
@@ -10,6 +11,7 @@ const router = express.Router();
 let pool;
 const initializePool = (poolInstance) => {
   pool = poolInstance;
+  authLogger.info('🔗 Pool de conexões inicializado nas rotas de auth');
 };
 
 // Aplicar rate limiting às rotas de auth
@@ -17,11 +19,16 @@ router.use(authLimiter);
 
 // Rota de diagnóstico OAuth
 router.get('/oauth-info', (req, res) => {
+  authLogger.info('📋 Solicitação de informações OAuth', {
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+  
   res.json({
     success: true,
     message: 'Informações de configuração OAuth',
     config: {
-      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_id: process.env.GOOGLE_CLIENT_ID ? 'CONFIGURADO' : 'NÃO CONFIGURADO',
       redirect_uri: process.env.GOOGLE_REDIRECT_URI,
       environment: process.env.NODE_ENV || 'development',
       current_url: `${req.protocol}://${req.get('host')}${req.originalUrl}`,
@@ -59,40 +66,99 @@ router.get('/reset-limits', (req, res) => {
 });
 
 // Rota para iniciar autenticação Google
-router.get('/google', 
+router.get('/google', (req, res, next) => {
+  googleLogger.info('🚀 Iniciando fluxo de autenticação Google', {
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    referer: req.get('Referer')
+  });
+  
   passport.authenticate('google', { 
     scope: ['profile', 'email'] 
-  })
-);
+  })(req, res, next);
+});
 
 // Callback do Google OAuth
 router.get('/google/callback',
+  (req, res, next) => {
+    googleLogger.info('📥 Recebido callback do Google', {
+      query: req.query,
+      ip: req.ip,
+      hasCode: !!req.query.code,
+      hasError: !!req.query.error
+    });
+    
+    if (req.query.error) {
+      googleLogger.error('❌ Erro no callback do Google', {
+        error: req.query.error,
+        errorDescription: req.query.error_description
+      });
+    }
+    
+    next();
+  },
   passport.authenticate('google', { 
     failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=auth_failed`,
     session: false 
   }),
   async (req, res) => {
     try {
+      googleLogger.info('🔄 Processando callback bem-sucedido do Google');
+      
       // req.user contém os dados do usuário e possível status especial
       const user = req.user;
       
+      googleLogger.info('👤 Dados do usuário recebidos do callback', {
+        hasUser: !!user,
+        email: user?.email,
+        status_auth: user?.status_auth,
+        ativo: user?.ativo,
+        hasToken: !!user?.token
+      });
+      
       // Verificar se usuário tem status especial
       if (user.status_auth === 'inativo') {
+        googleLogger.warn('🚫 Usuário inativo detectado, redirecionando', {
+          email: user.email,
+          userId: user.id
+        });
         console.log(`⚠️ Redirecionando usuário inativo: ${user.email}`);
         return res.redirect('/usuario-inativo.html');
       }
       
       if (user.status_auth === 'nao_cadastrado') {
+        googleLogger.warn('🚫 Usuário não cadastrado detectado, redirecionando', {
+          email: user.email,
+          googleId: user.google_id
+        });
         console.log(`⚠️ Redirecionando usuário não cadastrado: ${user.email}`);
         return res.redirect('/usuario-nao-cadastrado.html');
       }
       
       // Usuário válido - continuar com autenticação normal
+      googleLogger.info('✅ Usuário válido, gerando cookies de autenticação', {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+      
       if (!user.token || !user.refreshToken) {
+        googleLogger.error('❌ Tokens não gerados para usuário válido', {
+          email: user.email,
+          userId: user.id,
+          hasToken: !!user.token,
+          hasRefreshToken: !!user.refreshToken
+        });
+        
         console.error('❌ Tokens não gerados para usuário válido');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         return res.redirect(`${frontendUrl}/login?error=token_failed`);
       }
+      
+      googleLogger.debug('🍪 Configurando cookies de autenticação', {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
       
       // Definir cookies seguros com os tokens
       const cookieOptions = {
@@ -114,11 +180,26 @@ router.get('/google/callback',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
       });
       
+      googleLogger.info('✅ Autenticação Google concluída com sucesso', {
+        userId: user.id,
+        email: user.email,
+        nome: user.nome,
+        role: user.role,
+        redirectUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/?auth=success`
+      });
+      
       // Redirecionar para o frontend com sucesso
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       res.redirect(`${frontendUrl}/?auth=success&user=${encodeURIComponent(user.nome)}`);
       
     } catch (error) {
+      googleLogger.error('❌ Erro crítico no callback do Google', {
+        error: error.message,
+        stack: error.stack,
+        hasUser: !!req.user,
+        userEmail: req.user?.email
+      });
+      
       console.error('❌ Erro no callback do Google:', error);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       res.redirect(`${frontendUrl}/login?error=callback_failed`);
