@@ -126,49 +126,55 @@ async function testDatabaseConnection() {
   }
 }
 
-// Endpoint de teste principal
+// Endpoint principal - Frontend ou API dependendo do ambiente
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Servidor rodando',
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    endpoints: {
-      clientes: {
-        'GET /clientes': 'Lista todos os clientes',
-        'GET /clientes/:id': 'Busca cliente por ID',
-        'POST /clientes': 'Cria novo cliente',
-        'PUT /clientes/:id': 'Atualiza cliente',
-        'DELETE /clientes/:id': 'Remove cliente'
+  // Em produção, servir o frontend React
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+  } else {
+    // Em desenvolvimento, mostrar informações da API
+    res.json({
+      message: 'Servidor rodando',
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      endpoints: {
+        clientes: {
+          'GET /clientes': 'Lista todos os clientes',
+          'GET /clientes/:id': 'Busca cliente por ID',
+          'POST /clientes': 'Cria novo cliente',
+          'PUT /clientes/:id': 'Atualiza cliente',
+          'DELETE /clientes/:id': 'Remove cliente'
+        },
+        servicos: {
+          'GET /servicos': 'Lista todos os serviços',
+          'GET /servicos/:id': 'Busca serviço por ID',
+          'POST /servicos': 'Cria novo serviço',
+          'PUT /servicos/:id': 'Atualiza serviço',
+          'DELETE /servicos/:id': 'Remove serviço'
+        },
+        recontatos: {
+          'GET /recontatos': 'Lista todos os recontatos',
+          'GET /recontatos/:id': 'Busca recontato por ID',
+          'POST /recontatos': 'Cria novo recontato',
+          'PUT /recontatos/:id': 'Atualiza recontato',
+          'DELETE /recontatos/:id': 'Remove recontato'
+        },
+        dashboard: {
+          'GET /dashboard': 'Métricas e estatísticas do sistema'
+        },
+        health: {
+          'GET /db-test': 'Testa conexão com banco',
+          'GET /health': 'Status do servidor'
+        }
       },
-      servicos: {
-        'GET /servicos': 'Lista todos os serviços',
-        'GET /servicos/:id': 'Busca serviço por ID',
-        'POST /servicos': 'Cria novo serviço',
-        'PUT /servicos/:id': 'Atualiza serviço',
-        'DELETE /servicos/:id': 'Remove serviço'
-      },
-      recontatos: {
-        'GET /recontatos': 'Lista todos os recontatos',
-        'GET /recontatos/:id': 'Busca recontato por ID',
-        'POST /recontatos': 'Cria novo recontato',
-        'PUT /recontatos/:id': 'Atualiza recontato',
-        'DELETE /recontatos/:id': 'Remove recontato'
-      },
-      dashboard: {
-        'GET /dashboard': 'Métricas e estatísticas do sistema'
-      },
-      health: {
-        'GET /db-test': 'Testa conexão com banco',
-        'GET /health': 'Status do servidor'
+      pages: {
+        'dashboard.html': 'Interface visual do dashboard com métricas',
+        'teste-recontatos.html': 'Interface de teste para recontatos',
+        'teste-completo-recontatos.html': 'Interface completa de gerenciamento de recontatos'
       }
-    },
-    pages: {
-      'dashboard.html': 'Interface visual do dashboard com métricas',
-      'teste-recontatos.html': 'Interface de teste para recontatos',
-      'teste-completo-recontatos.html': 'Interface completa de gerenciamento de recontatos'
-    }
-  });
+    });
+  }
 });
 
 // Rotas da API
@@ -361,28 +367,34 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Rota catch-all para o frontend React (em produção)
+// Esta deve vir DEPOIS de todas as rotas da API
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Verificar se não é uma rota da API
+    if (!req.path.startsWith('/auth') && 
+        !req.path.startsWith('/usuarios') && 
+        !req.path.startsWith('/admin') && 
+        !req.path.startsWith('/clientes') && 
+        !req.path.startsWith('/servicos') && 
+        !req.path.startsWith('/recontatos') && 
+        !req.path.startsWith('/dashboard') && 
+        !req.path.startsWith('/health') &&
+        !req.path.startsWith('/oauth-setup') &&
+        !req.path.startsWith('/db-test')) {
+      // Servir o index.html do React para todas as outras rotas
+      res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+    } else {
+      // Se for uma rota da API que não existe, retornar 404
+      res.status(404).json({ error: 'Endpoint não encontrado' });
+    }
+  });
+}
+
 // Servir arquivos estáticos do React em produção
 if (process.env.NODE_ENV === 'production') {
   // Servir os arquivos estáticos do build do React
   app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
-  
-  // Para todas as rotas que não são da API, servir o index.html do React
-  app.get('*', (req, res) => {
-    // Verificar se a rota é da API para não servir o React
-    if (req.path.startsWith('/auth') || 
-        req.path.startsWith('/usuarios') || 
-        req.path.startsWith('/admin') || 
-        req.path.startsWith('/clientes') || 
-        req.path.startsWith('/servicos') || 
-        req.path.startsWith('/recontatos') || 
-        req.path.startsWith('/dashboard') || 
-        req.path.startsWith('/health') ||
-        req.path.startsWith('/oauth-setup')) {
-      return res.status(404).json({ error: 'Endpoint não encontrado' });
-    }
-    
-    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
-  });
 }
 
 // Inicialização do servidor
