@@ -42,3 +42,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+.env.example
+.env.test
+.env.prod
