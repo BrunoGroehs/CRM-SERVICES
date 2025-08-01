@@ -46,7 +46,8 @@ const Navigation = () => {
     <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          📊 CRM Services
+          <img src="/logo.png" alt="CRM Services" className="nav-logo-img" />
+          CRM Services
         </Link>
         <ul className="nav-menu">
           <li className="nav-item">

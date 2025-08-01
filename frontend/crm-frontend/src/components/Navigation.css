@@ -153,6 +153,13 @@
   display: flex;
   align-items: center;
   height: 100%;
+  gap: 0.5rem;
+}
+
+.nav-logo-img {
+  height: 32px;
+  width: auto;
+  filter: brightness(0) saturate(100%) invert(1);
 }
 
 .nav-logo:hover {
