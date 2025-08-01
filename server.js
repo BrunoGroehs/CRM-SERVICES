@@ -429,6 +429,29 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Catch-all handler: serve React app para qualquer rota não encontrada (DEVE ser a última rota)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Se não é uma rota da API, serve o React
+    if (!req.path.startsWith('/api') && 
+        !req.path.startsWith('/auth') && 
+        !req.path.startsWith('/clientes') && 
+        !req.path.startsWith('/servicos') && 
+        !req.path.startsWith('/recontatos') && 
+        !req.path.startsWith('/usuarios') && 
+        !req.path.startsWith('/admin') && 
+        !req.path.startsWith('/dashboard') && 
+        !req.path.startsWith('/health') && 
+        !req.path.startsWith('/db-') && 
+        !req.path.startsWith('/oauth-setup')) {
+      logger.info('🔄 Servindo React app para rota:', { path: req.path });
+      res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+    } else {
+      next();
+    }
+  });
+}
+
 // Inicialização do servidor
 app.listen(port, async () => {
   console.log('🚀 Servidor CRM Services iniciado!');
