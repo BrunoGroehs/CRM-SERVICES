@@ -40,8 +40,15 @@ app.use(helmet({
 }));
 
 // Configurar CORS
+const corsOrigins = process.env.NODE_ENV === 'production' 
+  ? [process.env.FRONTEND_URL]
+  : ['http://localhost:3001', 'http://localhost:3000'];
+
+console.log(`🌐 CORS configurado para: ${JSON.stringify(corsOrigins)}`);
+console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
@@ -353,6 +360,30 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Servir arquivos estáticos do React em produção
+if (process.env.NODE_ENV === 'production') {
+  // Servir os arquivos estáticos do build do React
+  app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
+  
+  // Para todas as rotas que não são da API, servir o index.html do React
+  app.get('*', (req, res) => {
+    // Verificar se a rota é da API para não servir o React
+    if (req.path.startsWith('/auth') || 
+        req.path.startsWith('/usuarios') || 
+        req.path.startsWith('/admin') || 
+        req.path.startsWith('/clientes') || 
+        req.path.startsWith('/servicos') || 
+        req.path.startsWith('/recontatos') || 
+        req.path.startsWith('/dashboard') || 
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/oauth-setup')) {
+      return res.status(404).json({ error: 'Endpoint não encontrado' });
+    }
+    
+    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+  });
+}
 
 // Inicialização do servidor
 app.listen(port, async () => {
