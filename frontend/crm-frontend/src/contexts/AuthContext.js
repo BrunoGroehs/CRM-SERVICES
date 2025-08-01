@@ -23,7 +23,8 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+      const response = await fetch(`${apiBaseUrl}/auth/me`, {
         credentials: 'include'
       });
       
@@ -51,12 +52,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = () => {
     // Redirecionar para Google OAuth
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+    window.location.href = `${apiBaseUrl}/auth/google`;
   };
 
   const logout = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/auth/logout`, {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+      await fetch(`${apiBaseUrl}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -73,7 +76,8 @@ export const AuthProvider = ({ children }) => {
 
   const refreshAuth = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+      const response = await fetch(`${apiBaseUrl}/auth/refresh`, {
         method: 'POST',
         credentials: 'include'
       });

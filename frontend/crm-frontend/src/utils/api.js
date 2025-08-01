@@ -1,9 +1,15 @@
 // API utility functions
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export const getApiUrl = (endpoint) => {
   // Remove leading slash if present to avoid double slashes
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // Se não há base URL definida (produção), use caminho relativo
+  if (!API_BASE_URL) {
+    return `/${cleanEndpoint}`;
+  }
+  
   return `${API_BASE_URL}/${cleanEndpoint}`;
 };
 
