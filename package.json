@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "cd frontend/crm-frontend && npm install && npm run build",
+    "build:full": "npm install && cd frontend/crm-frontend && npm install && npm run build",
+    "heroku-postbuild": "cd frontend/crm-frontend && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

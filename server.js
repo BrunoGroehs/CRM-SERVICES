@@ -32,16 +32,33 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "accounts.google.com"]
+      imgSrc: ["'self'", "data:", "https:", "*.googleusercontent.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Para React em produção
+      connectSrc: ["'self'", "accounts.google.com", "*.googleapis.com"],
+      frameSrc: ["'self'", "accounts.google.com"]
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false // Para OAuth
 }));
 
 // Configurar CORS
+const isProd = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProd 
+  ? [
+      process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://crm-services.onrender.com',
+      'https://accounts.google.com'
+    ]
+  : [
+      'http://localhost:3001', 
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ];
+
+console.log(`🌐 CORS configurado para: ${allowedOrigins.join(', ')}`);
+
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
@@ -52,13 +69,14 @@ app.use(cookieParser());
 
 // Configurar sessões
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // HTTPS em produção
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Para CORS em produção
   }
 }));
 
@@ -75,6 +93,14 @@ app.use('/api/', apiLimiter);
 
 // Middleware para servir arquivos estáticos
 app.use(express.static('public'));
+
+// Servir frontend React em produção
+if (process.env.NODE_ENV === 'production') {
+  // Servir arquivos estáticos do build do React
+  app.use(express.static(path.join(__dirname, 'frontend/crm-frontend/build')));
+  
+  console.log('📦 Servindo frontend React do diretório: ' + path.join(__dirname, 'frontend/crm-frontend/build'));
+}
 
 // Middleware para logging de requests
 app.use((req, res, next) => {
@@ -353,6 +379,13 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Catch-all para servir o frontend React em produção
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+  });
+}
 
 // Inicialização do servidor
 app.listen(port, async () => {

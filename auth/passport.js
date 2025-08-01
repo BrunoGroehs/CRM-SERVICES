@@ -4,10 +4,21 @@ const { generateToken, generateRefreshToken } = require('./jwt');
 
 // Configuração da estratégia Google OAuth
 const configureGoogleStrategy = (pool) => {
+  // Configurar URL de callback baseada no ambiente
+  const isProd = process.env.NODE_ENV === 'production';
+  const baseURL = isProd 
+    ? process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://crm-services.onrender.com'
+    : 'http://localhost:3000';
+  
+  const callbackURL = process.env.GOOGLE_REDIRECT_URI || `${baseURL}/auth/google/callback`;
+  
+  console.log(`🔧 Configurando Google OAuth para ambiente: ${isProd ? 'PRODUÇÃO' : 'DESENVOLVIMENTO'}`);
+  console.log(`🔗 Callback URL: ${callbackURL}`);
+
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_REDIRECT_URI
+    callbackURL: callbackURL
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
