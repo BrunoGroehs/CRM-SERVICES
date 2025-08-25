@@ -890,6 +890,248 @@
 .form-group input:hover:not(:focus),
 .form-group select:hover:not(:focus),
 .form-group textarea:hover:not(:focus) {
+  border-color: #bdbdbd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================
+   ESTILOS DA TABELA DE SERVIÇOS
+   =========================== */
+
+/* Herda todos os estilos da tabela base do Clientes.css */
+.servicos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.servicos-table thead {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.servicos-table th {
+  padding: 16px 12px;
+  text-align: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Centralizar cabeçalhos específicos */
+.servicos-table th:nth-child(6), /* Valor */
+.servicos-table th:nth-child(7), /* Status */
+.servicos-table th:nth-child(8) { /* Ações */
+  text-align: center;
+}
+
+.servicos-table tbody tr {
+  border-bottom: 1px solid #e8ecef;
+  transition: all 0.2s ease;
+}
+
+.servicos-table tbody tr:hover {
+  background: linear-gradient(135deg, #f8fffe 0%, #f0fdff 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.1);
+}
+
+.servicos-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.servicos-table td {
+  padding: 16px 12px;
+  vertical-align: middle;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #2d3748;
+}
+
+/* Estilos específicos para colunas de serviços */
+.data-cell {
+  min-width: 100px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.hora-cell {
+  min-width: 80px;
+  color: #4a5568;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+}
+
+.cliente-cell {
+  min-width: 150px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.cliente-cell strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.funcionario-cell {
+  min-width: 120px;
+  color: #4a5568;
+}
+
+.valor-cell {
+  width: 120px;
+  text-align: center;
+}
+
+.valor-cell .valor-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-cell {
+  width: 100px;
+  text-align: center;
+}
+
+.status-cell .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Responsividade para tabela de serviços */
+@media (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+    margin: 1rem -1rem;
+    border-radius: 0;
+  }
+  
+  .servicos-table {
+    font-size: 12px;
+  }
+  
+  /* Ocultar colunas menos importantes em telas menores */
+  .servicos-table th:nth-child(1), /* ID */
+  .servicos-table td:nth-child(1),
+  .servicos-table th:nth-child(3), /* Hora */
+  .servicos-table td:nth-child(3),
+  .servicos-table th:nth-child(5), /* Funcionário */
+  .servicos-table td:nth-child(5),
+  .servicos-table th:nth-child(6), /* Valor */
+  .servicos-table td:nth-child(6) {
+    display: none;
+  }
+  
+  /* Ajustar células visíveis (Data, Cliente, Status, Ações) */
+  .data-cell {
+    min-width: 100px;
+    max-width: 120px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .cliente-cell {
+    min-width: 120px;
+    max-width: 150px;
+    font-size: 13px;
+  }
+  
+  .status-cell {
+    width: 80px !important;
+    min-width: 80px !important;
+  }
+  
+  .status-cell .status-badge {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+  
+  .actions-cell {
+    width: 80px !important;
+    min-width: 80px !important;
+  }
+  
+  .actions-cell span {
+    padding: 4px 6px;
+    font-size: 10px;
+    min-width: 35px;
+  }
+}
+
+/* Para telas muito pequenas (mobile) */
+@media (max-width: 480px) {
+  .servicos-table {
+    font-size: 11px;
+  }
+  
+  .data-cell {
+    min-width: 80px;
+    max-width: 100px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  
+  .cliente-cell {
+    min-width: 100px;
+    max-width: 120px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  .status-cell {
+    width: 70px !important;
+    min-width: 70px !important;
+  }
+  
+  .status-cell .status-badge {
+    padding: 2px 4px;
+    font-size: 9px;
+  }
+  
+  .actions-cell {
+    width: 60px !important;
+    min-width: 60px !important;
+  }
+  
+  .actions-cell span {
+    padding: 3px 5px;
+    font-size: 9px;
+    min-width: 30px;
+  }
+  
+  .servicos-table th,
+  .servicos-table td {
+    padding: 8px 6px;
+  }
+  
+  /* Melhorar visibilidade dos cabeçalhos em mobile */
+  .servicos-table th {
+    font-size: 11px;
+    padding: 12px 6px;
+    font-weight: 700;
+  }
+}
+.form-group select:hover:not(:focus),
+.form-group textarea:hover:not(:focus) {
   border-color: #90caf9;
   transform: translateY(-0.5px);
 }

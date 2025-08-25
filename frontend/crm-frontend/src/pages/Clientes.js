@@ -514,7 +514,7 @@ const Clientes = () => {
         <h1>👥 Clientes</h1>
         <p>Lista de todos os clientes cadastrados no sistema</p>
         <button className="add-btn" onClick={openModal}>
-          ➕ CLIENTE +
+          ➕
         </button>
       </div>
 

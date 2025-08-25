@@ -10,6 +10,12 @@ const Servicos = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingServico, setEditingServico] = useState(null);
+  
+  // Estados para paginação e busca
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 20;
+  
   const authenticatedFetch = useAuthenticatedFetch();
   const [formData, setFormData] = useState({
     cliente_id: '',
@@ -120,6 +126,37 @@ const Servicos = () => {
   const formatDateForAPI = (dateString) => {
     // O input type="date" já retorna no formato YYYY-MM-DD, que é o formato ISO
     return dateString;
+  };
+
+  // Funções de filtro e paginação
+  const filteredServicos = servicos.filter(servico => {
+    const clienteNome = clientes.find(c => c.id === servico.cliente_id)?.nome || '';
+    const searchLower = searchTerm.toLowerCase();
+    
+    return (
+      servico.id?.toString().includes(searchLower) ||
+      clienteNome.toLowerCase().includes(searchLower) ||
+      servico.funcionario_responsavel?.toLowerCase().includes(searchLower) ||
+      servico.status?.toLowerCase().includes(searchLower) ||
+      servico.notas?.toLowerCase().includes(searchLower) ||
+      formatDate(servico.data).includes(searchLower) ||
+      formatCurrency(servico.valor).includes(searchLower)
+    );
+  });
+
+  // Calcular itens da página atual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentServicos = filteredServicos.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredServicos.length / itemsPerPage);
+
+  // Resetar página quando busca muda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   const handleEdit = (servico) => {
@@ -341,86 +378,146 @@ const Servicos = () => {
         </div>
       </div>
 
-      <div className="stats-bar">
-        <div className="stat-item">
-          <span className="stat-value">{servicos.length}</span>
-          <span className="stat-label">Total de Serviços</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{formatCurrency(getTotalReceita())}</span>
-          <span className="stat-label">Receita Total</span>
-          <span className="stat-note">(apenas serviços concluídos)</span>
+      {/* Barra de pesquisa */}
+      <div className="search-bar">
+        <div className="search-input-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Buscar por ID, cliente, funcionário, status, data..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              title="Limpar busca"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {servicos.length === 0 ? (
+      {filteredServicos.length === 0 ? (
         <div className="empty-state">
           <h3>Nenhum serviço encontrado</h3>
-          <p>Não há serviços cadastrados no sistema.</p>
+          <p>{searchTerm ? 'Nenhum serviço corresponde à sua busca.' : 'Não há serviços cadastrados no sistema.'}</p>
+          {searchTerm && (
+            <button 
+              className="clear-search-btn"
+              onClick={() => setSearchTerm('')}
+            >
+              Limpar busca
+            </button>
+          )}
         </div>
       ) : (
-        <div className="data-grid">
-          {servicos.map((servico) => (
-            <div key={servico.id} className="data-card servico-card">
-              <div className="card-header">
-                <h3>{servico.cliente_nome}</h3>
-                <div className="card-badges">
-                  <span className="card-id">ID: {servico.id}</span>
-                  <span className="valor-badge">{formatCurrency(servico.valor)}</span>
-                </div>
-              </div>
-              <div className="card-content">
-                <div className="info-row">
-                  <span className="info-label">👤 Cliente ID:</span>
-                  <span className="info-value">{servico.cliente_id}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📱 Telefone:</span>
-                  <span className="info-value">{servico.cliente_telefone}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📅 Data:</span>
-                  <span className="info-value">{formatDate(servico.data)}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">⏰ Hora:</span>
-                  <span className="info-value">{formatTime(servico.hora)}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📝 Descrição:</span>
-                  <span className="info-value">{servico.notas || 'Sem descrição'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📊 Status:</span>
-                  <span className={`status-badge ${servico.status || 'pendente'}`}>
-                    {servico.status || 'Pendente'}
-                  </span>
-                </div>
-                {servico.funcionario_responsavel && (
-                  <div className="info-row">
-                    <span className="info-label">👤 Responsável:</span>
-                    <span className="info-value">{servico.funcionario_responsavel}</span>
-                  </div>
-                )}
-                {servico.criado_em && (
-                  <div className="info-row">
-                    <span className="info-label">📅 Cadastrado em:</span>
-                    <span className="info-value">{formatDate(servico.criado_em)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="card-actions">
-                <button 
-                  className="edit-btn"
-                  onClick={() => handleEdit(servico)}
-                  title="Editar serviço"
-                >
-                  ✏️ Editar
-                </button>
-              </div>
+        <>
+          {/* Tabela de Serviços */}
+          <div className="table-container">
+            <table className="servicos-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Data</th>
+                  <th>Hora</th>
+                  <th>Cliente</th>
+                  <th>Funcionário</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentServicos.map((servico) => {
+                  const cliente = clientes.find(c => c.id === servico.cliente_id);
+                  return (
+                    <tr key={servico.id}>
+                      <td className="id-cell">{servico.id}</td>
+                      <td className="data-cell">{formatDate(servico.data)}</td>
+                      <td className="hora-cell">{formatTime(servico.hora)}</td>
+                      <td className="cliente-cell">
+                        <strong>{cliente?.nome || `Cliente #${servico.cliente_id}`}</strong>
+                      </td>
+                      <td className="funcionario-cell">
+                        {servico.funcionario_responsavel || '-'}
+                      </td>
+                      <td className="valor-cell">
+                        <span className="valor-badge">{formatCurrency(servico.valor)}</span>
+                      </td>
+                      <td className="status-cell">
+                        <span className={`status-badge ${servico.status || 'pendente'}`}>
+                          {servico.status || 'Pendente'}
+                        </span>
+                      </td>
+                      <td className="actions-cell">
+                        <div>
+                          <span 
+                            onClick={() => handleEdit(servico)}
+                            title="Editar serviço"
+                          >
+                            Edit
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Controles de Paginação */}
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Exibindo {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, filteredServicos.length)} de {filteredServicos.length} serviços
             </div>
-          ))}
-        </div>
+            <div className="pagination-controls">
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Anterior
+              </button>
+              
+              <div className="pagination-pages">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNumber}
+                      className={`pagination-page ${currentPage === pageNumber ? 'active' : ''}`}
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Próximo →
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Modal de Criação/Edição */}
