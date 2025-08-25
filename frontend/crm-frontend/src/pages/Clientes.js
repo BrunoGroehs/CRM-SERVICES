@@ -9,6 +9,8 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
   const [showModal, setShowModal] = useState(false);
   const [showRecontatoModal, setShowRecontatoModal] = useState(false);
   const [showDetalhesModal, setShowDetalhesModal] = useState(false);
@@ -33,7 +35,7 @@ const Clientes = () => {
     cidade: '',
     cep: '',
     indicacao: '',
-    quantidade_placas: ''
+    quantidade_paineis: ''
   });
 
   const authenticatedFetch = useAuthenticatedFetch();
@@ -57,7 +59,30 @@ const Clientes = () => {
       );
       setFilteredClientes(filtered);
     }
+    setCurrentPage(1); // Reset para primeira página ao pesquisar
   }, [clientes, searchTerm]);
+
+  // Lógica de paginação
+  const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentClientes = filteredClientes.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   // Função para mostrar toast
   const showToast = (message, type = 'success') => {
@@ -248,7 +273,7 @@ const Clientes = () => {
           cidade: '',
           cep: '',
           indicacao: '',
-          quantidade_placas: ''
+          quantidade_paineis: ''
         });
         setEditingCliente(null);
         setShowModal(false);
@@ -270,7 +295,7 @@ const Clientes = () => {
           cidade: '',
           cep: '',
           indicacao: '',
-          quantidade_placas: ''
+          quantidade_paineis: ''
         });
       }
       
@@ -303,7 +328,7 @@ const Clientes = () => {
       cidade: '',
       cep: '',
       indicacao: '',
-      quantidade_placas: ''
+      quantidade_paineis: ''
     });
     setShowModal(true);
   };
@@ -318,7 +343,7 @@ const Clientes = () => {
       cidade: cliente.cidade || '',
       cep: cliente.cep || '',
       indicacao: cliente.indicacao || '',
-      quantidade_placas: cliente.quantidade_placas || ''
+      quantidade_paineis: cliente.quantidade_paineis || ''
     });
     setShowModal(true);
   };
@@ -334,7 +359,7 @@ const Clientes = () => {
       cidade: '',
       cep: '',
       indicacao: '',
-      quantidade_placas: ''
+      quantidade_paineis: ''
     });
   };
 
@@ -493,17 +518,6 @@ const Clientes = () => {
         </button>
       </div>
 
-      <div className="stats-bar">
-        <div className="stat-item">
-          <span className="stat-value">{clientes.length}</span>
-          <span className="stat-label">Total de Clientes</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{filteredClientes.length}</span>
-          <span className="stat-label">Exibindo</span>
-        </div>
-      </div>
-
       {/* Barra de pesquisa */}
       <div className="search-bar">
         <div className="search-input-container">
@@ -548,7 +562,6 @@ const Clientes = () => {
               <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>Email</th>
                 <th>Telefone</th>
                 <th>Cidade</th>
                 <th>Endereço</th>
@@ -558,14 +571,11 @@ const Clientes = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredClientes.map((cliente) => (
+              {currentClientes.map((cliente) => (
                 <tr key={cliente.id}>
                   <td className="id-cell">{cliente.id}</td>
                   <td className="nome-cell">
                     <strong>{cliente.nome}</strong>
-                  </td>
-                  <td className="email-cell">
-                    {cliente.email || '-'}
                   </td>
                   <td className="telefone-cell">
                     {cliente.telefone || '-'}
@@ -577,35 +587,92 @@ const Clientes = () => {
                     {cliente.endereco || '-'}
                   </td>
                   <td className="paineis-cell">
-                    {cliente.quantidade_placas ? (
-                      <span className="paineis-badge">⚡ {cliente.quantidade_placas}</span>
+                    {cliente.quantidade_paineis ? (
+                      <span className="paineis-badge">⚡ {cliente.quantidade_paineis}</span>
                     ) : '-'}
                   </td>
                   <td className="indicacao-cell">
                     {cliente.indicacao || '-'}
                   </td>
                   <td className="actions-cell">
-                    <div className="action-buttons">
-                      <button 
-                        className="edit-btn-small"
+                    <div style={{display: 'flex', gap: '4px', justifyContent: 'center', alignItems: 'center'}}>
+                      <span 
                         onClick={() => handleEdit(cliente)}
+                        style={{
+                          backgroundColor: '#fbbf24',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          userSelect: 'none'
+                        }}
                         title="Editar cliente"
                       >
-                        ✏️
-                      </button>
-                      <button 
-                        className="details-btn-small"
+                        EDIT
+                      </span>
+                      <span 
                         onClick={() => handleVerDetalhes(cliente)}
+                        style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          userSelect: 'none'
+                        }}
                         title="Ver detalhes"
                       >
-                        📋
-                      </button>
+                        INFO
+                      </span>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          
+          {/* Controles de Paginação */}
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredClientes.length)} de {filteredClientes.length} clientes
+              </div>
+              <div className="pagination-controls">
+                <button 
+                  className="pagination-btn prev" 
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  ‹ Anterior
+                </button>
+                
+                {/* Páginas */}
+                <div className="pagination-pages">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`pagination-page ${page === currentPage ? 'active' : ''}`}
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button 
+                  className="pagination-btn next" 
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima ›
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -714,12 +781,12 @@ const Clientes = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="quantidade_placas">⚡ Quantidade de Placas</label>
+                  <label htmlFor="quantidade_paineis">⚡ Quantidade de Placas</label>
                   <input
                     type="number"
-                    id="quantidade_placas"
-                    name="quantidade_placas"
-                    value={formData.quantidade_placas}
+                    id="quantidade_paineis"
+                    name="quantidade_paineis"
+                    value={formData.quantidade_paineis}
                     onChange={handleInputChange}
                     placeholder="Ex: 10"
                     min="0"
@@ -864,7 +931,7 @@ const Clientes = () => {
                   </div>
                   <div className="info-row">
                     <span className="info-label">🔢 Quantidade de Placas:</span>
-                    <span className="info-value badge badge-primary">{selectedCliente.quantidade_placas || 0} placas</span>
+                    <span className="info-value badge badge-primary">{selectedCliente.quantidade_paineis || 0} placas</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">�📅 Cadastrado em:</span>
