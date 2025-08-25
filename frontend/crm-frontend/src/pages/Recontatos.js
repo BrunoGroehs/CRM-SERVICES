@@ -773,7 +773,7 @@ const Recontatos = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar por cliente, cidade, observações, data..."
+            placeholder="🔍 Pesquisar por ID, cliente, cidade, observações, data..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

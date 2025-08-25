@@ -366,11 +366,14 @@ const Servicos = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>🔧 Serviços</h1>
-        <p>Lista de todos os serviços realizados no sistema</p>
+        <div className="header-content">
+          <h1>🔧 Serviços</h1>
+          <p>Lista de todos os serviços realizados no sistema</p>
+        </div>
         <div className="header-buttons">
-          <button className="add-btn" onClick={handleOpenModal}>
-            ➕
+          <button className="modern-add-btn" onClick={handleOpenModal}>
+            <span className="btn-icon">+</span>
+            <span className="btn-text">Adicionar Serviço</span>
           </button>
           <button className="refresh-btn" onClick={fetchServicos} disabled={loading}>
             {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
@@ -384,7 +387,7 @@ const Servicos = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar por ID, cliente, funcionário, status, data..."
+            placeholder="🔍 Pesquisar por ID, cliente, funcionário, status, data..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

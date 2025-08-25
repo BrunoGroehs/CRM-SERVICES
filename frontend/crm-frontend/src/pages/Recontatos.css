@@ -1284,7 +1284,7 @@
 
 .recontatos-table th {
   padding: 16px 12px;
-  text-align: center;
+  text-align: center !important;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 12px;
@@ -1323,6 +1323,14 @@
   white-space: nowrap;
   font-size: 14px;
   color: #2d3748;
+}
+
+/* Centralizar conteúdo de colunas específicas */
+.recontatos-table td:nth-child(3), /* Telefone */
+.recontatos-table td:nth-child(4), /* Data Recontato */
+.recontatos-table td:nth-child(5), /* Motivo */
+.recontatos-table td:nth-child(6) { /* Observações */
+  text-align: center;
 }
 
 /* Estilos específicos para colunas de recontatos */

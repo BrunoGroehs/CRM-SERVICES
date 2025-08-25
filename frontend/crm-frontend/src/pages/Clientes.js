@@ -511,10 +511,13 @@ const Clientes = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>👥 Clientes</h1>
-        <p>Lista de todos os clientes cadastrados no sistema</p>
-        <button className="add-btn" onClick={openModal}>
-          ➕
+        <div className="header-content">
+          <h1>👥 Clientes</h1>
+          <p>Lista de todos os clientes cadastrados no sistema</p>
+        </div>
+        <button className="modern-add-btn" onClick={openModal}>
+          <span className="btn-icon">+</span>
+          <span className="btn-text">Adicionar Cliente</span>
         </button>
       </div>
 
