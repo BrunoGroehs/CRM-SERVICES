@@ -9,12 +9,23 @@ const Recontatos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('todos');
+  
+  // Estados para paginação e busca
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 20;
+  
+  // Estados dos modais
   const [showModal, setShowModal] = useState(false);
   const [showServicoModal, setShowServicoModal] = useState(false);
   const [showProrrogarModal, setShowProrrogarModal] = useState(false);
   const [showProximoRecontatoModal, setShowProximoRecontatoModal] = useState(false);
   const [recontatoParaProrrogar, setRecontatoParaProrrogar] = useState(null);
   const [servicoCriado, setServicoCriado] = useState(null);
+  
+  // Estados para menu de ações por linha
+  const [showActionsMenu, setShowActionsMenu] = useState(null);
+  
   const authenticatedFetch = useAuthenticatedFetch();
   const [proximoRecontatoData, setProximoRecontatoData] = useState({
     periodo: '',
@@ -71,6 +82,7 @@ const Recontatos = () => {
   const applyFilter = useCallback(() => {
     let filtered = recontatos;
     
+    // Aplicar filtro de status primeiro
     switch (activeFilter) {
       case 'atrasados':
         filtered = recontatos.filter(r => getStatusInfo(r).status === 'atrasado');
@@ -88,8 +100,52 @@ const Recontatos = () => {
         filtered = recontatos;
     }
     
+    // Aplicar busca por texto
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(recontato => {
+        const cliente = clientes.find(c => c.id === recontato.cliente_id);
+        return (
+          recontato.id?.toString().includes(searchLower) ||
+          cliente?.nome?.toLowerCase().includes(searchLower) ||
+          cliente?.cidade?.toLowerCase().includes(searchLower) ||
+          recontato.observacoes?.toLowerCase().includes(searchLower) ||
+          formatDate(recontato.data_agendada).includes(searchLower) ||
+          getStatusInfo(recontato).label.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+    
     setFilteredRecontatos(filtered);
-  }, [recontatos, activeFilter]);
+  }, [recontatos, activeFilter, searchTerm, clientes]);
+
+  // Funções de paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRecontatos = filteredRecontatos.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRecontatos.length / itemsPerPage);
+
+  // Resetar página quando filtro ou busca muda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchTerm]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Função para abrir menu de ações
+  const handleRowClick = (recontato, event) => {
+    event.stopPropagation();
+    setShowActionsMenu(showActionsMenu === recontato.id ? null : recontato.id);
+  };
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionsMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchRecontatos();
@@ -624,6 +680,16 @@ const Recontatos = () => {
     await fetchServicosHistorico(recontato.cliente_id);
   };
 
+  const handleAgendarServico = (recontato) => {
+    // Redirecionar para página de serviços com cliente pré-selecionado
+    const params = new URLSearchParams({
+      cliente_id: recontato.cliente_id,
+      cliente_nome: recontato.cliente_nome,
+      action: 'novo_servico'
+    });
+    window.location.href = `/servicos?${params.toString()}`;
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedCliente(null);
@@ -701,92 +767,212 @@ const Recontatos = () => {
         </div>
       </div>
 
+      {/* Barra de pesquisa */}
+      <div className="search-bar">
+        <div className="search-input-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Buscar por cliente, cidade, observações, data..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              title="Limpar busca"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       {filteredRecontatos.length === 0 ? (
         <div className="empty-state">
           <h3>Nenhum recontato encontrado</h3>
-          <p>Não há recontatos {activeFilter === 'todos' ? 'cadastrados' : `na categoria "${activeFilter}"`} no sistema.</p>
+          <p>
+            {searchTerm 
+              ? 'Nenhum recontato corresponde à sua busca.' 
+              : `Não há recontatos ${activeFilter === 'todos' ? 'cadastrados' : `na categoria "${activeFilter}"`} no sistema.`
+            }
+          </p>
+          {searchTerm && (
+            <button 
+              className="clear-search-btn"
+              onClick={() => setSearchTerm('')}
+            >
+              Limpar busca
+            </button>
+          )}
         </div>
       ) : (
-        <div className="data-grid">
-          {filteredRecontatos.map((recontato) => {
-            const statusInfo = getStatusInfo(recontato);
-            return (
-              <div key={recontato.id} className={`data-card recontato-card ${statusInfo.class}`}>
-                <div className="card-header">
-                  <h3>{recontato.cliente_nome}</h3>
-                  <div className="card-badges">
-                    <span className="card-id">ID: {recontato.id}</span>
-                  </div>
-                </div>
-                <div className="card-content">
-                  <div className="info-row">
-                    <span className="info-label">📱 Telefone:</span>
-                    <span className="info-value" title={recontato.cliente_telefone}>{recontato.cliente_telefone}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📞 Recontato:</span>
-                    <span className="info-value" title={formatDate(recontato.data_agendada)}>{formatDate(recontato.data_agendada)}</span>
-                  </div>
-                  {recontato.hora_agendada && (
-                    <div className="info-row">
-                      <span className="info-label">⏰ Hora:</span>
-                      <span className="info-value" title={formatTime(recontato.hora_agendada)}>{formatTime(recontato.hora_agendada)}</span>
-                    </div>
-                  )}
-                  <div className="info-row">
-                    <span className="info-label">🎯 Motivo:</span>
-                    <span className="info-value" title={recontato.motivo || 'Não informado'}>{recontato.motivo || 'Não informado'}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📝 Nota:</span>
-                    <span className="info-value" title={recontato.observacoes || 'Sem nota'}>{recontato.observacoes || 'Sem nota'}</span>
-                  </div>
-                  {recontato.criado_em && (
-                    <div className="info-row">
-                      <span className="info-label">📅 Cadastrado em:</span>
-                      <span className="info-value" title={formatDate(recontato.criado_em)}>{formatDate(recontato.criado_em)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Botões de Ação */}
-                <div className="card-actions">
-                  <button 
-                    className="action-btn contatar-btn"
-                    onClick={() => handleContatar(recontato)}
-                    title="Contatar cliente via WhatsApp"
-                  >
-                    💬 Contatar
-                  </button>
+        <>
+          {/* Tabela de Recontatos */}
+          <div className="table-container">
+            <table className="recontatos-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>Data Recontato</th>
+                  <th>Motivo</th>
+                  <th className="observacoes-col">Observações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentRecontatos.map((recontato) => {
+                  const statusInfo = getStatusInfo(recontato);
+                  const cliente = clientes.find(c => c.id === recontato.cliente_id);
                   
-                  <button 
-                    className="action-btn marcar-btn"
-                    onClick={() => handleCriarServico(recontato)}
-                    title="Criar novo serviço para este cliente"
-                  >
-                    📅 Agendar Serviço
-                  </button>
-                  
-                  <button 
-                    className="action-btn prorrogar-btn"
-                    onClick={() => handleProrrogar(recontato)}
-                    title="Prorrogar recontato"
-                  >
-                    ⏳ Prorrogar
-                  </button>
-                  
-                  <button 
-                    className="action-btn detalhes-btn"
-                    onClick={() => handleVerDetalhes(recontato)}
-                    title="Ver histórico de serviços"
-                  >
-                    📋 Ver Detalhes
-                  </button>
+                  return (
+                    <tr 
+                      key={recontato.id} 
+                      className={`recontato-row ${statusInfo.class}`}
+                      onClick={(e) => handleRowClick(recontato, e)}
+                      style={{ cursor: 'pointer', position: 'relative' }}
+                    >
+                      <td className="id-cell">{recontato.id}</td>
+                      <td className="nome-cell">
+                        <strong>{cliente?.nome || `Cliente #${recontato.cliente_id}`}</strong>
+                      </td>
+                      <td className="telefone-cell">
+                        {cliente?.telefone || 'N/A'}
+                      </td>
+                      <td className="data-cell">
+                        <div className="data-info">
+                          <span className="data">{formatDate(recontato.data_agendada)}</span>
+                          {recontato.hora_agendada && (
+                            <span className="hora">{formatTime(recontato.hora_agendada)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="motivo-cell">
+                        {recontato.motivo || 'N/A'}
+                      </td>
+                      <td className="observacoes-cell" title={recontato.observacoes || 'Sem observações'}>
+                        <span className="observacoes-text">
+                          {recontato.observacoes ? 
+                            (recontato.observacoes.length > 50 ? 
+                              `${recontato.observacoes.substring(0, 50)}...` : 
+                              recontato.observacoes
+                            ) : 
+                            'Sem observações'
+                          }
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            
+            {/* Menu de ações posicionado fora da tabela */}
+            {showActionsMenu && (
+              <div className="actions-menu-overlay" onClick={() => setShowActionsMenu(null)}>
+                <div className="actions-menu" onClick={(e) => e.stopPropagation()}>
+                  <div className="actions-dropdown">
+                    <button 
+                      className="action-btn contatar-btn"
+                      onClick={() => {
+                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                        setShowActionsMenu(null);
+                        handleContatar(recontato);
+                      }}
+                    >
+                      📞 Contatar
+                    </button>
+                    
+                    <button 
+                      className="action-btn servico-btn"
+                      onClick={() => {
+                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                        setShowActionsMenu(null);
+                        handleAgendarServico(recontato);
+                      }}
+                    >
+                      🛠️ Agendar Serviço
+                    </button>
+                    
+                    <button 
+                      className="action-btn prorrogar-btn"
+                      onClick={() => {
+                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                        setShowActionsMenu(null);
+                        handleProrrogar(recontato);
+                      }}
+                    >
+                      ⏳ Prorrogar
+                    </button>
+                    
+                    <button 
+                      className="action-btn detalhes-btn"
+                      onClick={() => {
+                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                        setShowActionsMenu(null);
+                        handleVerDetalhes(recontato);
+                      }}
+                    >
+                      📋 Ver Detalhes
+                    </button>
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+
+          {/* Controles de Paginação */}
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Exibindo {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, filteredRecontatos.length)} de {filteredRecontatos.length} recontatos
+              {activeFilter !== 'todos' && ` (filtro: ${activeFilter})`}
+            </div>
+            <div className="pagination-controls">
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Anterior
+              </button>
+              
+              <div className="pagination-pages">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNumber}
+                      className={`pagination-page ${currentPage === pageNumber ? 'active' : ''}`}
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Próximo →
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       <button className="refresh-btn" onClick={fetchRecontatos} disabled={loading}>
@@ -1095,30 +1281,56 @@ const Recontatos = () => {
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content cliente-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>📋 Histórico de Serviços - {selectedCliente.cliente_nome}</h2>
+              <h2>📋 Detalhes do Recontato</h2>
               <button className="close-btn" onClick={handleCloseModal}>
                 ✕
               </button>
             </div>
             
             <div className="modal-body">
-              <div className="cliente-info">
-                <div className="info-row">
-                  <span className="info-label">👤 Cliente:</span>
-                  <span className="info-value" title={selectedCliente.cliente_nome}>{selectedCliente.cliente_nome}</span>
+              <div className="cliente-info-detailed">
+                <div className="info-section">
+                  <h3>👤 Informações do Cliente</h3>
+                  <div className="info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Nome:</span>
+                      <span className="info-value">{selectedCliente.cliente_nome}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Telefone:</span>
+                      <span className="info-value">{selectedCliente.cliente_telefone}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">📱 Telefone:</span>
-                  <span className="info-value" title={selectedCliente.cliente_telefone}>{selectedCliente.cliente_telefone}</span>
+
+                <div className="info-section">
+                  <h3>📞 Detalhes do Recontato</h3>
+                  <div className="info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Data do Recontato:</span>
+                      <span className="info-value">{formatDate(selectedCliente.data_agendada)}</span>
+                    </div>
+                    {selectedCliente.hora_agendada && (
+                      <div className="info-row">
+                        <span className="info-label">Hora:</span>
+                        <span className="info-value">{formatTime(selectedCliente.hora_agendada)}</span>
+                      </div>
+                    )}
+                    <div className="info-row">
+                      <span className="info-label">Motivo:</span>
+                      <span className="info-value">{selectedCliente.motivo || 'Não informado'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">📞 Recontato:</span>
-                  <span className="info-value" title={formatDate(selectedCliente.data_agendada)}>{formatDate(selectedCliente.data_agendada)}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">🎯 Motivo:</span>
-                  <span className="info-value" title={selectedCliente.motivo || 'Não informado'}>{selectedCliente.motivo || 'Não informado'}</span>
-                </div>
+
+                {selectedCliente.observacoes && (
+                  <div className="info-section">
+                    <h3>📝 Observações/Notas</h3>
+                    <div className="observacoes-content">
+                      <p>{selectedCliente.observacoes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="historico-section">
