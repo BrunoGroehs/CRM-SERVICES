@@ -1717,8 +1717,45 @@
   }
   
   .clientes-table {
-    min-width: 800px;
     font-size: 12px;
+  }
+  
+  /* Ocultar colunas menos importantes em telas menores */
+  .clientes-table th:nth-child(1), /* ID */
+  .clientes-table td:nth-child(1),
+  .clientes-table th:nth-child(3), /* Telefone */
+  .clientes-table td:nth-child(3),
+  .clientes-table th:nth-child(5), /* Endereço */
+  .clientes-table td:nth-child(5),
+  .clientes-table th:nth-child(6), /* Painéis */
+  .clientes-table td:nth-child(6),
+  .clientes-table th:nth-child(7), /* Indicação */
+  .clientes-table td:nth-child(7) {
+    display: none;
+  }
+  
+  /* Ajustar células visíveis */
+  .nome-cell {
+    min-width: 150px;
+    max-width: 200px;
+    font-size: 13px;
+  }
+  
+  .cidade-cell {
+    min-width: 100px;
+    max-width: 120px;
+    font-size: 12px;
+  }
+  
+  .actions-cell {
+    width: 100px !important;
+    min-width: 100px !important;
+  }
+  
+  .actions-cell span {
+    padding: 4px 6px;
+    font-size: 10px;
+    min-width: 35px;
   }
   
   .search-input {
@@ -1728,5 +1765,53 @@
   
   .page-container {
     padding: 1rem;
+  }
+}
+
+/* Para telas muito pequenas (mobile) */
+@media (max-width: 480px) {
+  .clientes-table {
+    font-size: 11px;
+  }
+  
+  .nome-cell {
+    min-width: 120px;
+    max-width: 150px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  .cidade-cell {
+    min-width: 80px;
+    max-width: 100px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  
+  .actions-cell {
+    width: 80px !important;
+    min-width: 80px !important;
+  }
+  
+  .actions-cell span {
+    padding: 3px 5px;
+    font-size: 9px;
+    min-width: 30px;
+  }
+  
+  .clientes-table th,
+  .clientes-table td {
+    padding: 8px 6px;
+  }
+  
+  .page-container {
+    padding: 0.5rem;
+  }
+  
+  /* Melhorar visibilidade dos cabeçalhos em mobile */
+  .clientes-table th {
+    font-size: 11px;
+    padding: 12px 6px;
+    font-weight: 700;
   }
 }
