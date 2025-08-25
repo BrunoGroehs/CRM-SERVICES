@@ -873,51 +873,67 @@ const Recontatos = () => {
             {showActionsMenu && (
               <div className="actions-menu-overlay" onClick={() => setShowActionsMenu(null)}>
                 <div className="actions-menu" onClick={(e) => e.stopPropagation()}>
-                  <div className="actions-dropdown">
-                    <button 
-                      className="action-btn contatar-btn"
-                      onClick={() => {
-                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
-                        setShowActionsMenu(null);
-                        handleContatar(recontato);
-                      }}
-                    >
-                      📞 Contatar
-                    </button>
-                    
-                    <button 
-                      className="action-btn servico-btn"
-                      onClick={() => {
-                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
-                        setShowActionsMenu(null);
-                        handleAgendarServico(recontato);
-                      }}
-                    >
-                      🛠️ Agendar Serviço
-                    </button>
-                    
-                    <button 
-                      className="action-btn prorrogar-btn"
-                      onClick={() => {
-                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
-                        setShowActionsMenu(null);
-                        handleProrrogar(recontato);
-                      }}
-                    >
-                      ⏳ Prorrogar
-                    </button>
-                    
-                    <button 
-                      className="action-btn detalhes-btn"
-                      onClick={() => {
-                        const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
-                        setShowActionsMenu(null);
-                        handleVerDetalhes(recontato);
-                      }}
-                    >
-                      📋 Ver Detalhes
-                    </button>
-                  </div>
+                  {(() => {
+                    const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                    const cliente = clientes.find(c => c.id === recontato?.cliente_id);
+                    return (
+                      <>
+                        <div className="actions-menu-header">
+                          <div className="cliente-info-header">
+                            <h3 className="cliente-name">{cliente?.nome || `Cliente #${recontato?.cliente_id}`}</h3>
+                            <span className="recontato-date">Recontato: {formatDate(recontato?.data_agendada)}</span>
+                          </div>
+                          <button 
+                            className="close-actions-btn" 
+                            onClick={() => setShowActionsMenu(null)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="actions-dropdown">
+                          <button 
+                            className="action-btn contatar-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleContatar(recontato);
+                            }}
+                          >
+                            📞 Contatar
+                          </button>
+                          
+                          <button 
+                            className="action-btn servico-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleAgendarServico(recontato);
+                            }}
+                          >
+                            🛠️ Agendar Serviço
+                          </button>
+                          
+                          <button 
+                            className="action-btn prorrogar-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleProrrogar(recontato);
+                            }}
+                          >
+                            ⏳ Prorrogar
+                          </button>
+                          
+                          <button 
+                            className="action-btn detalhes-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleVerDetalhes(recontato);
+                            }}
+                          >
+                            📋 Ver Detalhes
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}

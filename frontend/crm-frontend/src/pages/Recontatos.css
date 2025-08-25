@@ -8,9 +8,11 @@
 }
 
 .recontatos-stats .stat-item {
+  display: block;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 2px solid transparent;
+  text-align: center;
 }
 
 .recontatos-stats .stat-item:hover {
@@ -23,24 +25,51 @@
   background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%);
 }
 
-.stat-success {
+/* Estilos para os números e textos dos filtros - específicos para recontatos */
+.recontatos-stats .stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4facfe;
+  margin-bottom: 4px;
+}
+
+.recontatos-stats .stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.recontatos-stats .stat-success {
   color: #4CAF50 !important;
 }
 
-.stat-danger {
+.recontatos-stats .stat-danger {
   color: #f44336 !important;
 }
 
-.stat-warning {
+.recontatos-stats .stat-warning {
   color: #FF9800 !important;
 }
 
-.stat-info {
+.recontatos-stats .stat-info {
   color: #2196F3 !important;
 }
 
-.stat-secondary {
+.recontatos-stats .stat-secondary {
   color: #9E9E9E !important;
+}
+
+/* Estados ativos dos filtros */
+.recontatos-stats .stat-item.active .stat-value {
+  color: #1976D2 !important;
+}
+
+.recontatos-stats .stat-item.active .stat-label {
+  color: #1976D2 !important;
+  font-weight: 600;
 }
 
 .recontato-card {
@@ -1400,51 +1429,56 @@
 }
 
 /* Estilos específicos para colunas da tabela */
+.recontatos-table {
+  width: 100%;
+  table-layout: fixed; /* Força a tabela a ocupar toda a largura */
+}
+
 .recontatos-table th,
 .recontatos-table td {
   text-align: left;
   vertical-align: middle;
   padding: 12px 8px;
   border-bottom: 1px solid #eee;
+  overflow: hidden;
 }
 
 .recontatos-table .id-cell {
-  width: 60px;
+  width: 8%; /* 8% da largura total */
   text-align: center;
   font-weight: bold;
 }
 
 .recontatos-table .nome-cell {
-  width: 200px;
-  min-width: 180px;
+  width: 25%; /* 25% da largura total */
+  font-weight: 500;
 }
 
 .recontatos-table .telefone-cell {
-  width: 140px;
-  min-width: 120px;
+  width: 15%; /* 15% da largura total */
   font-family: monospace;
+  font-size: 14px;
 }
 
 .recontatos-table .data-cell {
-  width: 140px;
-  min-width: 120px;
+  width: 15%; /* 15% da largura total */
 }
 
 .recontatos-table .motivo-cell {
-  width: 150px;
-  min-width: 120px;
+  width: 17%; /* 17% da largura total */
 }
 
 .recontatos-table .observacoes-cell {
-  width: auto;
-  min-width: 200px;
-  max-width: 300px;
+  width: 20%; /* 20% da largura total - restante */
 }
 
 .observacoes-text {
   display: block;
   word-wrap: break-word;
   line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /* Melhorias no modal */
@@ -1481,14 +1515,18 @@
 
 .info-grid .info-label {
   font-weight: 600;
-  color: #666;
+  color: #2d3748; /* Cinza escuro para melhor legibilidade */
   font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .info-grid .info-value {
-  color: #333;
-  font-size: 15px;
+  color: #1a202c; /* Preto/cinza muito escuro para os dados */
+  font-size: 16px;
+  font-weight: 500;
   word-wrap: break-word;
+  line-height: 1.4;
 }
 
 .observacoes-content {
@@ -1532,10 +1570,57 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-  padding: 16px;
-  min-width: 250px;
-  max-width: 300px;
+  min-width: 280px;
+  max-width: 350px;
   animation: slideIn 0.2s ease-out;
+  overflow: hidden;
+}
+
+.actions-menu-header {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cliente-info-header {
+  flex: 1;
+  padding-right: 10px;
+}
+
+.cliente-name {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recontato-date {
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
+}
+
+.close-actions-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.close-actions-btn:hover {
+  background: #e2e8f0;
+  color: #333;
 }
 
 @keyframes slideIn {
@@ -1553,45 +1638,53 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 16px;
 }
 
 .actions-dropdown .action-btn {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 13px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   white-space: nowrap;
+  color: #2d3748; /* Texto em cinza escuro */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.actions-dropdown .action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .actions-dropdown .contatar-btn:hover {
-  background: #25D366;
-  color: white;
+  background: #e8f5e8;
+  color: #25D366;
   border-color: #25D366;
 }
 
 .actions-dropdown .servico-btn:hover {
-  background: #4CAF50;
-  color: white;
+  background: #e8f5e8;
+  color: #4CAF50;
   border-color: #4CAF50;
 }
 
 .actions-dropdown .prorrogar-btn:hover {
-  background: #FF9800;
-  color: white;
+  background: #fff3e0;
+  color: #FF9800;
   border-color: #FF9800;
 }
 
 .actions-dropdown .detalhes-btn:hover {
-  background: #2196F3;
-  color: white;
+  background: #e3f2fd;
+  color: #2196F3;
   border-color: #2196F3;
 }
 
@@ -1737,8 +1830,25 @@
     display: none;
   }
   
+  /* Redistribui as larguras sem a coluna observações */
+  .recontatos-table .id-cell {
+    width: 10%;
+  }
+  
+  .recontatos-table .nome-cell {
+    width: 35%;
+  }
+  
+  .recontatos-table .telefone-cell {
+    width: 20%;
+  }
+  
+  .recontatos-table .data-cell {
+    width: 20%;
+  }
+  
   .recontatos-table .motivo-cell {
-    max-width: 100px;
+    width: 15%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1759,8 +1869,17 @@
     display: none;
   }
   
+  /* Redistribui larguras apenas para ID, Nome e Data */
+  .recontatos-table .id-cell {
+    width: 15%;
+  }
+  
   .recontatos-table .nome-cell {
-    min-width: 150px;
+    width: 60%;
+  }
+  
+  .recontatos-table .data-cell {
+    width: 25%;
   }
   
   .recontatos-table .data-cell {
