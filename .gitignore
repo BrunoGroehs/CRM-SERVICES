@@ -45,3 +45,4 @@ build/
 .env.example
 .env.test
 .env.prod
+clientes.csv

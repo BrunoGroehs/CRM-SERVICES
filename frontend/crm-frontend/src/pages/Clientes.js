@@ -5,6 +5,8 @@ import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
+  const [filteredClientes, setFilteredClientes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -40,6 +42,23 @@ const Clientes = () => {
     fetchClientes();
   }, []);
 
+  // Efeito para filtrar clientes baseado na pesquisa
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredClientes(clientes);
+    } else {
+      const filtered = clientes.filter(cliente => 
+        cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.telefone?.includes(searchTerm) ||
+        cliente.cidade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.endereco?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.indicacao?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredClientes(filtered);
+    }
+  }, [clientes, searchTerm]);
+
   // Função para mostrar toast
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -67,7 +86,9 @@ const Clientes = () => {
       }
 
       const data = await response.json();
-      setClientes(data.data || []);
+      const clientesData = data.data || [];
+      setClientes(clientesData);
+      setFilteredClientes(clientesData);
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
@@ -477,78 +498,114 @@ const Clientes = () => {
           <span className="stat-value">{clientes.length}</span>
           <span className="stat-label">Total de Clientes</span>
         </div>
+        <div className="stat-item">
+          <span className="stat-value">{filteredClientes.length}</span>
+          <span className="stat-label">Exibindo</span>
+        </div>
       </div>
 
-      {clientes.length === 0 ? (
+      {/* Barra de pesquisa */}
+      <div className="search-bar">
+        <div className="search-input-container">
+          <input
+            type="text"
+            placeholder="🔍 Pesquisar por nome, email, telefone, cidade..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              title="Limpar pesquisa"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {filteredClientes.length === 0 ? (
         <div className="empty-state">
-          <h3>Nenhum cliente encontrado</h3>
-          <p>Não há clientes cadastrados no sistema.</p>
+          <h3>{searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum cliente encontrado'}</h3>
+          <p>
+            {searchTerm 
+              ? `Não há clientes que correspondam a "${searchTerm}".`
+              : 'Não há clientes cadastrados no sistema.'
+            }
+          </p>
+          {searchTerm && (
+            <button className="clear-search-btn" onClick={() => setSearchTerm('')}>
+              Limpar pesquisa
+            </button>
+          )}
         </div>
       ) : (
-        <div className="data-grid">
-          {clientes.map((cliente) => (
-            <div key={cliente.id} className="data-card">
-              <div className="card-header">
-                <h3>{cliente.nome}</h3>
-                <div className="card-meta">
-                  {cliente.quantidade_placas && (
-                    <span className="card-placas">⚡ {cliente.quantidade_placas}un</span>
-                  )}
-                  <span className="card-id">ID: {cliente.id}</span>
-                </div>
-              </div>
-              <div className="card-content">
-                <div className="info-row">
-                  <span className="info-label">📧 Email:</span>
-                  <span className="info-value">{cliente.email || 'Não informado'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📱 Telefone:</span>
-                  <span className="info-value">{cliente.telefone}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📍 Endereço:</span>
-                  <span className="info-value">{cliente.endereco}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">🏙️ Cidade:</span>
-                  <span className="info-value">{cliente.cidade}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📮 CEP:</span>
-                  <span className="info-value">{cliente.cep}</span>
-                </div>
-                {cliente.indicacao && (
-                  <div className="info-row">
-                    <span className="info-label">👥 Indicação:</span>
-                    <span className="info-value">{cliente.indicacao}</span>
-                  </div>
-                )}
-                {cliente.criado_em && (
-                  <div className="info-row">
-                    <span className="info-label">📅 Cadastrado em:</span>
-                    <span className="info-value">{formatDate(cliente.criado_em)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="card-actions">
-                <button 
-                  className="edit-btn"
-                  onClick={() => handleEdit(cliente)}
-                  title="Editar cliente"
-                >
-                  ✏️ Editar
-                </button>
-                <button 
-                  className="details-btn"
-                  onClick={() => handleVerDetalhes(cliente)}
-                  title="Ver histórico e detalhes"
-                >
-                  📋 Ver Detalhes
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="table-container">
+          <table className="clientes-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Cidade</th>
+                <th>Endereço</th>
+                <th>Painéis</th>
+                <th>Indicação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClientes.map((cliente) => (
+                <tr key={cliente.id}>
+                  <td className="id-cell">{cliente.id}</td>
+                  <td className="nome-cell">
+                    <strong>{cliente.nome}</strong>
+                  </td>
+                  <td className="email-cell">
+                    {cliente.email || '-'}
+                  </td>
+                  <td className="telefone-cell">
+                    {cliente.telefone || '-'}
+                  </td>
+                  <td className="cidade-cell">
+                    {cliente.cidade || '-'}
+                  </td>
+                  <td className="endereco-cell">
+                    {cliente.endereco || '-'}
+                  </td>
+                  <td className="paineis-cell">
+                    {cliente.quantidade_placas ? (
+                      <span className="paineis-badge">⚡ {cliente.quantidade_placas}</span>
+                    ) : '-'}
+                  </td>
+                  <td className="indicacao-cell">
+                    {cliente.indicacao || '-'}
+                  </td>
+                  <td className="actions-cell">
+                    <div className="action-buttons">
+                      <button 
+                        className="edit-btn-small"
+                        onClick={() => handleEdit(cliente)}
+                        title="Editar cliente"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="details-btn-small"
+                        onClick={() => handleVerDetalhes(cliente)}
+                        title="Ver detalhes"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
