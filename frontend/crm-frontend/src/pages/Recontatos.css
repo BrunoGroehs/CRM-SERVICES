@@ -190,6 +190,16 @@
   transform: translateY(-1px);
 }
 
+.edit-btn {
+  background: #ff9800; /* Orange color for edit */
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #e68900;
+  transform: translateY(-1px);
+}
+
 .action-btn:active {
   transform: translateY(0);
 }
@@ -1096,15 +1106,640 @@
 .modal-overlay {
   background: rgba(0, 0, 0, 0.7) !important;
   backdrop-filter: blur(8px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .modal-content.modal-wide {
   background: #ffffff;
   padding: 0;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  width: 100%;
+  max-width: 700px;
+  margin: 20px;
+  animation: modalSlideIn 0.3s ease;
 }
 
+/* Cabeçalho do modal moderno */
+.modal-header {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Corpo do modal */
 .modal-wide .modal-body-wide {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  padding: 2rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: auto;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* Exceção para o modal de serviço */
+.modal-servico .modal-body-wide {
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Sobrescrever qualquer conflito do modal-wide para o modal de serviço */
+.modal-servico.modal-wide .modal-body-wide {
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Formulário do modal */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-input.disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Botões de ação */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+  margin-top: 1rem;
+}
+
+.cancel-btn {
+  padding: 12px 24px;
+  border: 2px solid #6c757d;
   background: transparent;
+  color: #6c757d;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.submit-btn {
+  padding: 12px 24px;
+  border: none;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+/* Animação do modal */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsividade para tela cheia */
+@media (min-width: 1200px) {
+  .modal-overlay {
+    padding: 40px;
+  }
+  
+  .modal-content.modal-wide {
+    max-width: 800px;
+    margin: auto;
+    width: 100%;
+  }
+  
+  .modal-header {
+    padding: 2.5rem;
+  }
+  
+  .modal-wide .modal-body-wide {
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 100%;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    box-sizing: border-box;
+  }
+  
+  .form-group label {
+    font-size: 1rem;
+  }
+  
+  .form-input {
+    padding: 14px 18px;
+    font-size: 16px;
+  }
+}
+
+/* Para telas extra grandes (1400px+) */
+@media (min-width: 1400px) {
+  .modal-content.modal-wide {
+    max-width: 900px;
+  }
+  
+  .modal-wide .modal-body-wide {
+    padding: 3rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .modal-header {
+    padding: 3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-content.modal-wide {
+    margin: 10px;
+    border-radius: 15px;
+  }
+  
+  .modal-header {
+    padding: 1.5rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  .modal-wide .modal-body-wide {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+  }
+}
+
+/* Estilos específicos para o modal de editar recontato */
+.modal-overlay[data-modal="edit"] {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px);
+}
+
+.modal-overlay[data-modal="edit"] .modal-content {
+  background: #ffffff !important;
+  border: none;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+  width: 100% !important;
+  max-width: 800px !important;
+  margin: auto !important;
+}
+
+.modal-overlay[data-modal="edit"] .modal-wide {
+  background: #ffffff !important;
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.modal-overlay[data-modal="edit"] .modal-body-wide {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 2rem !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  min-height: auto !important;
+}
+
+/* Garantir que não há espaços em branco */
+.modal-overlay * {
+  box-sizing: border-box;
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  height: auto;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Forçar que o modal-body-wide sempre ocupe 100% da largura disponível */
+.modal-overlay .modal-body-wide,
+.modal-overlay[data-modal="edit"] .modal-body-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-overlay .modal-form,
+.modal-overlay[data-modal="edit"] .modal-form {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1;
+}
+
+/* Melhorias visuais adicionais para o formulário */
+.form-input[type="date"],
+.form-input[type="time"] {
+  color: #495057;
+  font-family: inherit;
+}
+
+.form-input[type="date"]::-webkit-calendar-picker-indicator,
+.form-input[type="time"]::-webkit-calendar-picker-indicator {
+  color: #2196F3;
+  cursor: pointer;
+  filter: brightness(1.2);
+}
+
+.form-input select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232196F3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.form-input textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* Efeitos hover para campos */
+.form-group:hover .form-input:not(:focus) {
+  border-color: #b3d9ff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Indicador de campo obrigatório */
+.form-group label[for*="Edit"]:has-text("*")::after {
+  content: " *";
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Gradiente sutil no fundo do modal para dar profundidade */
+.modal-overlay[data-modal="edit"]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(33, 150, 243, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Estilos específicos para o modal de serviço com layout de duas colunas */
+.modal-servico {
+  max-width: 1200px !important;
+  width: 95% !important;
+}
+
+.modal-body-servico {
+  padding: 0 !important;
+  background: transparent !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.servico-layout-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0;
+  min-height: 500px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  width: 100%;
+  height: auto;
+}
+
+/* Coluna do formulário (esquerda) */
+.servico-form-column {
+  flex: 1 1 60% !important;
+  min-width: 0;
+  padding: 2rem;
+  border-right: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* Coluna do histórico (direita) */
+.servico-historico-column {
+  flex: 0 0 40% !important;
+  width: 40%;
+  min-width: 350px;
+  padding: 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-sizing: border-box;
+  overflow: hidden !important;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico-section {
+  height: 100%;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico {
+  height: 100%;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+/* Ajustes para o histórico no modal de serviço */
+.servico-historico-column .historico-modal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1;
+  padding-right: 8px;
+  max-height: none !important;
+}
+
+/* Remover qualquer scroll desnecessário dos itens */
+.servico-historico-column .historico-modal-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: visible !important;
+  flex-shrink: 0;
+}
+
+.servico-historico-column .historico-modal-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.servico-historico-column .sem-historico-modal {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+  overflow: visible !important;
+}
+
+/* Ajustes específicos para o formulário na coluna esquerda */
+.servico-form-column .modal-form-section {
+  width: 100%;
+  height: 100%;
+}
+
+.servico-form-column .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.servico-form-column .form-row,
+.servico-form-column .form-row-horizontal {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.servico-form-column .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Forçar que o container principal não quebre o layout */
+.modal-servico * {
+  box-sizing: border-box;
+}
+
+/* Garantir que apenas a lista tenha scroll */
+.modal-servico .modal-historico-section,
+.modal-servico .modal-historico {
+  overflow: hidden !important;
+}
+
+.modal-servico .historico-modal-lista {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Remover qualquer scroll dos elementos filhos */
+.modal-servico .historico-modal-item,
+.modal-servico .historico-modal-header,
+.modal-servico .servico-data-modal,
+.modal-servico .servico-valor-modal,
+.modal-servico .servico-funcionario-modal,
+.modal-servico .servico-notas-modal,
+.modal-servico .status-badge-modal {
+  overflow: visible !important;
+}
+
+/* Responsividade para o modal de serviço */
+@media (max-width: 1024px) {
+  .modal-servico {
+    max-width: 95% !important;
+  }
+  
+  .servico-layout-container {
+    flex-direction: column !important;
+  }
+  
+  .servico-form-column {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  
+  .servico-historico-column {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: auto;
+    max-height: 400px;
+  }
+}
+
+/* Para telas muito pequenas */
+@media (max-width: 768px) {
+  .servico-form-column,
+  .servico-historico-column {
+    padding: 1.5rem;
+  }
+  
+  .servico-historico-column {
+    max-height: 300px;
+  }
+}
+
+/* Debug - Forçar layout side-by-side em telas grandes */
+@media (min-width: 1025px) {
+  .servico-layout-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .servico-form-column {
+    flex: 1 1 60% !important;
+    display: block !important;
+    float: left !important;
+    width: 60% !important;
+  }
+  
+  .servico-historico-column {
+    flex: 0 0 40% !important;
+    display: block !important;
+    float: right !important;
+    width: 40% !important;
+  }
 }
 
 .modal-form-section {
@@ -2034,9 +2669,13 @@
 }
 
 .modal-body-wide {
-  padding: 0;
-  max-height: 70vh;
-  overflow-y: auto;
+  padding: 2rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: auto;
+  box-sizing: border-box;
+  overflow: visible;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .modal-form-section {

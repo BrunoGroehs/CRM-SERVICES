@@ -530,7 +530,7 @@ const Servicos = () => {
       {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content modal-wide modal-servico" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
@@ -538,9 +538,12 @@ const Servicos = () => {
               </button>
             </div>
             
-            <div className="modal-body-wide">
-              <div className="modal-form-section">
-                <form onSubmit={handleSubmit} className="modal-form">
+            <div className="modal-body-wide modal-body-servico">
+              <div className="servico-layout-container">
+                {/* Coluna da Esquerda - Formulário */}
+                <div className="servico-form-column">
+                  <div className="modal-form-section">
+                    <form onSubmit={handleSubmit} className="modal-form">
                   {/* CLIENTE */}
                   <div className="form-group">
                     <label htmlFor="cliente_id">Cliente *</label>
@@ -702,13 +705,16 @@ const Servicos = () => {
                     </button>
                   </div>
                 </form>
-              </div>
-              
-              <div className="modal-historico-section">
-                {/* Seção do Histórico do Cliente */}
-                {formData.cliente_id && (
-                  <div className="modal-historico">
-                    <h3>📋 Histórico de Serviços</h3>
+                  </div>
+                </div>
+                
+                {/* Coluna da Direita - Histórico */}
+                <div className="servico-historico-column">
+                  <div className="modal-historico-section">
+                    {/* Seção do Histórico do Cliente */}
+                    {formData.cliente_id && (
+                      <div className="modal-historico">
+                        <h3>📋 Histórico de Serviços</h3>
                     {servicosDoCliente.length > 0 ? (
                       <div className="historico-modal-lista">
                         {servicosDoCliente.map((servico) => (
@@ -746,6 +752,8 @@ const Servicos = () => {
                     )}
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

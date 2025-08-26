@@ -1,6 +1,265 @@
 /* Importa estilos base */
 @import './Clientes.css';
 
+/* Estilos específicos para o modal de serviço com layout de duas colunas */
+.modal-servico {
+  max-width: 1200px !important;
+  width: 95% !important;
+}
+
+.modal-body-servico {
+  padding: 0 !important;
+  background: transparent !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.servico-layout-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0;
+  min-height: 500px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  width: 100%;
+  height: auto;
+}
+
+/* Coluna do formulário (esquerda) */
+.servico-form-column {
+  flex: 1 1 60% !important;
+  min-width: 0;
+  padding: 2rem;
+  border-right: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* Coluna do histórico (direita) */
+.servico-historico-column {
+  flex: 0 0 40% !important;
+  width: 40%;
+  min-width: 350px;
+  padding: 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  overflow-y: auto;
+  max-height: 70vh;
+  box-sizing: border-box;
+}
+
+/* Coluna do histórico (direita) */
+.servico-historico-column {
+  flex: 0 0 40% !important;
+  width: 40%;
+  min-width: 350px;
+  padding: 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-sizing: border-box;
+  overflow: hidden !important;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico-section {
+  height: 100%;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico {
+  height: 100%;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.servico-historico-column .modal-historico h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+/* Ajustes específicos para o formulário na coluna esquerda */
+.servico-form-column .modal-form-section {
+  width: 100%;
+  height: 100%;
+}
+
+.servico-form-column .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.servico-form-column .form-row,
+.servico-form-column .form-group-row-horizontal {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.servico-form-column .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ajustes para o histórico no modal de serviço */
+.servico-historico-column .historico-modal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1;
+  padding-right: 8px;
+  max-height: none !important;
+}
+
+.servico-historico-column .historico-modal-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: visible !important;
+  flex-shrink: 0;
+}
+
+.servico-historico-column .historico-modal-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.servico-historico-column .sem-historico-modal {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+  overflow: visible !important;
+}
+
+/* Responsividade para o modal de serviço */
+@media (max-width: 1024px) {
+  .modal-servico {
+    max-width: 95% !important;
+  }
+  
+  .servico-layout-container {
+    flex-direction: column !important;
+  }
+  
+  .servico-form-column {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  
+  .servico-historico-column {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: auto;
+    max-height: 400px;
+  }
+}
+
+/* Para telas muito pequenas */
+@media (max-width: 768px) {
+  .servico-form-column,
+  .servico-historico-column {
+    padding: 1.5rem;
+  }
+  
+  .servico-historico-column {
+    max-height: 300px;
+  }
+}
+
+/* Debug - Forçar layout side-by-side em telas grandes */
+@media (min-width: 1025px) {
+  .servico-layout-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .servico-form-column {
+    flex: 1 1 60% !important;
+    display: block !important;
+    float: left !important;
+    width: 60% !important;
+  }
+  
+  .servico-historico-column {
+    flex: 0 0 40% !important;
+    display: block !important;
+    float: right !important;
+    width: 40% !important;
+  }
+}
+
+/* Forçar que o modal-body-wide para serviços não tenha padding */
+.modal-servico .modal-body-wide {
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Sobrescrever qualquer conflito do modal-wide para o modal de serviço */
+.modal-servico.modal-wide .modal-body-wide {
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Forçar que o container principal não quebre o layout */
+.modal-servico * {
+  box-sizing: border-box;
+}
+
+/* Garantir que apenas a lista tenha scroll */
+.modal-servico .modal-historico-section,
+.modal-servico .modal-historico {
+  overflow: hidden !important;
+}
+
+.modal-servico .historico-modal-lista {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Remover qualquer scroll dos elementos filhos */
+.modal-servico .historico-modal-item,
+.modal-servico .historico-modal-header,
+.modal-servico .servico-data-modal,
+.modal-servico .servico-valor-modal,
+.modal-servico .servico-funcionario-modal,
+.modal-servico .servico-notas-modal,
+.modal-servico .status-badge-modal {
+  overflow: visible !important;
+}
+
 .servico-card {
   border-left-color: #2196F3;
 }
