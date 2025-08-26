@@ -56,6 +56,7 @@ const Recontatos = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [selectedCliente, setSelectedCliente] = useState(null);
+  const [clientePreSelecionado, setClientePreSelecionado] = useState(null);
   const [servicosHistorico, setServicosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
 
@@ -188,6 +189,7 @@ const Recontatos = () => {
   };
 
   const fetchServicosHistorico = async (clienteId) => {
+    console.log('Carregando histórico para cliente:', clienteId);
     try {
       setLoadingHistorico(true);
       const response = await authenticatedFetch(getApiUrl(`servicos/cliente/${clienteId}`));
@@ -197,6 +199,7 @@ const Recontatos = () => {
       }
 
       const data = await response.json();
+      console.log('Histórico carregado:', data);
       setServicosHistorico(data.data || []);
     } catch (err) {
       console.error('Erro ao carregar histórico:', err);
@@ -286,6 +289,8 @@ const Recontatos = () => {
 
   const handleCloseServicoModal = () => {
     setShowServicoModal(false);
+    setClientePreSelecionado(null);
+    setServicosHistorico([]);
     setFormData({
       cliente_id: '',
       data: '',
@@ -733,14 +738,28 @@ const Recontatos = () => {
     await fetchServicosHistorico(recontato.cliente_id);
   };
 
-  const handleAgendarServico = (recontato) => {
-    // Redirecionar para página de serviços com cliente pré-selecionado
-    const params = new URLSearchParams({
+  const handleAgendarServico = async (recontato) => {
+    // Abrir modal de serviço com cliente pré-selecionado e bloqueado
+    setFormData({
       cliente_id: recontato.cliente_id,
-      cliente_nome: recontato.cliente_nome,
-      action: 'novo_servico'
+      data: '',
+      hora: '',
+      valor: '',
+      status: 'agendado',
+      notas: '',
+      funcionario_responsavel: ''
     });
-    window.location.href = `/servicos?${params.toString()}`;
+    
+    // Pré-selecionar e bloquear o cliente
+    setClientePreSelecionado({
+      id: recontato.cliente_id,
+      nome: recontato.cliente_nome
+    });
+    
+    // Carregar histórico de serviços do cliente
+    await fetchServicosHistorico(recontato.cliente_id);
+    
+    setShowServicoModal(true);
   };
 
   const handleCloseModal = () => {
@@ -1307,21 +1326,31 @@ const Recontatos = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="cliente_id">Cliente *</label>
-                  <select
-                    id="cliente_id"
-                    name="cliente_id"
-                    value={formData.cliente_id}
-                    onChange={handleInputChange}
-                    className={formErrors.cliente_id ? 'error' : ''}
-                    required
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {clientes.map((cliente) => (
-                      <option key={cliente.id} value={cliente.id}>
-                        {cliente.nome} - {cliente.telefone}
-                      </option>
-                    ))}
-                  </select>
+                  {clientePreSelecionado ? (
+                    <input
+                      type="text"
+                      id="cliente_id"
+                      value={clientePreSelecionado.nome}
+                      className="readonly-field"
+                      readOnly
+                    />
+                  ) : (
+                    <select
+                      id="cliente_id"
+                      name="cliente_id"
+                      value={formData.cliente_id}
+                      onChange={handleInputChange}
+                      className={formErrors.cliente_id ? 'error' : ''}
+                      required
+                    >
+                      <option value="">Selecione um cliente</option>
+                      {clientes.map((cliente) => (
+                        <option key={cliente.id} value={cliente.id}>
+                          {cliente.nome} - {cliente.telefone}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {formErrors.cliente_id && (
                     <span className="error-message">{formErrors.cliente_id}</span>
                   )}
@@ -1443,7 +1472,7 @@ const Recontatos = () => {
               
               <div className="modal-historico-section">
                 {/* Seção do Histórico do Cliente */}
-                {formData.cliente_id && (
+                {(formData.cliente_id || clientePreSelecionado) && (
                   <div className="modal-historico">
                     <h3>📋 Histórico de Serviços</h3>
                     {servicosHistorico.length > 0 ? (
