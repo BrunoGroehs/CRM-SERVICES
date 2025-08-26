@@ -242,11 +242,6 @@ const Calendario = () => {
 
   return (
     <div className="calendario-container">
-      <div className="calendario-header">
-        <h1>📅 Calendário</h1>
-        <p>Visualize seus serviços e recontatos de forma organizada</p>
-      </div>
-
       <div className="calendar-wrapper">
         <div className="calendar-controls">
           <button onClick={() => navigateMonth(-1)} className="nav-btn">
