@@ -70,6 +70,11 @@ const Navigation = () => {
               📞 Recontatos
             </Link>
           </li>
+          <li className="nav-item">
+            <Link to="/calendario" className={isActive('/calendario')}>
+              📅 Calendário
+            </Link>
+          </li>
         </ul>
         <div className="nav-user">
           <div className="user-menu" ref={dropdownRef}>

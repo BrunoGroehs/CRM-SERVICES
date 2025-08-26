@@ -6,6 +6,7 @@ import AuthAwareDashboard from './pages/AuthAwareDashboard';
 import Clientes from './pages/Clientes';
 import Servicos from './pages/Servicos';
 import Recontatos from './pages/Recontatos';
+import Calendario from './pages/Calendario';
 import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
@@ -30,6 +31,7 @@ function App() {
                     <Route path="/clientes" element={<Clientes />} />
                     <Route path="/servicos" element={<Servicos />} />
                     <Route path="/recontatos" element={<Recontatos />} />
+                    <Route path="/calendario" element={<Calendario />} />
                     <Route path="/admin" element={
                       <RoleProtectedRoute allowedRoles={['admin', 'manager']}>
                         <AdminPanel />
