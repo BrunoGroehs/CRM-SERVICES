@@ -24,6 +24,7 @@ const Clientes = () => {
   const [toasts, setToasts] = useState([]);
   const [recontatoData, setRecontatoData] = useState({
     data_agendada: '',
+    motivo: '',
     observacoes: '',
     status: 'agendado'
   });
@@ -444,6 +445,18 @@ const Clientes = () => {
 
   const handleSubmitRecontato = async (e) => {
     e.preventDefault();
+    
+    // Validações
+    if (!recontatoData.data_agendada) {
+      alert('Por favor, selecione uma data para o recontato.');
+      return;
+    }
+    
+    if (!recontatoData.motivo.trim()) {
+      alert('Por favor, informe o motivo do recontato.');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
@@ -478,6 +491,7 @@ const Clientes = () => {
     setNovoClienteId(null);
     setRecontatoData({
       data_agendada: '',
+      motivo: '',
       observacoes: '',
       status: 'agendado'
     });
@@ -865,6 +879,19 @@ const Clientes = () => {
                     placeholder="Selecione uma data específica"
                   />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="motivo">Motivo do Recontato *</label>
+                <input
+                  type="text"
+                  id="motivo"
+                  name="motivo"
+                  value={recontatoData.motivo}
+                  onChange={handleRecontatoInputChange}
+                  placeholder="Ex: Follow-up inicial, apresentar serviços, verificar necessidades..."
+                  required
+                />
               </div>
 
               <div className="form-group">

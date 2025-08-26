@@ -31,6 +31,7 @@ const Recontatos = () => {
   const [proximoRecontatoData, setProximoRecontatoData] = useState({
     periodo: '',
     data_personalizada: '',
+    motivo: '',
     observacoes: ''
   });
   const [prorrogacaoTempo, setProrrogacaoTempo] = useState({ tipo: 'dias', quantidade: 7 });
@@ -228,6 +229,22 @@ const Recontatos = () => {
   // Função para criar novo recontato
   const handleSubmitNovoRecontato = async (e) => {
     e.preventDefault();
+    
+    // Validação básica
+    if (!novoRecontatoData.cliente_id) {
+      alert('Por favor, selecione um cliente.');
+      return;
+    }
+    
+    if (!novoRecontatoData.data_agendada) {
+      alert('Por favor, informe a data do recontato.');
+      return;
+    }
+    
+    if (!novoRecontatoData.motivo.trim()) {
+      alert('Por favor, informe o motivo do recontato.');
+      return;
+    }
     
     try {
       const response = await authenticatedFetch(getApiUrl('recontatos'), {
@@ -600,6 +617,11 @@ const Recontatos = () => {
         return;
       }
 
+      if (!proximoRecontatoData.motivo.trim()) {
+        alert('Por favor, informe o motivo do recontato');
+        return;
+      }
+
       // Encontrar o recontato atual do cliente para atualizar
       const recontatoAtual = recontatos.find(r => r.cliente_id === servicoCriado.cliente_id);
       
@@ -615,7 +637,8 @@ const Recontatos = () => {
         },
         body: JSON.stringify({
           data_agendada: dataRecontato,
-          observacoes: proximoRecontatoData.observacoes || `Recontato pós-serviço - Acompanhamento do serviço realizado`,
+          motivo: proximoRecontatoData.motivo,
+          observacoes: proximoRecontatoData.observacoes,
           status: 'agendado'
         })
       });
@@ -640,6 +663,7 @@ const Recontatos = () => {
     setProximoRecontatoData({
       periodo: '',
       data_personalizada: '',
+      motivo: '',
       observacoes: ''
     });
   };
@@ -1162,13 +1186,14 @@ const Recontatos = () => {
 
                   {/* MOTIVO */}
                   <div className="form-group">
-                    <label htmlFor="motivo">Motivo</label>
+                    <label htmlFor="motivo">Motivo *</label>
                     <input
                       type="text"
                       id="motivo"
                       value={novoRecontatoData.motivo}
                       onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, motivo: e.target.value }))}
                       placeholder="Ex: Apresentar novos serviços, Follow-up de proposta..."
+                      required
                     />
                   </div>
 
@@ -1642,19 +1667,19 @@ const Recontatos = () => {
       {/* Modal de Próximo Recontato */}
       {showProximoRecontatoModal && (
         <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && handleCloseProximoRecontatoModal()}>
-          <div className="beautiful-modal">
+          <div className="modal-content" style={{maxWidth: '600px', width: '90%'}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>🎯 Reagendar Recontato</h3>
-              <button className="close-btn" onClick={handleCloseProximoRecontatoModal}>×</button>
+              <h2>🎯 Reagendar Recontato</h2>
+              <button className="close-btn" onClick={handleCloseProximoRecontatoModal}>✕</button>
             </div>
             
-            <div className="modal-content">
-              <div className="success-message">
-                <p>✅ Serviço criado com sucesso!</p>
-                <p>Agora vamos reagendar o recontato deste cliente para dar continuidade ao relacionamento.</p>
-              </div>
+            <div className="modal-body">
+              <form onSubmit={handleSubmitProximoRecontato} className="modal-form">
+                <div className="success-message" style={{textAlign: 'center', marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e8', borderRadius: '8px', border: '1px solid #4caf50', width: '100%'}}>
+                  <p style={{margin: '5px 0', color: '#2e7d32', fontWeight: 'bold', fontSize: '16px'}}>✅ Serviço criado com sucesso!</p>
+                  <p style={{margin: '5px 0', color: '#4caf50', fontSize: '14px'}}>Agora vamos reagendar o recontato deste cliente para dar continuidade ao relacionamento.</p>
+                </div>
 
-              <form onSubmit={handleSubmitProximoRecontato}>
                 <div className="form-group">
                   <label>📅 Quando fazer o próximo recontato?</label>
                   <div className="quick-options">
@@ -1686,24 +1711,38 @@ const Recontatos = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="observacoes_proximo">Observações (opcional):</label>
+                  <label htmlFor="motivo_proximo">🎯 Motivo do Recontato *</label>
+                  <input
+                    type="text"
+                    id="motivo_proximo"
+                    name="motivo"
+                    value={proximoRecontatoData.motivo}
+                    onChange={handleProximoRecontatoInputChange}
+                    placeholder="Ex: Follow-up pós-serviço, verificar satisfação, apresentar novos produtos..."
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="observacoes_proximo">📝 Observações (opcional):</label>
                   <textarea
                     id="observacoes_proximo"
                     name="observacoes"
                     value={proximoRecontatoData.observacoes}
                     onChange={handleProximoRecontatoInputChange}
-                    placeholder="Ex: Verificar satisfação com o serviço, apresentar novos produtos..."
+                    placeholder=""
                     rows="3"
                     className="form-input"
                   />
                 </div>
 
-                <div className="button-group">
-                  <button type="button" className="btn-secondary" onClick={handleSkipProximoRecontato}>
-                    Pular Reagendamento
+                <div className="form-actions">
+                  <button type="button" className="cancel-btn" onClick={handleSkipProximoRecontato}>
+                    ⏭️ Pular Reagendamento
                   </button>
-                  <button type="submit" className="btn-primary">
-                    Reagendar Recontato
+                  <button type="submit" className="submit-btn">
+                    📅 Reagendar Recontato
                   </button>
                 </div>
               </form>
