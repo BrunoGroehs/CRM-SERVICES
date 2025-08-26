@@ -59,7 +59,11 @@ const Servicos = () => {
       const response = await authenticatedFetch(getApiUrl('clientes'));
       if (response.ok) {
         const data = await response.json();
-        setClientes(data.data || []);
+        // Ordenar clientes alfabeticamente por nome
+        const clientesOrdenados = (data.data || []).sort((a, b) => 
+          a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+        );
+        setClientes(clientesOrdenados);
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
@@ -540,21 +544,34 @@ const Servicos = () => {
                   {/* CLIENTE */}
                   <div className="form-group">
                     <label htmlFor="cliente_id">Cliente *</label>
-                    <select
-                      id="cliente_id"
-                      name="cliente_id"
-                      value={formData.cliente_id}
-                      onChange={handleInputChange}
-                      className={formErrors.cliente_id ? 'error' : ''}
-                      required
-                    >
-                      <option value="">Selecione um cliente</option>
-                      {clientes.map((cliente) => (
-                        <option key={cliente.id} value={cliente.id}>
-                          {cliente.nome} - {cliente.telefone}
-                        </option>
-                      ))}
-                    </select>
+                    {editingServico ? (
+                      // Modo edição: campo de texto somente leitura
+                      <input
+                        type="text"
+                        id="cliente_readonly"
+                        value={editingServico.cliente_nome || ''}
+                        className="readonly-field"
+                        readOnly
+                        disabled
+                      />
+                    ) : (
+                      // Modo criação: select normal
+                      <select
+                        id="cliente_id"
+                        name="cliente_id"
+                        value={formData.cliente_id}
+                        onChange={handleInputChange}
+                        className={formErrors.cliente_id ? 'error' : ''}
+                        required
+                      >
+                        <option value="">Selecione um cliente</option>
+                        {clientes.map((cliente) => (
+                          <option key={cliente.id} value={cliente.id}>
+                            {cliente.nome} - {cliente.telefone}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     {formErrors.cliente_id && (
                       <span className="error-message">{formErrors.cliente_id}</span>
                     )}

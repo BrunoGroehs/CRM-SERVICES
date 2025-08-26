@@ -1216,3 +1216,17 @@
   color: #adb5bd;
   font-style: italic;
 }
+
+/* Campo somente leitura para cliente em modo edição */
+.readonly-field {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  border-color: #dee2e6 !important;
+  font-weight: 500;
+}
+
+.readonly-field:focus {
+  box-shadow: none !important;
+  border-color: #dee2e6 !important;
+}

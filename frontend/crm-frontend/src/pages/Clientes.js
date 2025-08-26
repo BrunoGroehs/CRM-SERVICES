@@ -112,8 +112,12 @@ const Clientes = () => {
 
       const data = await response.json();
       const clientesData = data.data || [];
-      setClientes(clientesData);
-      setFilteredClientes(clientesData);
+      // Ordenar clientes alfabeticamente por nome
+      const clientesOrdenados = clientesData.sort((a, b) => 
+        a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+      );
+      setClientes(clientesOrdenados);
+      setFilteredClientes(clientesOrdenados);
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
