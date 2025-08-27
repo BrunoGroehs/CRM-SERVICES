@@ -490,6 +490,36 @@
   cursor: not-allowed;
 }
 
+/* Evita que emojis girem automaticamente */
+.refresh-btn {
+  animation: none !important;
+}
+
+.refresh-btn * {
+  animation: none !important;
+}
+
+.refresh-icon {
+  display: inline-block;
+  animation: none !important;
+  transform: none !important;
+  transition: transform 0.3s ease;
+}
+
+/* Rotação controlada apenas quando disabled (loading) */
+.refresh-btn:disabled .refresh-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.refresh-text {
+  display: inline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .page-container {

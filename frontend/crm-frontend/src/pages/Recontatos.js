@@ -1169,7 +1169,8 @@ const Recontatos = () => {
       )}
 
       <button className="refresh-btn" onClick={fetchRecontatos} disabled={loading}>
-        {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
+        <span className="refresh-icon">↻</span>
+        <span className="refresh-text">{loading ? ' Atualizando...' : ' Atualizar Lista'}</span>
       </button>
 
       {/* Modal de Criação de Recontato */}
@@ -1890,7 +1891,8 @@ const Recontatos = () => {
 
                 <div className="form-group">
                   <label htmlFor="motivoEdit">Motivo do Recontato: *</label>
-                  <select
+                  <input
+                    type="text"
                     id="motivoEdit"
                     value={recontatoParaEditar.motivo}
                     onChange={(e) => setRecontatoParaEditar({
@@ -1899,17 +1901,8 @@ const Recontatos = () => {
                     })}
                     required
                     className="form-input"
-                  >
-                    <option value="">Selecione o motivo</option>
-                    <option value="Follow-up vendas">Follow-up de vendas</option>
-                    <option value="Atendimento pós-venda">Atendimento pós-venda</option>
-                    <option value="Cobrança">Cobrança</option>
-                    <option value="Agendamento de serviço">Agendamento de serviço</option>
-                    <option value="Pesquisa de satisfação">Pesquisa de satisfação</option>
-                    <option value="Renovação de contrato">Renovação de contrato</option>
-                    <option value="Oferta especial">Oferta especial</option>
-                    <option value="Outros">Outros</option>
-                  </select>
+                    placeholder="Digite o motivo do recontato..."
+                  />
                 </div>
 
                 <div className="form-group">
