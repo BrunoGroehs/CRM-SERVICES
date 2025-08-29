@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import './Recontatos.css';
 import { getApiUrl } from '../utils/api';
@@ -64,6 +65,8 @@ const Recontatos = () => {
   const [clientePreSelecionado, setClientePreSelecionado] = useState(null);
   const [servicosHistorico, setServicosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [recontatoParaDeletar, setRecontatoParaDeletar] = useState(null);
 
   // Função para determinar o status do recontato
   const getStatusInfo = (recontato) => {
@@ -721,13 +724,15 @@ const Recontatos = () => {
     handleCloseProximoRecontatoModal();
   };
 
-  const handleDeleteRecontato = async (recontato) => {
-    if (!window.confirm(`Tem certeza que deseja deletar o recontato de ${recontato.cliente_nome}?`)) {
-      return;
-    }
+  const askDeleteRecontato = (recontato) => {
+    setRecontatoParaDeletar(recontato);
+    setConfirmDeleteOpen(true);
+  };
 
+  const confirmDeleteRecontato = async () => {
+    if (!recontatoParaDeletar) return;
     try {
-      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontato.id}`), {
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoParaDeletar.id}`), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -738,14 +743,21 @@ const Recontatos = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-  pushToast('Recontato deletado com sucesso!', { type: 'success' });
-      handleCloseModal(); // Fechar modal de detalhes
-      await fetchRecontatos(); // Recarregar lista
-      
+      pushToast('Recontato deletado com sucesso!', { type: 'success' });
+      handleCloseModal();
+      await fetchRecontatos();
     } catch (err) {
       console.error('Erro ao deletar recontato:', err);
-  pushToast('Erro ao deletar recontato: ' + err.message, { type: 'error' });
+      pushToast('Erro ao deletar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setRecontatoParaDeletar(null);
     }
+  };
+
+  const cancelDeleteRecontato = () => {
+    setConfirmDeleteOpen(false);
+    setRecontatoParaDeletar(null);
   };
 
   const formatDate = (dateString) => {
@@ -1753,7 +1765,7 @@ const Recontatos = () => {
               <div className="recontato-actions">
                 <button 
                   className="delete-recontato-btn"
-                  onClick={() => handleDeleteRecontato(selectedCliente)}
+                  onClick={() => askDeleteRecontato(selectedCliente)}
                   title="Deletar este recontato permanentemente"
                 >
                   🗑️ Deletar Recontato
@@ -1952,6 +1964,21 @@ const Recontatos = () => {
         </div>
       )}
 
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Deletar recontato"
+        tone="danger"
+        message={`Tem certeza que deseja deletar o recontato de ${recontatoParaDeletar?.cliente_nome || ''}?`}
+        details={<>
+          <p><strong>Data:</strong> {recontatoParaDeletar ? formatDate(recontatoParaDeletar.data_agendada) : '-'}</p>
+          {recontatoParaDeletar?.motivo && <p><strong>Motivo:</strong> {recontatoParaDeletar.motivo}</p>}
+          <p style={{marginTop:'8px'}}>Esta ação não pode ser desfeita.</p>
+        </>}
+        confirmLabel="Deletar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmDeleteRecontato}
+        onCancel={cancelDeleteRecontato}
+      />
     </div>
   );
 };

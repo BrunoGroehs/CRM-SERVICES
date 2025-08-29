@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
@@ -25,6 +26,8 @@ const AdminPanel = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   const authenticatedFetch = useAuthenticatedFetch();
   const { add: pushToast } = useToast();
@@ -189,29 +192,37 @@ const AdminPanel = () => {
     }
   };
 
-  const handleDeleteUser = async (user) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o usuário ${user.email}? Esta ação não pode ser desfeita.`)) {
-      return;
-    }
+  const askDeleteUser = (user) => {
+    setUserToDelete(user);
+    setConfirmDeleteOpen(true);
+  };
 
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
     try {
       setError('');
-      const response = await authenticatedFetch(getApiUrl(`admin/users/${user.id}`), {
+      const response = await authenticatedFetch(getApiUrl(`admin/users/${userToDelete.id}`), {
         method: 'DELETE',
       });
-
       const data = await response.json();
-
       if (response.ok) {
-  pushToast(`Usuário ${user.email} excluído`, { type: 'success' });
-        loadAdminData(); // Recarregar dados
+        pushToast(`Usuário ${userToDelete.email} excluído`, { type: 'success' });
+        loadAdminData();
       } else {
-  pushToast(data.message || 'Erro ao excluir usuário', { type: 'error' });
+        pushToast(data.message || 'Erro ao excluir usuário', { type: 'error' });
       }
     } catch (error) {
       console.error('Erro ao excluir usuário:', error);
-  pushToast('Erro ao excluir usuário', { type: 'error' });
+      pushToast('Erro ao excluir usuário', { type: 'error' });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setUserToDelete(null);
     }
+  };
+
+  const cancelDeleteUser = () => {
+    setConfirmDeleteOpen(false);
+    setUserToDelete(null);
   };
 
   const openRoleModal = (user) => {
@@ -375,7 +386,7 @@ const AdminPanel = () => {
                       </button>
                       <button
                         className="btn btn-danger btn-sm"
-                        onClick={() => handleDeleteUser(user)}
+                        onClick={() => askDeleteUser(user)}
                         title="Excluir usuário"
                       >
                         🗑️ Excluir
@@ -575,6 +586,20 @@ const AdminPanel = () => {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Excluir usuário"
+        tone="danger"
+        message={`Tem certeza que deseja excluir o usuário ${userToDelete?.email || ''}?`}
+        details={<>
+          <p>Esta ação não pode ser desfeita e removerá o acesso deste usuário.</p>
+          {userToDelete && <p><strong>Role atual:</strong> {userToDelete.role}</p>}
+        </>}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        onConfirm={confirmDeleteUser}
+        onCancel={cancelDeleteUser}
+      />
     </div>
   );
 };

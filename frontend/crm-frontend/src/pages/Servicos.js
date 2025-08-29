@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDialog from '../components/ConfirmDialog';
 import './Servicos.css';
 import { getApiUrl } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
@@ -29,6 +30,7 @@ const Servicos = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [servicosDoCliente, setServicosDoCliente] = useState([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { add: pushToast } = useToast();
 
@@ -312,18 +314,13 @@ const Servicos = () => {
     }
   };
 
-  const handleDeleteServico = async () => {
+  const handleAskDelete = () => {
     if (!editingServico) return;
-    
-    const confirmDelete = window.confirm(
-      `Tem certeza que deseja excluir o serviço do cliente "${editingServico.cliente_nome}"?\n\n` +
-      `Data: ${formatDate(editingServico.data)}\n` +
-      `Valor: ${formatCurrency(editingServico.valor || 0)}\n\n` +
-      `Esta ação não pode ser desfeita!`
-    );
-    
-    if (!confirmDelete) return;
-    
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!editingServico) return;
     try {
       const response = await authenticatedFetch(getApiUrl(`servicos/${editingServico.id}`), {
         method: 'DELETE',
@@ -337,14 +334,17 @@ const Servicos = () => {
         throw new Error(errorData.message || 'Erro ao excluir serviço');
       }
 
-  pushToast('Serviço excluído com sucesso!', { type: 'success' });
+      pushToast('Serviço excluído com sucesso!', { type: 'success' });
       await fetchServicos(); // Recarregar a lista
       handleCloseModal();
     } catch (err) {
       console.error('Erro ao excluir serviço:', err);
   pushToast(`Erro ao excluir serviço: ${err.message}`, { type: 'error' });
     }
+    setConfirmDeleteOpen(false);
   };
+
+  const handleCancelDelete = () => setConfirmDeleteOpen(false);
 
   if (loading) {
     return (
@@ -697,13 +697,13 @@ const Servicos = () => {
                     </button>
                     {editingServico && (
                       <button
-                        type="button"
-                        onClick={handleDeleteServico}
-                        className="modal-btn modal-btn-danger"
-                        title="Excluir este serviço permanentemente"
-                      >
-                        🗑️ Excluir
-                      </button>
+                          type="button"
+                          onClick={handleAskDelete}
+                          className="modal-btn modal-btn-danger"
+                          title="Excluir este serviço permanentemente"
+                        >
+                          🗑️ Excluir
+                        </button>
                     )}
                     <button type="submit" className="modal-btn">
                       {editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço'}
@@ -764,6 +764,21 @@ const Servicos = () => {
           </div>
         </div>
       )}
+    <ConfirmDialog
+      open={confirmDeleteOpen}
+      title="Excluir serviço"
+      tone="danger"
+      message={`Tem certeza que deseja excluir o serviço de ${editingServico?.cliente_nome || ''}?`}
+      details={<>
+        <p><strong>Data:</strong> {editingServico ? formatDate(editingServico.data) : '-'}</p>
+        <p><strong>Valor:</strong> {editingServico ? formatCurrency(editingServico.valor || 0) : '-'}</p>
+        <p style={{marginTop:'8px'}}>Esta ação não pode ser desfeita.</p>
+      </>}
+      confirmLabel="Excluir"
+      cancelLabel="Cancelar"
+      onConfirm={handleConfirmDelete}
+      onCancel={handleCancelDelete}
+    />
     </div>
   );
 };

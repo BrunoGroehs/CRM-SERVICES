@@ -35,6 +35,11 @@
 
 /* Footer */
 .modal-footer { padding:1.25rem 2rem; display:flex; justify-content:flex-end; gap:1rem; background:linear-gradient(to top,#f5f7fa,#fff 55%); border-top:1px solid var(--color-border); }
+.confirm-dialog .modal-body { padding:1.25rem 1.5rem 0; }
+.confirm-dialog .confirm-message { font-weight:600; margin:0 0 .75rem; line-height:1.4; }
+.confirm-dialog .confirm-details { font-size:.85rem; opacity:.85; line-height:1.35; background:rgba(255,255,255,.07); padding:.75rem .85rem; border-radius:8px; max-height:160px; overflow:auto; }
+.confirm-danger .modal-header { background:linear-gradient(135deg,#d32f2f,#b71c1c); }
+.confirm-danger .modal-shell { box-shadow:0 10px 32px -4px rgba(183,28,28,.45),0 0 0 1px rgba(255,255,255,.1) inset; }
 
 /* Close button */
 .modal-close, .modal-close-btn, .close-btn { background:rgba(255,255,255,.18); border:none; color:#fff; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.35rem; cursor:pointer; transition:.25s ease; backdrop-filter:blur(2px); box-shadow:0 2px 6px rgba(0,0,0,.25) inset 0 0 0 1px rgba(255,255,255,.25); }
