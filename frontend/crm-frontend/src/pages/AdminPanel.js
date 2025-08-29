@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../contexts/ToastContext';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +27,7 @@ const AdminPanel = () => {
   const [success, setSuccess] = useState('');
 
   const authenticatedFetch = useAuthenticatedFetch();
+  const { add: pushToast } = useToast();
 
   useEffect(() => {
     loadAdminData();
@@ -104,17 +106,17 @@ const AdminPanel = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Role do usuário ${selectedUser.email} alterada para ${selectedRole}`);
+  pushToast(`Role de ${selectedUser.email} alterada para ${selectedRole}`, { type: 'success' });
         setShowRoleModal(false);
         setSelectedUser(null);
         setSelectedRole('');
         loadAdminData(); // Recarregar dados
       } else {
-        setError(data.message || 'Erro ao alterar role');
+  pushToast(data.message || 'Erro ao alterar role', { type: 'error' });
       }
     } catch (error) {
       console.error('Erro ao alterar role:', error);
-      setError('Erro ao alterar role do usuário');
+  pushToast('Erro ao alterar role do usuário', { type: 'error' });
     }
   };
 
@@ -134,14 +136,14 @@ const AdminPanel = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Usuário ${user.email} ${newStatus ? 'ativado' : 'desativado'} com sucesso`);
+  pushToast(`Usuário ${user.email} ${newStatus ? 'ativado' : 'desativado'}`, { type: 'success' });
         loadAdminData(); // Recarregar dados
       } else {
-        setError(data.message || 'Erro ao alterar status do usuário');
+  pushToast(data.message || 'Erro ao alterar status do usuário', { type: 'error' });
       }
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      setError('Erro ao alterar status do usuário');
+  pushToast('Erro ao alterar status do usuário', { type: 'error' });
     }
   };
 
@@ -169,7 +171,7 @@ const AdminPanel = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Usuário ${newUser.email} criado com sucesso`);
+  pushToast(`Usuário ${newUser.email} criado`, { type: 'success' });
         setShowCreateUserModal(false);
         setNewUser({
           email: '',
@@ -179,11 +181,11 @@ const AdminPanel = () => {
         });
         loadAdminData(); // Recarregar dados
       } else {
-        setError(data.message || 'Erro ao criar usuário');
+  pushToast(data.message || 'Erro ao criar usuário', { type: 'error' });
       }
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
-      setError('Erro ao criar usuário');
+  pushToast('Erro ao criar usuário', { type: 'error' });
     }
   };
 
@@ -201,14 +203,14 @@ const AdminPanel = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess(`Usuário ${user.email} excluído com sucesso`);
+  pushToast(`Usuário ${user.email} excluído`, { type: 'success' });
         loadAdminData(); // Recarregar dados
       } else {
-        setError(data.message || 'Erro ao excluir usuário');
+  pushToast(data.message || 'Erro ao excluir usuário', { type: 'error' });
       }
     } catch (error) {
       console.error('Erro ao excluir usuário:', error);
-      setError('Erro ao excluir usuário');
+  pushToast('Erro ao excluir usuário', { type: 'error' });
     }
   };
 

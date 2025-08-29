@@ -448,12 +448,12 @@ const Clientes = () => {
     
     // Validações
     if (!recontatoData.data_agendada) {
-      alert('Por favor, selecione uma data para o recontato.');
+      showToast('Selecione uma data para o recontato.', 'warning');
       return;
     }
     
     if (!recontatoData.motivo.trim()) {
-      alert('Por favor, informe o motivo do recontato.');
+      showToast('Informe o motivo do recontato.', 'warning');
       return;
     }
     
@@ -475,12 +475,12 @@ const Clientes = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Cliente e recontato criados com sucesso!');
+  showToast('Cliente e recontato criados com sucesso!', 'success');
       handleCloseRecontatoModal();
       
     } catch (err) {
       console.error('Erro ao criar recontato:', err);
-      alert('Erro ao criar recontato: ' + err.message);
+  showToast('Erro ao criar recontato: ' + err.message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -498,7 +498,7 @@ const Clientes = () => {
   };
 
   const handleSkipRecontato = () => {
-    alert('Cliente criado com sucesso!');
+  showToast('Cliente criado com sucesso!', 'success');
     handleCloseRecontatoModal();
   };
 
@@ -1088,28 +1088,7 @@ const Clientes = () => {
         </div>
       )}
 
-      {/* Sistema de Toast Notifications */}
-      {toasts.length > 0 && (
-        <div className="toast-container">
-          {toasts.map(toast => (
-            <div key={toast.id} className={`toast ${toast.type}`}>
-              <span className="toast-icon">
-                {toast.type === 'success' && '✅'}
-                {toast.type === 'error' && '❌'}
-                {toast.type === 'warning' && '⚠️'}
-              </span>
-              <span className="toast-message">{toast.message}</span>
-              <button 
-                className="toast-close" 
-                onClick={() => removeToast(toast.id)}
-                aria-label="Fechar notificação"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+  {/* Toasts globais renderizados via <ToastProvider /> */}
 
     </div>
   );

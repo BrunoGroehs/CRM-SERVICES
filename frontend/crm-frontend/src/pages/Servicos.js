@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Servicos.css';
 import { getApiUrl } from '../utils/api';
+import { useToast } from '../contexts/ToastContext';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Servicos = () => {
@@ -28,6 +29,8 @@ const Servicos = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [servicosDoCliente, setServicosDoCliente] = useState([]);
+
+  const { add: pushToast } = useToast();
 
   useEffect(() => {
     fetchServicos();
@@ -334,12 +337,12 @@ const Servicos = () => {
         throw new Error(errorData.message || 'Erro ao excluir serviço');
       }
 
-      alert('Serviço excluído com sucesso!');
+  pushToast('Serviço excluído com sucesso!', { type: 'success' });
       await fetchServicos(); // Recarregar a lista
       handleCloseModal();
     } catch (err) {
       console.error('Erro ao excluir serviço:', err);
-      alert(`Erro ao excluir serviço: ${err.message}`);
+  pushToast(`Erro ao excluir serviço: ${err.message}`, { type: 'error' });
     }
   };
 

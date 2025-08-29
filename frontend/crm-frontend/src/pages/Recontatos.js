@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useToast } from '../contexts/ToastContext';
 import './Recontatos.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
@@ -30,6 +31,7 @@ const Recontatos = () => {
   const [showActionsMenu, setShowActionsMenu] = useState(null);
   
   const authenticatedFetch = useAuthenticatedFetch();
+  const { add: pushToast } = useToast();
   const [proximoRecontatoData, setProximoRecontatoData] = useState({
     periodo: '',
     data_personalizada: '',
@@ -234,17 +236,17 @@ const Recontatos = () => {
     
     // Validação básica
     if (!novoRecontatoData.cliente_id) {
-      alert('Por favor, selecione um cliente.');
+  pushToast('Selecione um cliente.', { type: 'warning' });
       return;
     }
     
     if (!novoRecontatoData.data_agendada) {
-      alert('Por favor, informe a data do recontato.');
+  pushToast('Informe a data do recontato.', { type: 'warning' });
       return;
     }
     
     if (!novoRecontatoData.motivo.trim()) {
-      alert('Por favor, informe o motivo do recontato.');
+  pushToast('Informe o motivo do recontato.', { type: 'warning' });
       return;
     }
     
@@ -259,7 +261,7 @@ const Recontatos = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert('Recontato criado com sucesso!');
+  pushToast('Recontato criado com sucesso!', { type: 'success' });
         setShowAddModal(false);
         setNovoRecontatoData({
           cliente_id: '',
@@ -274,11 +276,11 @@ const Recontatos = () => {
         fetchRecontatos(); // Atualiza a lista
       } else {
         const error = await response.json();
-        alert('Erro ao criar recontato: ' + (error.message || 'Erro desconhecido'));
+  pushToast('Erro ao criar recontato: ' + (error.message || 'Erro desconhecido'), { type: 'error' });
       }
     } catch (err) {
       console.error('Erro ao criar recontato:', err);
-      alert('Erro ao criar recontato: ' + err.message);
+  pushToast('Erro ao criar recontato: ' + err.message, { type: 'error' });
     }
   };
 
@@ -288,12 +290,12 @@ const Recontatos = () => {
     
     // Validação básica
     if (!recontatoParaEditar.data_agendada) {
-      alert('Por favor, informe a data do recontato.');
+  pushToast('Informe a data do recontato.', { type: 'warning' });
       return;
     }
     
     if (!recontatoParaEditar.motivo.trim()) {
-      alert('Por favor, informe o motivo do recontato.');
+  pushToast('Informe o motivo do recontato.', { type: 'warning' });
       return;
     }
 
@@ -312,17 +314,17 @@ const Recontatos = () => {
       });
 
       if (response.ok) {
-        alert('Recontato atualizado com sucesso!');
+  pushToast('Recontato atualizado com sucesso!', { type: 'success' });
         setShowEditModal(false);
         setRecontatoParaEditar(null);
         fetchRecontatos(); // Atualiza a lista
       } else {
         const error = await response.json();
-        alert('Erro ao atualizar recontato: ' + (error.message || 'Erro desconhecido'));
+  pushToast('Erro ao atualizar recontato: ' + (error.message || 'Erro desconhecido'), { type: 'error' });
       }
     } catch (err) {
       console.error('Erro ao atualizar recontato:', err);
-      alert('Erro ao atualizar recontato: ' + err.message);
+  pushToast('Erro ao atualizar recontato: ' + err.message, { type: 'error' });
     }
   };
 
@@ -444,7 +446,7 @@ const Recontatos = () => {
         cliente_id: formData.cliente_id
       });
 
-      alert('Serviço criado com sucesso!');
+  pushToast('Serviço criado com sucesso!', { type: 'success' });
       handleCloseServicoModal();
       
       // Abrir modal para próximo recontato
@@ -547,7 +549,7 @@ const Recontatos = () => {
       const novaData = calcularNovaData();
       
       if (!novaData) {
-        alert('Erro ao calcular a nova data. Verifique os valores inseridos.');
+  pushToast('Falha ao calcular a nova data, verifique os valores.', { type: 'error' });
         return;
       }
       
@@ -582,12 +584,12 @@ const Recontatos = () => {
         throw new Error(errorMessage);
       }
 
-      alert(`Recontato prorrogado para ${formatDateSafe(novaData.toISOString())} com sucesso!`);
+  pushToast(`Recontato prorrogado para ${formatDateSafe(novaData.toISOString())}!`, { type: 'success' });
       handleCloseProrrogarModal();
       await fetchRecontatos(); // Recarregar lista
     } catch (err) {
       console.error('Erro ao prorrogar recontato:', err);
-      alert(`Erro ao prorrogar recontato: ${err.message}`);
+  pushToast(`Erro ao prorrogar recontato: ${err.message}`, { type: 'error' });
     }
   };
 
@@ -651,7 +653,7 @@ const Recontatos = () => {
     e.preventDefault();
 
     if (!servicoCriado) {
-      alert('Erro: informações do serviço não encontradas');
+  pushToast('Erro: informações do serviço não encontradas', { type: 'error' });
       return;
     }
 
@@ -659,12 +661,12 @@ const Recontatos = () => {
       const dataRecontato = proximoRecontatoData.data_personalizada;
       
       if (!dataRecontato) {
-        alert('Por favor, selecione uma data para o próximo recontato');
+  pushToast('Selecione uma data para o próximo recontato', { type: 'warning' });
         return;
       }
 
       if (!proximoRecontatoData.motivo.trim()) {
-        alert('Por favor, informe o motivo do recontato');
+  pushToast('Informe o motivo do recontato', { type: 'warning' });
         return;
       }
 
@@ -672,7 +674,7 @@ const Recontatos = () => {
       const recontatoAtual = recontatos.find(r => r.cliente_id === servicoCriado.cliente_id);
       
       if (!recontatoAtual) {
-        alert('Erro: recontato atual não encontrado para este cliente');
+  pushToast('Erro: recontato atual não encontrado', { type: 'error' });
         return;
       }
 
@@ -693,13 +695,13 @@ const Recontatos = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Recontato reagendado com sucesso!');
+  pushToast('Recontato reagendado com sucesso!', { type: 'success' });
       handleCloseProximoRecontatoModal();
       await fetchRecontatos(); // Recarregar lista
       
     } catch (err) {
       console.error('Erro ao reagendar recontato:', err);
-      alert('Erro ao reagendar recontato: ' + err.message);
+  pushToast('Erro ao reagendar recontato: ' + err.message, { type: 'error' });
     }
   };
 
@@ -715,7 +717,7 @@ const Recontatos = () => {
   };
 
   const handleSkipProximoRecontato = () => {
-    alert('Serviço criado com sucesso! Recontato não foi reagendado.');
+  pushToast('Serviço criado com sucesso! Recontato não foi reagendado.', { type: 'success' });
     handleCloseProximoRecontatoModal();
   };
 
@@ -736,13 +738,13 @@ const Recontatos = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Recontato deletado com sucesso!');
+  pushToast('Recontato deletado com sucesso!', { type: 'success' });
       handleCloseModal(); // Fechar modal de detalhes
       await fetchRecontatos(); // Recarregar lista
       
     } catch (err) {
       console.error('Erro ao deletar recontato:', err);
-      alert('Erro ao deletar recontato: ' + err.message);
+  pushToast('Erro ao deletar recontato: ' + err.message, { type: 'error' });
     }
   };
 

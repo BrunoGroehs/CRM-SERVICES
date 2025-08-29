@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../contexts/ToastContext';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 import './Calendario.css';
 
@@ -14,6 +15,7 @@ const Calendario = () => {
   const [editingService, setEditingService] = useState(null);
   const [submittingComplete, setSubmittingComplete] = useState(null);
   const authenticatedFetch = useAuthenticatedFetch();
+  const { add: pushToast } = useToast();
 
   const getApiUrl = (endpoint) => {
     return `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/${endpoint}`;
@@ -224,29 +226,29 @@ const Calendario = () => {
           )
         }));
 
-        alert('Serviço marcado como concluído!');
+  pushToast('Serviço marcado como concluído!', { type: 'success' });
       } else {
         const errorData = await response.json();
         console.error('❌ Erro na resposta:', errorData);
         
         if (response.status === 401) {
-          alert('Sessão expirada. Faça login novamente.');
+          pushToast('Sessão expirada. Faça login novamente.', { type: 'error' });
         } else if (response.status === 403) {
-          alert('Você não tem permissão para realizar esta ação.');
+          pushToast('Sem permissão para realizar esta ação.', { type: 'error' });
         } else if (response.status === 400 && errorData.errors) {
           console.error('🔍 Erros de validação detalhados:', errorData.errors);
-          alert(`Erro de validação: ${errorData.errors.join(', ')}`);
+          pushToast(`Erro de validação: ${errorData.errors.join(', ')}`, { type: 'error' });
         } else {
-          alert(`Erro ao marcar como concluído: ${errorData.message || `Status ${response.status}`}`);
+          pushToast(`Erro ao marcar como concluído: ${errorData.message || `Status ${response.status}`}` , { type: 'error' });
         }
       }
     } catch (error) {
       console.error('Erro ao marcar serviço como concluído:', error);
       
       if (error.message === 'Sessão expirada') {
-        alert('Sua sessão expirou. Você será redirecionado para o login.');
+  pushToast('Sua sessão expirou. Faça login novamente.', { type: 'error' });
       } else {
-        alert('Erro ao marcar como concluído. Verifique sua conexão e tente novamente.');
+  pushToast('Erro ao marcar como concluído. Verifique a conexão e tente novamente.', { type: 'error' });
       }
     } finally {
       setSubmittingComplete(null);
@@ -291,16 +293,16 @@ const Calendario = () => {
           )
         }));
 
-        setShowEditModal(false);
-        setEditingService(null);
-        alert('Serviço atualizado com sucesso!');
+  setShowEditModal(false);
+  setEditingService(null);
+  pushToast('Serviço atualizado com sucesso!', { type: 'success' });
       } else {
-        const errorData = await response.json();
-        alert(`Erro ao atualizar serviço: ${errorData.message || 'Erro desconhecido'}`);
+  const errorData = await response.json();
+  pushToast(`Erro ao atualizar serviço: ${errorData.message || 'Erro desconhecido'}`, { type: 'error' });
       }
     } catch (error) {
-      console.error('Erro ao atualizar serviço:', error);
-      alert('Erro ao atualizar serviço. Tente novamente.');
+  console.error('Erro ao atualizar serviço:', error);
+  pushToast('Erro ao atualizar serviço. Tente novamente.', { type: 'error' });
     }
   };
 

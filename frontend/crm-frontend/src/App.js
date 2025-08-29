@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import Navigation from './components/Navigation';
 import AuthAwareDashboard from './pages/AuthAwareDashboard';
 import Clientes from './pages/Clientes';
@@ -17,6 +18,7 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <Router>
         <div className="App">
           <Routes>
@@ -44,6 +46,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }
