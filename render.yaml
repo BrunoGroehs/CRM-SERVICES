@@ -8,7 +8,6 @@ node server.js
 
 ## Environment Variables Required:
 NODE_ENV=production
-TZ=America/Sao_Paulo
 DATABASE_URL=your-postgresql-database-url
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret

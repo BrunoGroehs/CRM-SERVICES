@@ -8,11 +8,6 @@ const helmet = require('helmet');
 const cors = require('cors');
 require('dotenv').config();
 
-// Configurar timezone para Brasil em produção
-if (process.env.NODE_ENV === 'production') {
-  process.env.TZ = 'America/Sao_Paulo';
-}
-
 // Importar sistema de logging
 const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger');
 
@@ -39,17 +34,8 @@ logger.info('🚀 Iniciando CRM Services...', {
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Definir ambiente
-const isProd = process.env.NODE_ENV === 'production';
-
 // Configurações de segurança
 logger.info('🔒 Configurando segurança com Helmet...');
-
-// Configurar CSP baseado no ambiente
-const cspConnectSrc = isProd 
-  ? ["'self'", "accounts.google.com", "*.googleapis.com"]
-  : ["'self'", "accounts.google.com", "*.googleapis.com", "http://localhost:3001", "http://localhost:3000"];
-
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -58,7 +44,7 @@ app.use(helmet({
       fontSrc: ["'self'", "fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "*.googleusercontent.com"],
       scriptSrc: ["'self'", "'unsafe-inline'"], // Para React em produção
-      connectSrc: cspConnectSrc,
+      connectSrc: ["'self'", "accounts.google.com", "*.googleapis.com"],
       frameSrc: ["'self'", "accounts.google.com"]
     }
   },
@@ -66,6 +52,7 @@ app.use(helmet({
 }));
 
 // Configurar CORS
+const isProd = process.env.NODE_ENV === 'production';
 const allowedOrigins = isProd 
   ? [
       process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://crm-services.onrender.com',

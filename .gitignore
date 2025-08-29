@@ -7,6 +7,7 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 
 # Logs
 logs
@@ -49,3 +50,6 @@ clientes.csv
 servico1.csv
 servico2.csv
 servico3.csv
+frontend/crm-frontend/.env.production
+frontend/crm-frontend/.env.production
+frontend/crm-frontend/.env.production
