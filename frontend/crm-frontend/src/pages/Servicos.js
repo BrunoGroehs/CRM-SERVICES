@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import MultiFuncionariosSelect from '../components/MultiFuncionariosSelect';
 import './Servicos.css';
 import { getApiUrl } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
@@ -7,6 +8,7 @@ import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Servicos = () => {
   const [servicos, setServicos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]); // novos usuários do sistema
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,8 +27,9 @@ const Servicos = () => {
     hora: '',
     valor: '',
     notas: '',
-    status: 'agendado',
-    funcionario_responsavel: ''
+  status: 'agendado',
+  funcionario_responsavel: [], // array de IDs (strings)
+  funcionarios: [] // DEPRECATED
   });
   const [formErrors, setFormErrors] = useState({});
   const [servicosDoCliente, setServicosDoCliente] = useState([]);
@@ -37,6 +40,7 @@ const Servicos = () => {
   useEffect(() => {
     fetchServicos();
     fetchClientes();
+    fetchUsuarios();
   }, []);
 
   const fetchServicos = async () => {
@@ -72,6 +76,18 @@ const Servicos = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
+    }
+  };
+
+  const fetchUsuarios = async () => {
+    try {
+      const response = await authenticatedFetch(getApiUrl('admin/users'));
+      if (response.ok) {
+        const data = await response.json();
+        setUsuarios(data.users || []);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar usuários:', e);
     }
   };
 
@@ -145,7 +161,7 @@ const Servicos = () => {
     return (
       servico.id?.toString().includes(searchLower) ||
       clienteNome.toLowerCase().includes(searchLower) ||
-      servico.funcionario_responsavel?.toLowerCase().includes(searchLower) ||
+  (Array.isArray(servico.funcionario_responsavel) ? servico.funcionario_responsavel.join(',') : (servico.funcionario_responsavel || '')).toLowerCase().includes(searchLower) ||
       servico.status?.toLowerCase().includes(searchLower) ||
       servico.notas?.toLowerCase().includes(searchLower) ||
       formatDate(servico.data).includes(searchLower) ||
@@ -177,7 +193,8 @@ const Servicos = () => {
       valor: servico.valor || '',
       notas: servico.notas || '',
       status: servico.status || 'agendado',
-      funcionario_responsavel: servico.funcionario_responsavel || ''
+  funcionario_responsavel: Array.isArray(servico.funcionario_responsavel) ? servico.funcionario_responsavel : (servico.funcionario_responsavel ? [servico.funcionario_responsavel] : []),
+  funcionarios: []
     });
     setFormErrors({});
     
@@ -193,13 +210,7 @@ const Servicos = () => {
     setShowModal(false);
     setEditingServico(null);
     setFormData({
-      cliente_id: '',
-      data: '',
-      hora: '',
-      valor: '',
-      notas: '',
-      status: 'agendado',
-      funcionario_responsavel: ''
+  cliente_id: '', data: '', hora: '', valor: '', notas: '', status: 'agendado', funcionario_responsavel: [], funcionarios: []
     });
     setFormErrors({});
     setServicosDoCliente([]); // Limpar histórico ao fechar modal
@@ -211,13 +222,7 @@ const Servicos = () => {
     
     setEditingServico(null);
     setFormData({
-      cliente_id: '',
-      data: dataAtual,
-      hora: '09:00',
-      valor: '',
-      notas: '',
-      status: 'agendado',
-      funcionario_responsavel: ''
+  cliente_id: '', data: dataAtual, hora: '09:00', valor: '', notas: '', status: 'agendado', funcionario_responsavel: [], funcionarios: []
     });
     setFormErrors({});
     setShowModal(true);
@@ -282,17 +287,17 @@ const Servicos = () => {
 
     try {
       // Preparar dados para envio, convertendo a data para formato ISO
-      const dataToSend = {
-        ...formData,
-        data: formatDateForAPI(formData.data)
-      };
+  const dataToSend = { ...formData, data: formatDateForAPI(formData.data) };
+  dataToSend.funcionario_responsavel = (formData.funcionario_responsavel || []).map(id => String(id));
+  delete dataToSend.funcionarios;
 
       const url = isEditing
         ? getApiUrl(`servicos/${editingServico.id}`)
         : getApiUrl('servicos');
       const method = isEditing ? 'PUT' : 'POST';
 
-      const response = await authenticatedFetch(url, {
+  console.debug('📤 Enviando serviço:', dataToSend);
+  const response = await authenticatedFetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
@@ -310,6 +315,9 @@ const Servicos = () => {
       handleCloseModal();
     } catch (err) {
       console.error(isEditing ? 'Erro ao atualizar serviço:' : 'Erro ao criar serviço:', err);
+      if (err.response) {
+        try { const t = await err.response.text(); console.error('Resposta bruta:', t);} catch(_){}
+      }
       setFormErrors({ submit: err.message });
     }
   };
@@ -430,48 +438,33 @@ const Servicos = () => {
             <table className="servicos-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Data</th>
-                  <th>Hora</th>
-                  <th>Cliente</th>
-                  <th>Funcionário</th>
-                  <th>Valor</th>
-                  <th>Status</th>
-                  <th>Ações</th>
+                  <th>ID</th><th>Data</th><th>Hora</th><th>Cliente</th><th>Funcionários</th><th>Valor</th><th>Status</th><th>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {currentServicos.map((servico) => {
+                {currentServicos.map(servico => {
                   const cliente = clientes.find(c => c.id === servico.cliente_id);
                   return (
                     <tr key={servico.id}>
                       <td className="id-cell">{servico.id}</td>
                       <td className="data-cell">{formatDate(servico.data)}</td>
                       <td className="hora-cell">{formatTime(servico.hora)}</td>
-                      <td className="cliente-cell">
-                        <strong>{cliente?.nome || `Cliente #${servico.cliente_id}`}</strong>
-                      </td>
+                      <td className="cliente-cell"><strong>{cliente?.nome || `Cliente #${servico.cliente_id}`}</strong></td>
                       <td className="funcionario-cell">
-                        {servico.funcionario_responsavel || '-'}
+                        {Array.isArray(servico.funcionario_responsavel) && servico.funcionario_responsavel.length > 0 ? (
+                          <div className="funcionarios-badges">
+                            {servico.funcionario_responsavel.slice(0,3).map(fid => {
+                              const u = usuarios.find(u => String(u.id) === String(fid));
+                              const nome = u?.nome || fid;
+                              return <span key={fid} className="func-badge" title={nome}>{nome}</span>;
+                            })}
+                            {servico.funcionario_responsavel.length > 3 && <span className="func-badge more" title={servico.funcionario_responsavel.slice(3).join(', ')}>+{servico.funcionario_responsavel.length - 3}</span>}
+                          </div>
+                        ) : '-'}
                       </td>
-                      <td className="valor-cell">
-                        <span className="valor-badge">{formatCurrency(servico.valor)}</span>
-                      </td>
-                      <td className="status-cell">
-                        <span className={`status-badge ${servico.status || 'pendente'}`}>
-                          {servico.status || 'Pendente'}
-                        </span>
-                      </td>
-                      <td className="actions-cell">
-                        <div>
-                          <span 
-                            onClick={() => handleEdit(servico)}
-                            title="Editar serviço"
-                          >
-                            Edit
-                          </span>
-                        </div>
-                      </td>
+                      <td className="valor-cell"><span className="valor-badge">{formatCurrency(servico.valor)}</span></td>
+                      <td className="status-cell"><span className={`status-badge ${servico.status || 'pendente'}`}>{servico.status || 'Pendente'}</span></td>
+                      <td className="actions-cell"><div><span onClick={() => handleEdit(servico)} title="Editar serviço">Edit</span></div></td>
                     </tr>
                   );
                 })}
@@ -533,21 +526,10 @@ const Servicos = () => {
       {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div 
-            className="modal-shell modal-lg modal-servico" 
-            role="dialog" 
-            aria-modal="true" 
-            aria-label={editingServico ? 'Editar serviço' : 'Criar novo serviço'}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h2 className="modal-title">{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
-              <button className="modal-btn icon" onClick={handleCloseModal} aria-label="Fechar modal de serviço">✕</button>
-            </div>
-
+          <div className="modal-shell modal-lg modal-servico" role="dialog" aria-modal="true" aria-label={editingServico ? 'Editar serviço' : 'Criar novo serviço'} onClick={e=>e.stopPropagation()}>
+            <div className="modal-header"><h2 className="modal-title">{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2><button className="modal-btn icon" onClick={handleCloseModal}>✕</button></div>
             <div className="modal-body modal-body-servico">
               <div className="servico-layout-container">
-                {/* Coluna da Esquerda - Formulário */}
                 <div className="servico-form-column">
                   <div className="modal-form-section">
                     <form onSubmit={handleSubmit} className="modal-form">
@@ -658,17 +640,37 @@ const Servicos = () => {
                     </div>
                   </div>
 
-                  {/* FUNCIONÁRIO RESPONSÁVEL */}
+                  {/* RESPONSÁVEIS (multi IDs) */}
                   <div className="form-group">
-                    <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
-                    <input
-                      type="text"
-                      id="funcionario_responsavel"
-                      name="funcionario_responsavel"
-                      value={formData.funcionario_responsavel}
-                      onChange={handleInputChange}
-                      placeholder="Ex: João Silva, Maria Santos..."
-                    />
+                    <label>Responsáveis</label>
+                    <div className="multi-funcionarios-control">
+                      <select onChange={e => {
+                        const val = e.target.value;
+                        if (val && !formData.funcionario_responsavel.includes(val)) {
+                          setFormData(prev => ({ ...prev, funcionario_responsavel: [...prev.funcionario_responsavel, val] }));
+                        }
+                        e.target.value='';
+                      }}>
+                        <option value="">Adicionar usuário...</option>
+                        {usuarios.filter(u => !formData.funcionario_responsavel.includes(String(u.id))).map(u => (
+                          <option key={u.id} value={u.id}>{u.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {formData.funcionario_responsavel.length > 0 && (
+                      <div className="multi-funcionarios-chips" style={{marginTop:'6px'}}>
+                        {formData.funcionario_responsavel.map(fid => {
+                          const u = usuarios.find(u => String(u.id) === String(fid));
+                          const nome = u?.nome || fid;
+                          return (
+                            <span key={fid} className="func-chip" title={nome}>
+                              {nome}
+                              <button type="button" onClick={() => setFormData(prev => ({ ...prev, funcionario_responsavel: prev.funcionario_responsavel.filter(id => id !== fid) }))}>×</button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* OBSERVAÇÕES */}
@@ -737,9 +739,12 @@ const Servicos = () => {
                                 💰 {formatCurrency(parseFloat(servico.valor))}
                               </div>
                             )}
-                            {servico.funcionario_responsavel && (
+                            {Array.isArray(servico.funcionario_responsavel) && servico.funcionario_responsavel.length > 0 && (
                               <div className="servico-funcionario-modal">
-                                👤 {servico.funcionario_responsavel}
+                                � {servico.funcionario_responsavel.map(fid => {
+                                  const u = usuarios.find(u => String(u.id) === String(fid));
+                                  return u?.nome || fid;
+                                }).join(', ')}
                               </div>
                             )}
                             {servico.notas && (

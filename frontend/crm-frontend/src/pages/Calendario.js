@@ -14,6 +14,7 @@ const Calendario = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [submittingComplete, setSubmittingComplete] = useState(null);
+  const [usuarios, setUsuarios] = useState([]); // usuários para resolver nomes dos IDs
   const authenticatedFetch = useAuthenticatedFetch();
   const { add: pushToast } = useToast();
 
@@ -61,6 +62,26 @@ const Calendario = () => {
         const errorText = await recontatosResponse.text();
         console.error('❌ Erro ao buscar recontatos:', recontatosResponse.status, errorText);
         setRecontatos([]);
+      }
+
+      // Buscar usuários (para seleção de funcionários múltiplos)
+      try {
+        const usuariosResp = await authenticatedFetch(getApiUrl('admin/users'));
+        if (usuariosResp.ok) {
+          const usuariosData = await usuariosResp.json();
+          // Aceita formato { users: [...] } ou array direto
+          const usersArray = usuariosData.users || usuariosData;
+          if (Array.isArray(usersArray)) {
+            setUsuarios(usersArray.map(u => ({ id: u.id, nome: u.nome })));
+          } else {
+            setUsuarios([]);
+          }
+        } else {
+          setUsuarios([]);
+        }
+      } catch (err) {
+        console.warn('Erro ao buscar usuários:', err);
+        setUsuarios([]);
       }
 
     } catch (error) {
@@ -169,6 +190,9 @@ const Calendario = () => {
       horaFormatada = horaFormatada.substring(0, 5);
     }
 
+    const fr = Array.isArray(servico.funcionario_responsavel)
+      ? servico.funcionario_responsavel
+      : (servico.funcionario_responsavel ? [servico.funcionario_responsavel] : []);
     setEditingService({
       id: servico.id,
       cliente_id: servico.cliente_id,
@@ -177,7 +201,7 @@ const Calendario = () => {
       valor: servico.valor || '',
       notas: servico.notas || '',
       status: servico.status || 'agendado',
-      funcionario_responsavel: servico.funcionario_responsavel || ''
+  funcionario_responsavel: fr
     });
     setShowEditModal(true);
   };
@@ -260,6 +284,11 @@ const Calendario = () => {
     if (!editingService) return;
 
     try {
+      // Sanitizar array de IDs (funcionario_responsavel)
+      const fr = Array.isArray(editingService.funcionario_responsavel)
+        ? editingService.funcionario_responsavel.filter((v,i,a)=> v && a.indexOf(v)===i).map(v=>String(v))
+        : [];
+      const payload = { ...editingService, funcionario_responsavel: fr };
       const response = await authenticatedFetch(
         getApiUrl(`servicos/${editingService.id}`),
         {
@@ -267,7 +296,7 @@ const Calendario = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(editingService)
+          body: JSON.stringify(payload)
         }
       );
 
@@ -275,23 +304,10 @@ const Calendario = () => {
         const updatedService = await response.json();
         
         // Atualizar o estado local
-        setServicos(prevServicos => 
-          prevServicos.map(servico => 
-            servico.id === editingService.id 
-              ? { ...servico, ...updatedService.servico || updatedService }
-              : servico
-          )
-        );
+  setServicos(prevServicos => prevServicos.map(servico => servico.id === editingService.id ? { ...servico, ...updatedService.servico || updatedService } : servico));
 
         // Atualizar os dados do modal se estiver aberto
-        setModalData(prevData => ({
-          ...prevData,
-          servicos: prevData.servicos.map(servico => 
-            servico.id === editingService.id 
-              ? { ...servico, ...updatedService.servico || updatedService }
-              : servico
-          )
-        }));
+  setModalData(prevData => ({ ...prevData, servicos: prevData.servicos.map(servico => servico.id === editingService.id ? { ...servico, ...updatedService.servico || updatedService } : servico) }));
 
   setShowEditModal(false);
   setEditingService(null);
@@ -459,8 +475,13 @@ const Calendario = () => {
                         </div>
                         <div className="event-title">{servico.notas || 'Serviço Agendado'}</div>
                         <div className="event-client">👤 {servico.cliente_nome}</div>
-                        {servico.funcionario_responsavel && (
-                          <div className="event-obs">👨‍💼 {servico.funcionario_responsavel}</div>
+                        {Array.isArray(servico.funcionario_responsavel) && servico.funcionario_responsavel.length > 0 && (
+                          <div className="event-obs">
+                            👨‍💼 {servico.funcionario_responsavel.map(fid => {
+                              const u = usuarios.find(u => String(u.id) === String(fid));
+                              return u?.nome || fid;
+                            }).join(', ')}
+                          </div>
                         )}
                         <div className="event-actions">
                           <button 
@@ -602,14 +623,35 @@ const Calendario = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="edit-funcionario">👨‍💼 Funcionário Responsável:</label>
-                  <input
-                    type="text"
-                    id="edit-funcionario"
-                    value={editingService.funcionario_responsavel}
-                    onChange={(e) => setEditingService(prev => ({ ...prev, funcionario_responsavel: e.target.value }))}
-                    placeholder="Nome do profissional responsável pelo serviço"
-                  />
+                  <label>👨‍💼 Responsáveis</label>
+                  <div className="multi-funcionarios-control">
+                    <select onChange={e => {
+                      const val = e.target.value;
+                      if (val && !editingService.funcionario_responsavel.includes(val)) {
+                        setEditingService(prev => ({ ...prev, funcionario_responsavel: [...prev.funcionario_responsavel, val] }));
+                      }
+                      e.target.value='';
+                    }}>
+                      <option value="">Adicionar usuário...</option>
+                      {usuarios.filter(u => !editingService.funcionario_responsavel.includes(String(u.id))).map(u => (
+                        <option key={u.id} value={u.id}>{u.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {editingService.funcionario_responsavel.length > 0 && (
+                    <div className="multi-funcionarios-chips" style={{marginTop:'6px'}}>
+                      {editingService.funcionario_responsavel.map(fid => {
+                        const u = usuarios.find(u => String(u.id) === String(fid));
+                        const nome = u?.nome || fid;
+                        return (
+                          <span key={fid} className="func-chip" title={nome}>
+                            {nome}
+                            <button type="button" onClick={() => setEditingService(prev => ({ ...prev, funcionario_responsavel: prev.funcionario_responsavel.filter(id => id !== fid) }))}>×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

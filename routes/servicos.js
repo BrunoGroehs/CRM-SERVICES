@@ -114,11 +114,10 @@ router.get('/', async (req, res) => {
         s.hora,
         s.valor,
         s.notas,
-        s.status,
-        s.funcionario_responsavel
+  s.status,
+	s.funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
-      ORDER BY s.data DESC, s.hora DESC
     `;
     
     const result = await pool.query(query);
@@ -162,8 +161,8 @@ router.get('/:id', async (req, res) => {
         s.hora,
         s.valor,
         s.notas,
-        s.status,
-        s.funcionario_responsavel
+  s.status,
+	s.funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       WHERE s.id = $1
@@ -225,8 +224,8 @@ router.get('/cliente/:clienteId', async (req, res) => {
         s.hora,
         s.valor,
         s.notas,
-        s.status,
-        s.funcionario_responsavel
+  s.status,
+	s.funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       WHERE s.cliente_id = $1
@@ -254,17 +253,16 @@ router.get('/cliente/:clienteId', async (req, res) => {
 // POST /servicos - Cria um novo serviço
 router.post('/', async (req, res) => {
   try {
-    const { 
-      cliente_id, 
-      data, 
-      hora, 
-      valor, 
-      notas, 
-      status = 'agendado', 
-      funcionario_responsavel 
-    } = req.body;
-    
-    // Validar campos obrigatórios
+    let { cliente_id, data, hora, valor, notas, status = 'agendado', funcionario_responsavel } = req.body;
+    // Sanitização do array de responsáveis
+    if (Array.isArray(funcionario_responsavel)) {
+      funcionario_responsavel = funcionario_responsavel.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
+      if (funcionario_responsavel.length === 0) funcionario_responsavel = null;
+    } else if (typeof funcionario_responsavel === 'string') {
+      funcionario_responsavel = funcionario_responsavel.trim() !== '' ? [funcionario_responsavel.trim()] : null;
+    } else {
+      funcionario_responsavel = null;
+    }
     const errors = validateServicoFields(req.body);
     if (errors.length > 0) {
       return res.status(400).json({
@@ -304,15 +302,17 @@ router.post('/', async (req, res) => {
       valor ? parseFloat(valor) : null,
       notas ? notas.trim() : null,
       status,
-      funcionario_responsavel ? funcionario_responsavel.trim() : null
+  funcionario_responsavel
     ];
+
+  console.debug('[SERVICOS][POST] Valores preparados para INSERT', { values, funcionario_responsavel_tipo: Array.isArray(funcionario_responsavel) ? 'array' : typeof funcionario_responsavel });
     
     const result = await pool.query(query, values);
     
     // Buscar o serviço criado com dados do cliente
     const servicoCompleto = await pool.query(`
       SELECT 
-        s.*,
+  s.*,
         c.nome as cliente_nome,
         c.telefone as cliente_telefone
       FROM servicos s
@@ -326,7 +326,7 @@ router.post('/', async (req, res) => {
       message: 'Serviço criado com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao criar serviço:', error);
+    console.error('Erro ao criar serviço:', { message: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao criar serviço',
@@ -339,15 +339,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      cliente_id, 
-      data, 
-      hora, 
-      valor, 
-      notas, 
-      status, 
-      funcionario_responsavel 
-    } = req.body;
+    let { cliente_id, data, hora, valor, notas, status, funcionario_responsavel } = req.body;
+    if (Array.isArray(funcionario_responsavel)) {
+      funcionario_responsavel = funcionario_responsavel.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
+      if (funcionario_responsavel.length === 0) funcionario_responsavel = null;
+    } else if (typeof funcionario_responsavel === 'string') {
+      funcionario_responsavel = funcionario_responsavel.trim() !== '' ? [funcionario_responsavel.trim()] : null;
+    } else {
+      funcionario_responsavel = undefined; // mantém atual
+    }
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -377,7 +377,7 @@ router.put('/:id', async (req, res) => {
       valor: valor !== undefined ? valor : currentService.valor,
       notas: notas !== undefined ? notas : currentService.notas,
       status: status !== undefined ? status : currentService.status,
-      funcionario_responsavel: funcionario_responsavel !== undefined ? funcionario_responsavel : currentService.funcionario_responsavel
+  funcionario_responsavel: funcionario_responsavel !== undefined ? funcionario_responsavel : currentService.funcionario_responsavel
     };
 
     // Validar os dados de update (permite atualizações parciais)
@@ -423,16 +423,20 @@ router.put('/:id', async (req, res) => {
       updateData.valor ? parseFloat(updateData.valor) : null,
       updateData.notas ? updateData.notas.trim() : null,
       updateData.status || 'agendado',
-      updateData.funcionario_responsavel ? updateData.funcionario_responsavel.trim() : null,
-      id
+      Array.isArray(updateData.funcionario_responsavel)
+        ? updateData.funcionario_responsavel.map(id => String(id))
+        : (Array.isArray(checkResult.rows[0].funcionario_responsavel) ? checkResult.rows[0].funcionario_responsavel : null),
+  id
     ];
+
+  console.debug('[SERVICOS][PUT] Valores preparados para UPDATE', { id, values, funcionario_responsavel: updateData.funcionario_responsavel });
 
     const result = await pool.query(query, values);
     
     // Buscar o serviço atualizado com dados do cliente
     const servicoCompleto = await pool.query(`
       SELECT 
-        s.*,
+  s.*,
         c.nome as cliente_nome,
         c.telefone as cliente_telefone
       FROM servicos s
@@ -446,7 +450,7 @@ router.put('/:id', async (req, res) => {
       message: 'Serviço atualizado com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao atualizar serviço:', error);
+    console.error('Erro ao atualizar serviço:', { message: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao atualizar serviço',

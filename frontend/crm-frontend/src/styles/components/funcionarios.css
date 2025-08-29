@@ -1,0 +1,12 @@
+/* Styles for MultiFuncionariosSelect */
+.multi-funcionarios-wrapper { display:flex; flex-direction:column; gap:.5rem; }
+.multi-funcionarios-label { font-size:.85rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--color-text-light,#555); }
+.multi-funcionarios-control select { width:100%; padding:.65rem .85rem; border:1px solid #d4dbe3; border-radius:10px; background:#fff; font:inherit; }
+.multi-funcionarios-control select:focus { outline:none; border-color:var(--color-primary-start,#3b82f6); box-shadow:0 0 0 3px rgba(59,130,246,.25); }
+.multi-funcionarios-chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+.func-chip { background:linear-gradient(135deg,#4f46e5,#6366f1); color:#fff; padding:.4rem .75rem; border-radius:999px; font-size:.75rem; font-weight:500; display:inline-flex; align-items:center; gap:.4rem; box-shadow:0 4px 10px -2px rgba(0,0,0,.25); }
+.func-chip button { background:rgba(255,255,255,.25); border:none; color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.85rem; line-height:1; padding:0; }
+.func-chip button:hover { background:rgba(255,255,255,.4); }
+.multi-funcionarios-hint { font-size:.7rem; opacity:.75; margin-top:.25rem; }
+.func-badge { background:#eef2ff; color:#4338ca; padding:.3rem .6rem; border-radius:8px; font-size:.65rem; font-weight:600; display:inline-block; line-height:1; }
+.func-badge.more { background:#ddd6fe; color:#4c1d95; }
