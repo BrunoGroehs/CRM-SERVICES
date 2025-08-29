@@ -532,7 +532,7 @@ const Servicos = () => {
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content modal-wide modal-servico" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
+              <h2 className="modal-title">{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
               <button className="close-btn" onClick={handleCloseModal}>
                 ✕
               </button>
@@ -685,7 +685,7 @@ const Servicos = () => {
 
                   {/* BOTÕES */}
                   <div className="form-actions">
-                    <button type="button" onClick={handleCloseModal} className="btn-secondary">
+                    <button type="button" onClick={handleCloseModal} className="cancel-btn">
                       ↩️ Cancelar
                     </button>
                     
@@ -693,14 +693,14 @@ const Servicos = () => {
                       <button 
                         type="button" 
                         onClick={handleDeleteServico} 
-                        className="btn-danger"
+                        className="delete-btn"
                         title="Excluir este serviço permanentemente"
                       >
                         🗑️ Excluir
                       </button>
                     )}
                     
-                    <button type="submit" className="btn-primary">
+                    <button type="submit" className="submit-btn">
                       {editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço'}
                     </button>
                   </div>
