@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
+import { getApiUrl } from '../utils/api';
 import './Calendario.css';
 
 const Calendario = () => {
@@ -11,10 +12,6 @@ const Calendario = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ servicos: [], recontatos: [] });
   const authenticatedFetch = useAuthenticatedFetch();
-
-  const getApiUrl = (endpoint) => {
-    return `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/${endpoint}`;
-  };
 
   useEffect(() => {
     fetchData();

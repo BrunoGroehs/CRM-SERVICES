@@ -1,14 +1,24 @@
 // API utility functions
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const getBaseUrl = () => {
+  // Se REACT_APP_API_URL está definida, use ela
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Em produção, use a mesma origem
+  if (process.env.NODE_ENV === 'production') {
+    return window.location.origin;
+  }
+  
+  // Em desenvolvimento, use localhost:3001
+  return 'http://localhost:3001';
+};
+
+const API_BASE_URL = getBaseUrl();
 
 export const getApiUrl = (endpoint) => {
   // Remove leading slash if present to avoid double slashes
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  
-  // Se não há base URL definida (produção), use caminho relativo
-  if (!API_BASE_URL) {
-    return `/${cleanEndpoint}`;
-  }
   
   return `${API_BASE_URL}/${cleanEndpoint}`;
 };
