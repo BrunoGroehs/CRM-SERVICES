@@ -725,25 +725,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.edit-modal .close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-  backdrop-filter: blur(10px);
-}
-
-.edit-modal .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
+/* close-btn substituído por .modal-btn.icon (removido) */
 
 .edit-modal .modal-body {
   padding: 35px 30px;
@@ -842,14 +824,7 @@
   appearance: none;
 }
 
-.form-actions {
-  display: flex;
-  gap: 18px;
-  justify-content: flex-end;
-  margin-top: 35px;
-  padding-top: 30px;
-  border-top: 1px solid #e8eaed;
-}
+/* form-actions removido: usar .modal-footer */
 
 .btn-secondary {
   padding: 16px 32px;
@@ -965,16 +940,7 @@
     gap: 15px;
   }
   
-  .form-actions {
-    flex-direction: column-reverse;
-    gap: 12px;
-  }
-  
-  .btn-secondary,
-  .btn-primary {
-    width: 100%;
-    justify-content: center;
-  }
+  /* (antigo .form-actions empilhado) substituído por .modal-footer padrão responsivo */
   
   .action-btn {
     font-size: 10px;

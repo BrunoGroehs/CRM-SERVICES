@@ -1,0 +1,6 @@
+/* Stats bar reused across pages */
+.stats-bar { display:flex; justify-content:center; gap:2rem; margin-bottom:2rem; padding:1rem; background:#f8f9fa; border-radius:10px; }
+.stat-item { text-align:center; }
+.stat-value { display:block; font-size:2rem; font-weight:bold; color:var(--color-primary-start); }
+.stat-label { display:block; font-size:0.9rem; color:var(--color-text-light); margin-top:0.25rem; }
+.stat-note { display:block; font-size:0.75rem; color:var(--color-muted); font-style:italic; margin-top:0.2rem; }

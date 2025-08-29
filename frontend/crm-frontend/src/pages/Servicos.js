@@ -530,15 +530,19 @@ const Servicos = () => {
       {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content modal-wide modal-servico" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg modal-servico" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label={editingServico ? 'Editar serviço' : 'Criar novo serviço'}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2 className="modal-title">{editingServico ? '✏️ Editar Serviço' : '➕ Novo Serviço'}</h2>
-              <button className="close-btn" onClick={handleCloseModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseModal} aria-label="Fechar modal de serviço">✕</button>
             </div>
-            
-            <div className="modal-body-wide modal-body-servico">
+
+            <div className="modal-body modal-body-servico">
               <div className="servico-layout-container">
                 {/* Coluna da Esquerda - Formulário */}
                 <div className="servico-form-column">
@@ -684,23 +688,21 @@ const Servicos = () => {
                   )}
 
                   {/* BOTÕES */}
-                  <div className="form-actions">
-                    <button type="button" onClick={handleCloseModal} className="cancel-btn">
+                  <div className="modal-footer">
+                    <button type="button" onClick={handleCloseModal} className="modal-btn modal-btn-secondary" title="Cancelar e fechar">
                       ↩️ Cancelar
                     </button>
-                    
                     {editingServico && (
-                      <button 
-                        type="button" 
-                        onClick={handleDeleteServico} 
-                        className="delete-btn"
+                      <button
+                        type="button"
+                        onClick={handleDeleteServico}
+                        className="modal-btn modal-btn-danger"
                         title="Excluir este serviço permanentemente"
                       >
                         🗑️ Excluir
                       </button>
                     )}
-                    
-                    <button type="submit" className="submit-btn">
+                    <button type="submit" className="modal-btn">
                       {editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço'}
                     </button>
                   </div>

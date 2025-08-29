@@ -1176,15 +1176,21 @@ const Recontatos = () => {
       {/* Modal de Criação de Recontato */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Criar novo recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📞 Novo Recontato</h2>
-              <button className="close-btn" onClick={() => setShowAddModal(false)}>
+              <button className="modal-btn icon" onClick={() => setShowAddModal(false)} aria-label="Fechar modal de novo recontato">
                 ✕
               </button>
             </div>
-            
-            <div className="modal-body-wide">
+
+            <div className="modal-body">
               <div className="modal-form-section">
                 <form onSubmit={handleSubmitNovoRecontato} className="modal-form">
                   {/* CLIENTE */}
@@ -1298,10 +1304,10 @@ const Recontatos = () => {
                   </div>
 
                   <div className="modal-footer">
-                    <button type="button" className="cancel-btn" onClick={() => setShowAddModal(false)}>
+                    <button type="button" className="modal-btn outline" onClick={() => setShowAddModal(false)}>
                       Cancelar
                     </button>
-                    <button type="submit" className="confirm-btn">
+                    <button type="submit" className="modal-btn">
                       Criar Recontato
                     </button>
                   </div>
@@ -1315,14 +1321,18 @@ const Recontatos = () => {
       {/* Modal de Prorrogação */}
       {showProrrogarModal && recontatoParaProrrogar && (
         <div className="modal-overlay" onClick={handleCloseProrrogarModal}>
-          <div className="modal-content prorrogar-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-md prorrogar-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Prorrogar recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>⏳ Prorrogar Recontato</h2>
-              <button className="close-btn" onClick={handleCloseProrrogarModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseProrrogarModal} aria-label="Fechar modal de prorrogação">✕</button>
             </div>
-            
+
             <div className="modal-body">
               <div className="prorrogar-info">
                 <h3>Cliente: {recontatoParaProrrogar.cliente_nome}</h3>
@@ -1397,13 +1407,9 @@ const Recontatos = () => {
                 )}
               </div>
               
-              <div className="modal-actions">
-                <button className="cancel-btn" onClick={handleCloseProrrogarModal}>
-                  Cancelar
-                </button>
-                <button className="confirm-btn" onClick={confirmarProrrogacao}>
-                  ⏳ Confirmar Prorrogação
-                </button>
+              <div className="modal-footer">
+                <button className="modal-btn outline" onClick={handleCloseProrrogarModal}>Cancelar</button>
+                <button className="modal-btn" onClick={confirmarProrrogacao}>⏳ Confirmar Prorrogação</button>
               </div>
             </div>
           </div>
@@ -1413,15 +1419,19 @@ const Recontatos = () => {
       {/* Modal de Criação de Serviço */}
       {showServicoModal && (
         <div className="modal-overlay" onClick={handleCloseServicoModal}>
-          <div className="modal-content modal-wide modal-servico" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg modal-servico" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Criar novo serviço"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📅 Novo Serviço</h2>
-              <button className="close-btn" onClick={handleCloseServicoModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseServicoModal} aria-label="Fechar modal de serviço">✕</button>
             </div>
-            
-            <div className="modal-body-wide modal-body-servico">
+
+            <div className="modal-body modal-body-servico">
               <div className="servico-layout-container">
                 {/* Coluna da Esquerda - Formulário */}
                 <div className="servico-form-column">
@@ -1563,11 +1573,11 @@ const Recontatos = () => {
                 </div>
               )}
 
-              <div className="form-actions">
-                <button type="button" onClick={handleCloseServicoModal} className="cancel-btn">
+              <div className="modal-footer">
+                <button type="button" onClick={handleCloseServicoModal} className="modal-btn modal-btn-secondary">
                   Cancelar
                 </button>
-                <button type="submit" className="submit-btn">
+                <button type="submit" className="modal-btn">
                   📅 Criar Serviço
                 </button>
               </div>
@@ -1630,14 +1640,18 @@ const Recontatos = () => {
       {/* Modal de Detalhes do Cliente */}
       {showModal && selectedCliente && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content cliente-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg cliente-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Detalhes do recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📋 Detalhes do Recontato</h2>
-              <button className="close-btn" onClick={handleCloseModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseModal} aria-label="Fechar modal de detalhes">✕</button>
             </div>
-            
+
             <div className="modal-body">
               <div className="cliente-info-detailed">
                 <div className="info-section">
@@ -1750,13 +1764,19 @@ const Recontatos = () => {
 
       {/* Modal de Próximo Recontato */}
       {showProximoRecontatoModal && (
-        <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && handleCloseProximoRecontatoModal()}>
-          <div className="modal-content" style={{maxWidth: '600px', width: '90%'}} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={(e) => e.target.classList.contains('modal-overlay') && handleCloseProximoRecontatoModal()}>
+          <div 
+            className="modal-shell modal-md" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Reagendar recontato" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>🎯 Reagendar Recontato</h2>
-              <button className="close-btn" onClick={handleCloseProximoRecontatoModal}>✕</button>
+              <button className="modal-btn icon" onClick={handleCloseProximoRecontatoModal} aria-label="Fechar modal">✕</button>
             </div>
-            
+
             <div className="modal-body">
               <form onSubmit={handleSubmitProximoRecontato} className="modal-form">
                 <div className="success-message" style={{textAlign: 'center', marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e8', borderRadius: '8px', border: '1px solid #4caf50', width: '100%'}}>
@@ -1821,13 +1841,9 @@ const Recontatos = () => {
                   />
                 </div>
 
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={handleSkipProximoRecontato}>
-                    ⏭️ Pular Reagendamento
-                  </button>
-                  <button type="submit" className="submit-btn">
-                    📅 Reagendar Recontato
-                  </button>
+                <div className="modal-footer">
+                  <button type="button" className="modal-btn outline" onClick={handleSkipProximoRecontato}>⏭️ Pular Reagendamento</button>
+                  <button type="submit" className="modal-btn">📅 Reagendar Recontato</button>
                 </div>
               </form>
             </div>
@@ -1838,14 +1854,18 @@ const Recontatos = () => {
       {/* Modal de Edição de Recontato */}
       {showEditModal && recontatoParaEditar && (
         <div className="modal-overlay" data-modal="edit" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-md" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Editar recontato" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>✏️ Editar Recontato</h2>
-              <button className="close-btn" onClick={() => setShowEditModal(false)}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={() => setShowEditModal(false)} aria-label="Fechar modal de edição">✕</button>
             </div>
-            <div className="modal-body modal-body-wide">
+            <div className="modal-body">
               <form onSubmit={handleSubmitEditarRecontato} className="modal-form">
                 <div className="form-group">
                   <label htmlFor="clienteEdit">Cliente:</label>
@@ -1920,13 +1940,9 @@ const Recontatos = () => {
                   />
                 </div>
 
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={() => setShowEditModal(false)}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="submit-btn">
-                    💾 Salvar Alterações
-                  </button>
+                <div className="modal-footer">
+                  <button type="button" className="modal-btn outline" onClick={() => setShowEditModal(false)}>Cancelar</button>
+                  <button type="submit" className="modal-btn">💾 Salvar Alterações</button>
                 </div>
               </form>
             </div>

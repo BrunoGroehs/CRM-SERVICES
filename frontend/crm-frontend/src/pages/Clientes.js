@@ -704,12 +704,12 @@ const Clientes = () => {
       {/* Modal para cadastro de cliente */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-shell modal-md" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingCliente ? '✏️ Editar Cliente' : '➕ Cadastrar Novo Cliente'}</h2>
-              <button className="close-btn" onClick={closeModal}>✕</button>
+              <button className="modal-close" onClick={closeModal} aria-label="Fechar">✕</button>
             </div>
-            
+            <div className="modal-body">
             <form onSubmit={handleSubmit} className="cliente-form">
               <div className="form-row">
                 <div className="form-group">
@@ -815,20 +815,18 @@ const Clientes = () => {
                 </div>
               </div>
 
-              <div className="form-actions">
-                <button type="button" onClick={closeModal} className="cancel-btn">
-                  ❌ Cancelar
-                </button>
-                <button type="submit" disabled={submitting} className="submit-btn">
+              <div className="modal-footer">
+                <button type="button" onClick={closeModal} className="modal-btn outline">Cancelar</button>
+                <button type="submit" disabled={submitting} className="modal-btn">
                   {submitting 
                     ? '⏳ Salvando...' 
                     : editingCliente 
                       ? '💾 Salvar Alterações' 
-                      : '✅ Salvar Cliente'
-                  }
+                      : '✅ Salvar Cliente'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -836,12 +834,12 @@ const Clientes = () => {
       {/* Modal para criação de recontato */}
       {showRecontatoModal && (
         <div className="modal-overlay" onClick={handleCloseRecontatoModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-shell modal-md" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>� Agendar Primeiro Recontato</h2>
-              <button className="close-btn" onClick={handleCloseRecontatoModal}>✕</button>
+              <h2>📞 Agendar Primeiro Recontato</h2>
+              <button className="modal-close" onClick={handleCloseRecontatoModal} aria-label="Fechar">✕</button>
             </div>
-            
+            <div className="modal-body">
             <form onSubmit={handleSubmitRecontato} className="recontato-form">
               <div className="recontato-intro">
                 <p>Cliente criado com sucesso!</p>
@@ -906,19 +904,18 @@ const Clientes = () => {
                 />
               </div>
 
-              <div className="form-actions">
-                <button type="button" onClick={handleSkipRecontato} className="skip-btn">
-                  ⏭️ Finalizar sem Agendar
-                </button>
+              <div className="modal-footer">
+                <button type="button" onClick={handleSkipRecontato} className="modal-btn outline">Finalizar sem Agendar</button>
                 <button 
                   type="submit" 
                   disabled={submitting || !recontatoData.data_agendada} 
-                  className="submit-btn"
+                  className="modal-btn"
                 >
-                  {submitting ? '⏳ Agendando...' : '� Agendar Recontato'}
+                  {submitting ? '⏳ Agendando...' : '📅 Agendar Recontato'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -926,14 +923,20 @@ const Clientes = () => {
       {/* Modal de Detalhes do Cliente */}
       {showDetalhesModal && selectedCliente && (
         <div className="modal-overlay" onClick={handleCloseDetalhesModal}>
-          <div className="modal-content detalhes-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-xl" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label={`Detalhes do Cliente ${selectedCliente.nome}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📋 Detalhes do Cliente - {selectedCliente.nome}</h2>
-              <button className="close-btn" onClick={handleCloseDetalhesModal}>
+              <button className="modal-btn icon" onClick={handleCloseDetalhesModal} aria-label="Fechar detalhes">
                 ✕
               </button>
             </div>
-            
+
             <div className="modal-body">
               {/* Informações do Cliente */}
               <div className="cliente-info-detalhada">

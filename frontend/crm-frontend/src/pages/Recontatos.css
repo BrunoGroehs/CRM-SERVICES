@@ -1,5 +1,4 @@
-/* Importa estilos base */
-@import './Clientes.css';
+/* Removed import of Clientes.css; shared styles now come from styles/ global imports */
 
 .recontatos-stats {
   display: grid;
@@ -510,50 +509,7 @@
   color: #2e7d32;
 }
 
-.modal-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
-}
-
-.cancel-btn {
-  background: #f8f9fa;
-  color: #6c757d;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background: #e9ecef;
-  color: #495057;
-}
-
-.confirm-btn {
-  background: linear-gradient(135deg, #FF9800, #F57C00);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.2);
-}
-
-.confirm-btn:hover {
-  background: linear-gradient(135deg, #F57C00, #E65100);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
-}
+/* (modal-actions / cancel-btn / confirm-btn migrados para .modal-footer + .modal-btn variantes globais) */
 
 .prorrogar-btn {
   background: linear-gradient(135deg, #FF9800, #F57C00);
@@ -581,14 +537,7 @@
     font-size: 0.8rem;
   }
   
-  .modal-actions {
-    flex-direction: column;
-  }
-  
-  .cancel-btn,
-  .confirm-btn {
-    width: 100%;
-  }
+  /* (antigo .modal-actions empilhado) substituído por .modal-footer responsivo */
 }
 
 /* Estilos para Modal de Próximo Recontato */
@@ -1029,58 +978,7 @@
   margin-right: 0.25rem;
 }
 
-/* Estilos específicos para modal de próximo recontato */
-.modal-content h2 {
-  margin-bottom: 1.5rem;
-}
-
-.modal-content .success-message {
-  margin-bottom: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-}
-
-.modal-content .form-group {
-  margin-bottom: -1.5rem;
-}
-
-.modal-content .form-group label {
-  margin-bottom: 0.50rem;
-  display: block;
-  font-weight: 600;
-}
-
-.modal-content input[type="date"] {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  width: 100%;
-  font-size: 1rem;
-}
-
-.modal-content input[type="date"]:focus {
-  border-color: #2196F3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-  outline: none;
-}
-
-.modal-content textarea {
-  padding: 0.75rem;
-  margin-bottom: 1.5rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  width: 100%;
-  min-height: 100px;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.modal-content textarea:focus {
-  border-color: #2196F3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-  outline: none;
-}
+/* (blocos .modal-content substituídos por estrutura .modal-shell; inputs usam estilos globais) */
 
 /* Melhorar espaçamento dos quick-options */
 .quick-options {
@@ -1098,9 +996,7 @@
 }
 
 /* Adicionar margens internas ao modal */
-.modal-content {
-  padding: 0rem;
-}
+/* (padding interno agora controlado por .modal-body) */
 
 /* Corrigir fundo do modal de serviços */
 .modal-overlay {
@@ -1117,17 +1013,7 @@
   z-index: 1000;
 }
 
-.modal-content.modal-wide {
-  background: #ffffff;
-  padding: 0;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  width: 100%;
-  max-width: 700px;
-  margin: 20px;
-  animation: modalSlideIn 0.3s ease;
-}
+/* (antigo .modal-content.modal-wide removido – usar .modal-shell.modal-lg|xl) */
 
 /* Cabeçalho do modal moderno */
 .modal-header {
@@ -1147,25 +1033,7 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
+/* (close-btn legado removido – usar .modal-close / .modal-btn.modal-btn-icon) */
 
 /* Corpo do modal */
 .modal-wide .modal-body-wide {
@@ -1251,49 +1119,7 @@
   cursor: not-allowed;
 }
 
-/* Botões de ação */
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e9ecef;
-  margin-top: 1rem;
-}
-
-.cancel-btn {
-  padding: 12px 24px;
-  border: 2px solid #6c757d;
-  background: transparent;
-  color: #6c757d;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.cancel-btn:hover {
-  background: #6c757d;
-  color: white;
-  transform: translateY(-2px);
-}
-
-.submit-btn {
-  padding: 12px 24px;
-  border: none;
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: white;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-}
-
-.submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-}
+/* form-actions / cancel-btn / submit-btn removidos: usar .modal-footer + .modal-btn variantes */
 
 /* Animação do modal */
 @keyframes modalSlideIn {
@@ -1313,11 +1139,7 @@
     padding: 40px;
   }
   
-  .modal-content.modal-wide {
-    max-width: 800px;
-    margin: auto;
-    width: 100%;
-  }
+  /* (antigo .modal-content.modal-wide -> usar .modal-shell.modal-lg) */
   
   .modal-header {
     padding: 2.5rem;
@@ -1343,9 +1165,7 @@
 
 /* Para telas extra grandes (1400px+) */
 @media (min-width: 1400px) {
-  .modal-content.modal-wide {
-    max-width: 900px;
-  }
+  /* (antigo .modal-content.modal-wide 900px -> usar .modal-shell.modal-xl se necessário) */
   
   .modal-wide .modal-body-wide {
     padding: 3rem;
@@ -1364,10 +1184,7 @@
     padding: 10px;
   }
   
-  .modal-content.modal-wide {
-    margin: 10px;
-    border-radius: 15px;
-  }
+  /* (margin/border-radius agora herdados da .modal-shell) */
   
   .modal-header {
     padding: 1.5rem;
@@ -1386,15 +1203,7 @@
     gap: 1rem;
   }
   
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .cancel-btn,
-  .submit-btn {
-    width: 100%;
-    padding: 14px;
-  }
+  /* (antigo .form-actions empilhado) substituído por .modal-footer padrão responsivo */
 }
 
 /* Estilos específicos para o modal de editar recontato */
@@ -1403,14 +1212,7 @@
   backdrop-filter: blur(10px);
 }
 
-.modal-overlay[data-modal="edit"] .modal-content {
-  background: #ffffff !important;
-  border: none;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
-  width: 100% !important;
-  max-width: 800px !important;
-  margin: auto !important;
-}
+/* (estilos específicos .modal-content edit removidos – usar .modal-shell overrides se preciso) */
 
 .modal-overlay[data-modal="edit"] .modal-wide {
   background: #ffffff !important;
@@ -1435,14 +1237,7 @@
   box-sizing: border-box;
 }
 
-.modal-content {
-  position: relative;
-  width: 100%;
-  height: auto;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
+/* (estrutura base do conteúdo agora fornecida por .modal-shell e .modal-body) */
 
 /* Forçar que o modal-body-wide sempre ocupe 100% da largura disponível */
 .modal-overlay .modal-body-wide,

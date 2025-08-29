@@ -425,12 +425,18 @@ const Calendario = () => {
       {/* Modal de Eventos */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content calendar-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg calendar-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Eventos do dia"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📅 {selectedDate?.toLocaleDateString('pt-BR')}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+              <button className="modal-btn icon" onClick={() => setShowModal(false)} aria-label="Fechar modal de eventos">✕</button>
             </div>
-            
+
             <div className="modal-body">
               {modalData.servicos.length > 0 && (
                 <div className="events-section">
@@ -522,18 +528,24 @@ const Calendario = () => {
       {/* Modal de Edição de Serviço */}
       {showEditModal && editingService && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-md edit-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Editar serviço" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>✏️ Editar Serviço</h2>
               <button 
-                className="close-btn" 
+                className="modal-btn icon" 
                 onClick={() => setShowEditModal(false)}
-                title="Fechar"
+                aria-label="Fechar edição"
               >
                 ✕
               </button>
             </div>
-            
+
             <div className="modal-body">
               <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}>
                 <div className="form-row">
@@ -609,17 +621,17 @@ const Calendario = () => {
                   />
                 </div>
 
-                <div className="form-actions">
-                  <button 
-                    type="button" 
-                    className="btn-secondary"
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="modal-btn modal-btn-secondary"
                     onClick={() => setShowEditModal(false)}
                   >
                     ❌ Cancelar
                   </button>
-                  <button 
-                    type="submit" 
-                    className="btn-primary"
+                  <button
+                    type="submit"
+                    className="modal-btn"
                   >
                     💾 Salvar Alterações
                   </button>
