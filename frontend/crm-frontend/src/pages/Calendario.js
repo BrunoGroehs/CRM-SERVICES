@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
-import { getApiUrl, formatDateLocal, formatDateFromString } from '../utils/api';
 import './Calendario.css';
 
 const Calendario = () => {
@@ -12,6 +11,10 @@ const Calendario = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ servicos: [], recontatos: [] });
   const authenticatedFetch = useAuthenticatedFetch();
+
+  const getApiUrl = (endpoint) => {
+    return `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/${endpoint}`;
+  };
 
   useEffect(() => {
     fetchData();
@@ -93,7 +96,7 @@ const Calendario = () => {
   };
 
   const formatDate = (date) => {
-    return formatDateLocal(date);
+    return date.toISOString().split('T')[0];
   };
 
   const getEventsForDate = (date) => {
@@ -110,10 +113,10 @@ const Calendario = () => {
     const servicosNaData = servicosArray.filter(servico => {
       if (!servico || !servico.data) return false;
       
-      // Usar função que considera timezone local
+      // Tentar diferentes formatos de data
       let servicoDate;
       try {
-        servicoDate = formatDateFromString(servico.data);
+        servicoDate = new Date(servico.data).toISOString().split('T')[0];
       } catch (error) {
         console.warn('Erro ao processar data do serviço:', servico.data);
         return false;
@@ -129,10 +132,10 @@ const Calendario = () => {
     const recontatosNaData = recontatosArray.filter(recontato => {
       if (!recontato || !recontato.data_agendada) return false;
       
-      // Usar função que considera timezone local
+      // Tentar diferentes formatos de data
       let recontatoDate;
       try {
-        recontatoDate = formatDateFromString(recontato.data_agendada);
+        recontatoDate = new Date(recontato.data_agendada).toISOString().split('T')[0];
       } catch (error) {
         console.warn('Erro ao processar data do recontato:', recontato.data_agendada);
         return false;
