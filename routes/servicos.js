@@ -49,6 +49,46 @@ const validateServicoFields = (servico) => {
   return errors;
 };
 
+// Validação específica para updates - permite atualizações parciais
+const validateServicoUpdateFields = (servico) => {
+  const errors = [];
+  
+  // Só valida os campos que foram fornecidos
+  if (servico.cliente_id !== undefined && (isNaN(servico.cliente_id) || !servico.cliente_id)) {
+    errors.push('cliente_id deve ser um número válido');
+  }
+  
+  if (servico.data !== undefined && (!servico.data || servico.data.trim() === '')) {
+    errors.push('Data do serviço não pode estar vazia');
+  }
+  
+  if (servico.hora !== undefined && (!servico.hora || servico.hora.trim() === '')) {
+    errors.push('Hora do serviço não pode estar vazia');
+  }
+  
+  // Validação de formato de data (YYYY-MM-DD)
+  if (servico.data && servico.data.trim() !== '') {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(servico.data)) {
+      errors.push('Data deve estar no formato YYYY-MM-DD');
+    }
+  }
+  
+  // Validação de status válido
+  const statusValidos = ['agendado', 'em_andamento', 'concluido', 'cancelado'];
+  if (servico.status && !statusValidos.includes(servico.status)) {
+    errors.push('Status deve ser: agendado, em_andamento, concluido ou cancelado');
+  }
+  
+  // Validação de valor (se fornecido)
+  if (servico.valor !== undefined && servico.valor !== '' && servico.valor !== null && 
+      (isNaN(servico.valor) || parseFloat(servico.valor) < 0)) {
+    errors.push('Valor deve ser um número positivo');
+  }
+  
+  return errors;
+};
+
 // Função para verificar se cliente existe
 const checkClienteExists = async (clienteId) => {
   try {
@@ -315,19 +355,9 @@ router.put('/:id', async (req, res) => {
         message: 'ID do serviço deve ser um número válido'
       });
     }
-    
-    // Validar campos obrigatórios
-    const errors = validateServicoFields(req.body);
-    if (errors.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Dados inválidos',
-        errors: errors
-      });
-    }
-    
-    // Verificar se o serviço existe
-    const checkQuery = 'SELECT id FROM servicos WHERE id = $1';
+
+    // Verificar se o serviço existe e buscar dados atuais
+    const checkQuery = 'SELECT * FROM servicos WHERE id = $1';
     const checkResult = await pool.query(checkQuery, [id]);
     
     if (checkResult.rows.length === 0) {
@@ -336,14 +366,40 @@ router.put('/:id', async (req, res) => {
         message: 'Serviço não encontrado'
       });
     }
+
+    const currentService = checkResult.rows[0];
+
+    // Para atualizações parciais (como só status), usar dados existentes
+    const updateData = {
+      cliente_id: cliente_id !== undefined ? cliente_id : currentService.cliente_id,
+      data: data !== undefined ? data : currentService.data,
+      hora: hora !== undefined ? hora : currentService.hora,
+      valor: valor !== undefined ? valor : currentService.valor,
+      notas: notas !== undefined ? notas : currentService.notas,
+      status: status !== undefined ? status : currentService.status,
+      funcionario_responsavel: funcionario_responsavel !== undefined ? funcionario_responsavel : currentService.funcionario_responsavel
+    };
+
+    // Validar os dados de update (permite atualizações parciais)
+    const errors = validateServicoUpdateFields(req.body);
     
-    // Verificar se cliente existe
-    const clienteExists = await checkClienteExists(cliente_id);
-    if (!clienteExists) {
+    if (errors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Cliente não encontrado. Verifique se o cliente_id está correto.'
+        message: 'Dados inválidos',
+        errors: errors
       });
+    }
+    
+    // Verificar se cliente existe (só se cliente_id foi fornecido)
+    if (cliente_id !== undefined) {
+      const clienteExists = await checkClienteExists(cliente_id);
+      if (!clienteExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cliente não encontrado. Verifique se o cliente_id está correto.'
+        });
+      }
     }
     
     const query = `
@@ -359,18 +415,18 @@ router.put('/:id', async (req, res) => {
       WHERE id = $8
       RETURNING *
     `;
-    
+
     const values = [
-      cliente_id,
-      data,
-      hora,
-      valor ? parseFloat(valor) : null,
-      notas ? notas.trim() : null,
-      status || 'agendado',
-      funcionario_responsavel ? funcionario_responsavel.trim() : null,
+      updateData.cliente_id,
+      updateData.data,
+      updateData.hora,
+      updateData.valor ? parseFloat(updateData.valor) : null,
+      updateData.notas ? updateData.notas.trim() : null,
+      updateData.status || 'agendado',
+      updateData.funcionario_responsavel ? updateData.funcionario_responsavel.trim() : null,
       id
     ];
-    
+
     const result = await pool.query(query, values);
     
     // Buscar o serviço atualizado com dados do cliente

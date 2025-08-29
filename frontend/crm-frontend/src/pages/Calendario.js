@@ -10,6 +10,9 @@ const Calendario = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ servicos: [], recontatos: [] });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+  const [submittingComplete, setSubmittingComplete] = useState(null);
   const authenticatedFetch = useAuthenticatedFetch();
 
   const getApiUrl = (endpoint) => {
@@ -23,25 +26,15 @@ const Calendario = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Iniciando fetch de dados...');
       
       // Buscar serviços
-      console.log('📞 Chamando API de serviços...');
       const servicosResponse = await authenticatedFetch(getApiUrl('servicos'));
-      console.log('📊 Resposta da API de serviços:', {
-        status: servicosResponse.status,
-        ok: servicosResponse.ok,
-        headers: Object.fromEntries(servicosResponse.headers.entries())
-      });
       
       if (servicosResponse.ok) {
         const servicosData = await servicosResponse.json();
-        console.log('✅ Dados de serviços recebidos:', servicosData);
-        console.log('🔍 Tipo dos dados de serviços:', typeof servicosData, Array.isArray(servicosData));
         
         // A API pode retornar { data: [...] } ou um array direto
         const servicosArray = servicosData.data || servicosData;
-        console.log('📋 Array de serviços:', servicosArray);
         
         // Garantir que sempre seja um array
         setServicos(Array.isArray(servicosArray) ? servicosArray : []);
@@ -52,22 +45,13 @@ const Calendario = () => {
       }
 
       // Buscar recontatos
-      console.log('📞 Chamando API de recontatos...');
       const recontatosResponse = await authenticatedFetch(getApiUrl('recontatos'));
-      console.log('📊 Resposta da API de recontatos:', {
-        status: recontatosResponse.status,
-        ok: recontatosResponse.ok,
-        headers: Object.fromEntries(recontatosResponse.headers.entries())
-      });
       
       if (recontatosResponse.ok) {
         const recontatosData = await recontatosResponse.json();
-        console.log('✅ Dados de recontatos recebidos:', recontatosData);
-        console.log('🔍 Tipo dos dados de recontatos:', typeof recontatosData, Array.isArray(recontatosData));
         
         // A API pode retornar { data: [...] } ou um array direto
         const recontatosArray = recontatosData.data || recontatosData;
-        console.log('📋 Array de recontatos:', recontatosArray);
         
         // Garantir que sempre seja um array
         setRecontatos(Array.isArray(recontatosArray) ? recontatosArray : []);
@@ -83,7 +67,6 @@ const Calendario = () => {
       setRecontatos([]);
     } finally {
       setLoading(false);
-      console.log('🏁 Fetch de dados finalizado');
     }
   };
 
@@ -101,14 +84,10 @@ const Calendario = () => {
 
   const getEventsForDate = (date) => {
     const dateStr = formatDate(date);
-    console.log('Buscando eventos para data:', dateStr);
     
     // Garantir que servicos e recontatos são arrays antes de usar filter
     const servicosArray = Array.isArray(servicos) ? servicos : [];
     const recontatosArray = Array.isArray(recontatos) ? recontatos : [];
-    
-    console.log('Total de serviços:', servicosArray.length);
-    console.log('Total de recontatos:', recontatosArray.length);
     
     const servicosNaData = servicosArray.filter(servico => {
       if (!servico || !servico.data) return false;
@@ -162,6 +141,167 @@ const Calendario = () => {
     setModalData(events);
     // Sempre abrir o modal, mesmo sem eventos
     setShowModal(true);
+  };
+
+  // Função para abrir modal de edição de serviço
+  const handleEditService = (servico) => {
+    // Garantir que a data esteja no formato correto para o input[type="date"]
+    let dataFormatada = servico.data;
+    if (dataFormatada) {
+      // Se a data contém horário (formato ISO), extrair apenas a parte da data
+      if (dataFormatada.includes('T')) {
+        dataFormatada = dataFormatada.split('T')[0];
+      }
+      // Se a data está no formato DD/MM/YYYY, converter para YYYY-MM-DD
+      if (dataFormatada.includes('/')) {
+        const partes = dataFormatada.split('/');
+        if (partes.length === 3) {
+          dataFormatada = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+        }
+      }
+    }
+
+    // Garantir que a hora esteja no formato HH:MM para o input[type="time"]
+    let horaFormatada = servico.hora;
+    if (horaFormatada && horaFormatada.length > 5) {
+      horaFormatada = horaFormatada.substring(0, 5);
+    }
+
+    setEditingService({
+      id: servico.id,
+      cliente_id: servico.cliente_id,
+      data: dataFormatada || '',
+      hora: horaFormatada || '',
+      valor: servico.valor || '',
+      notas: servico.notas || '',
+      status: servico.status || 'agendado',
+      funcionario_responsavel: servico.funcionario_responsavel || ''
+    });
+    setShowEditModal(true);
+  };
+
+  // Função para marcar serviço como concluído
+  const handleMarkComplete = async (servicoId) => {
+    setSubmittingComplete(servicoId);
+    
+    try {
+      console.log('🔄 Marcando serviço como concluído:', servicoId);
+      
+      const response = await authenticatedFetch(
+        getApiUrl(`servicos/${servicoId}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'concluido' })
+        }
+      );
+
+      console.log('📊 Resposta do servidor:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
+
+      if (response.ok) {
+        // Atualizar o estado local
+        setServicos(prevServicos => 
+          prevServicos.map(servico => 
+            servico.id === servicoId 
+              ? { ...servico, status: 'concluido' }
+              : servico
+          )
+        );
+
+        // Atualizar os dados do modal se estiver aberto
+        setModalData(prevData => ({
+          ...prevData,
+          servicos: prevData.servicos.map(servico => 
+            servico.id === servicoId 
+              ? { ...servico, status: 'concluido' }
+              : servico
+          )
+        }));
+
+        alert('Serviço marcado como concluído!');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Erro na resposta:', errorData);
+        
+        if (response.status === 401) {
+          alert('Sessão expirada. Faça login novamente.');
+        } else if (response.status === 403) {
+          alert('Você não tem permissão para realizar esta ação.');
+        } else if (response.status === 400 && errorData.errors) {
+          console.error('🔍 Erros de validação detalhados:', errorData.errors);
+          alert(`Erro de validação: ${errorData.errors.join(', ')}`);
+        } else {
+          alert(`Erro ao marcar como concluído: ${errorData.message || `Status ${response.status}`}`);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao marcar serviço como concluído:', error);
+      
+      if (error.message === 'Sessão expirada') {
+        alert('Sua sessão expirou. Você será redirecionado para o login.');
+      } else {
+        alert('Erro ao marcar como concluído. Verifique sua conexão e tente novamente.');
+      }
+    } finally {
+      setSubmittingComplete(null);
+    }
+  };
+
+  // Função para salvar edição do serviço
+  const handleSaveEdit = async () => {
+    if (!editingService) return;
+
+    try {
+      const response = await authenticatedFetch(
+        getApiUrl(`servicos/${editingService.id}`),
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editingService)
+        }
+      );
+
+      if (response.ok) {
+        const updatedService = await response.json();
+        
+        // Atualizar o estado local
+        setServicos(prevServicos => 
+          prevServicos.map(servico => 
+            servico.id === editingService.id 
+              ? { ...servico, ...updatedService.servico || updatedService }
+              : servico
+          )
+        );
+
+        // Atualizar os dados do modal se estiver aberto
+        setModalData(prevData => ({
+          ...prevData,
+          servicos: prevData.servicos.map(servico => 
+            servico.id === editingService.id 
+              ? { ...servico, ...updatedService.servico || updatedService }
+              : servico
+          )
+        }));
+
+        setShowEditModal(false);
+        setEditingService(null);
+        alert('Serviço atualizado com sucesso!');
+      } else {
+        const errorData = await response.json();
+        alert(`Erro ao atualizar serviço: ${errorData.message || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar serviço:', error);
+      alert('Erro ao atualizar serviço. Tente novamente.');
+    }
   };
 
   const renderCalendarDays = () => {
@@ -301,12 +441,39 @@ const Calendario = () => {
                         <div className="event-header">
                           <span className="event-time">⏰ {formatTime(servico.hora)}</span>
                           <span className="event-value">{formatCurrency(servico.valor)}</span>
+                          <span className={`event-status status-${servico.status}`}>
+                            {servico.status === 'agendado' && '📅'}
+                            {servico.status === 'em_andamento' && '⚡'}
+                            {servico.status === 'concluido' && '✅'}
+                            {servico.status === 'cancelado' && '❌'}
+                            {servico.status || 'agendado'}
+                          </span>
                         </div>
                         <div className="event-title">{servico.notas || 'Serviço Agendado'}</div>
                         <div className="event-client">👤 {servico.cliente_nome}</div>
                         {servico.funcionario_responsavel && (
-                          <div className="event-obs">👨‍� {servico.funcionario_responsavel}</div>
+                          <div className="event-obs">👨‍💼 {servico.funcionario_responsavel}</div>
                         )}
+                        <div className="event-actions">
+                          <button 
+                            className="action-btn edit-btn"
+                            onClick={() => handleEditService(servico)}
+                            title="Editar serviço"
+                          >
+                            ✏️ Editar
+                          </button>
+                          {servico.status !== 'concluido' && (
+                            <button 
+                              className="action-btn complete-btn"
+                              onClick={() => handleMarkComplete(servico.id)}
+                              disabled={submittingComplete === servico.id}
+                              title="Marcar como concluído"
+                            >
+                              {submittingComplete === servico.id ? '⏳' : '✅'} 
+                              {submittingComplete === servico.id ? 'Salvando...' : 'Concluir'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -347,6 +514,117 @@ const Calendario = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Serviço */}
+      {showEditModal && editingService && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>✏️ Editar Serviço</h2>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowEditModal(false)}
+                title="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-data">📅 Data do Serviço:</label>
+                    <input
+                      type="date"
+                      id="edit-data"
+                      value={editingService.data}
+                      onChange={(e) => setEditingService(prev => ({ ...prev, data: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="edit-hora">⏰ Horário:</label>
+                    <input
+                      type="time"
+                      id="edit-hora"
+                      value={editingService.hora}
+                      onChange={(e) => setEditingService(prev => ({ ...prev, hora: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-valor">💰 Valor do Serviço:</label>
+                    <input
+                      type="number"
+                      id="edit-valor"
+                      step="0.01"
+                      min="0"
+                      value={editingService.valor}
+                      onChange={(e) => setEditingService(prev => ({ ...prev, valor: e.target.value }))}
+                      placeholder="Ex: 150.00"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="edit-status">📊 Status do Serviço:</label>
+                    <select
+                      id="edit-status"
+                      value={editingService.status}
+                      onChange={(e) => setEditingService(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="agendado">📅 Agendado</option>
+                      <option value="em_andamento">⚡ Em Andamento</option>
+                      <option value="concluido">✅ Concluído</option>
+                      <option value="cancelado">❌ Cancelado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-funcionario">👨‍💼 Funcionário Responsável:</label>
+                  <input
+                    type="text"
+                    id="edit-funcionario"
+                    value={editingService.funcionario_responsavel}
+                    onChange={(e) => setEditingService(prev => ({ ...prev, funcionario_responsavel: e.target.value }))}
+                    placeholder="Nome do profissional responsável pelo serviço"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-notas">📝 Observações e Detalhes:</label>
+                  <textarea
+                    id="edit-notas"
+                    value={editingService.notas}
+                    onChange={(e) => setEditingService(prev => ({ ...prev, notas: e.target.value }))}
+                    placeholder="Descreva o serviço, materiais necessários, observações especiais..."
+                    rows="4"
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => setShowEditModal(false)}
+                  >
+                    ❌ Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                  >
+                    💾 Salvar Alterações
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
