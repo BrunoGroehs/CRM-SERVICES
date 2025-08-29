@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
-import { getApiUrl } from '../utils/api';
+import { getApiUrl, formatDateLocal, formatDateFromString } from '../utils/api';
 import './Calendario.css';
 
 const Calendario = () => {
@@ -93,7 +93,7 @@ const Calendario = () => {
   };
 
   const formatDate = (date) => {
-    return date.toISOString().split('T')[0];
+    return formatDateLocal(date);
   };
 
   const getEventsForDate = (date) => {
@@ -110,10 +110,10 @@ const Calendario = () => {
     const servicosNaData = servicosArray.filter(servico => {
       if (!servico || !servico.data) return false;
       
-      // Tentar diferentes formatos de data
+      // Usar função que considera timezone local
       let servicoDate;
       try {
-        servicoDate = new Date(servico.data).toISOString().split('T')[0];
+        servicoDate = formatDateFromString(servico.data);
       } catch (error) {
         console.warn('Erro ao processar data do serviço:', servico.data);
         return false;
@@ -129,10 +129,10 @@ const Calendario = () => {
     const recontatosNaData = recontatosArray.filter(recontato => {
       if (!recontato || !recontato.data_agendada) return false;
       
-      // Tentar diferentes formatos de data
+      // Usar função que considera timezone local
       let recontatoDate;
       try {
-        recontatoDate = new Date(recontato.data_agendada).toISOString().split('T')[0];
+        recontatoDate = formatDateFromString(recontato.data_agendada);
       } catch (error) {
         console.warn('Erro ao processar data do recontato:', recontato.data_agendada);
         return false;

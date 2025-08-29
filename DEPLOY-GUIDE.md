@@ -36,6 +36,7 @@ https://seu-app.onrender.com
 
 ```bash
 NODE_ENV=production
+TZ=America/Sao_Paulo
 DATABASE_URL=sua-database-url-postgresql
 GOOGLE_CLIENT_ID=seu-google-client-id
 GOOGLE_CLIENT_SECRET=seu-google-client-secret

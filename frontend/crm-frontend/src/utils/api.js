@@ -23,6 +23,32 @@ export const getApiUrl = (endpoint) => {
   return `${API_BASE_URL}/${cleanEndpoint}`;
 };
 
+// Utility functions para lidar com datas e timezone
+export const formatDateLocal = (date) => {
+  // Formatar data considerando timezone local
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const parseDateString = (dateString) => {
+  // Parse string de data evitando problemas de UTC
+  // Adiciona horário meio-dia para evitar problemas de timezone
+  return new Date(dateString + 'T12:00:00');
+};
+
+export const formatDateFromString = (dateString) => {
+  // Para strings do banco, formatar considerando timezone local
+  try {
+    const date = parseDateString(dateString);
+    return formatDateLocal(date);
+  } catch (error) {
+    console.warn('Erro ao formatar data:', dateString, error);
+    return dateString;
+  }
+};
+
 export const apiRequest = async (endpoint, options = {}) => {
   const url = getApiUrl(endpoint);
   const defaultOptions = {

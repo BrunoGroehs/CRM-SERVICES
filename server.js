@@ -8,6 +8,11 @@ const helmet = require('helmet');
 const cors = require('cors');
 require('dotenv').config();
 
+// Configurar timezone para Brasil em produção
+if (process.env.NODE_ENV === 'production') {
+  process.env.TZ = 'America/Sao_Paulo';
+}
+
 // Importar sistema de logging
 const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger');
 
