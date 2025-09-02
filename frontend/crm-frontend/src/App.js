@@ -14,6 +14,8 @@ import AuthCallback from './pages/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
 import './App.css';
+import './styles/tokens.css';
+import './styles/global.css';
 
 function App() {
   return (
