@@ -58,8 +58,9 @@ const Recontatos = () => {
     valor: '',
     notas: '',
     status: 'agendado',
-    funcionario_responsavel: ''
+    funcionario_responsavel: [], // agora array de IDs
   });
+  const [usuarios, setUsuarios] = useState([]); // usuários para seleção de responsáveis
   const [formErrors, setFormErrors] = useState({});
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [clientePreSelecionado, setClientePreSelecionado] = useState(null);
@@ -67,6 +68,23 @@ const Recontatos = () => {
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [recontatoParaDeletar, setRecontatoParaDeletar] = useState(null);
+
+  // Carregar usuários para seleção de responsáveis de serviço
+  useEffect(() => {
+    fetchUsuarios();
+  }, []);
+
+  const fetchUsuarios = async () => {
+    try {
+      const response = await authenticatedFetch(getApiUrl('admin/users'));
+      if (response.ok) {
+        const data = await response.json();
+        setUsuarios(data.users || []);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar usuários:', e);
+    }
+  };
 
   // Função para determinar o status do recontato
   const getStatusInfo = (recontato) => {
@@ -426,12 +444,16 @@ const Recontatos = () => {
     }
 
     try {
+      const dataToSend = { ...formData };
+      if (Array.isArray(dataToSend.funcionario_responsavel)) {
+        dataToSend.funcionario_responsavel = dataToSend.funcionario_responsavel.map(id => String(id));
+      }
       const response = await authenticatedFetch(getApiUrl('servicos'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -850,7 +872,7 @@ const Recontatos = () => {
       valor: '',
       status: 'agendado',
       notas: '',
-      funcionario_responsavel: ''
+  funcionario_responsavel: []
     });
     
     // Pré-selecionar e bloquear o cliente
@@ -1569,15 +1591,35 @@ const Recontatos = () => {
 
               <div className="form-row">
                 <div className="form-group full-width">
-                  <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
-                  <input
-                    type="text"
-                    id="funcionario_responsavel"
-                    name="funcionario_responsavel"
-                    value={formData.funcionario_responsavel}
-                    onChange={handleInputChange}
-                    placeholder="Nome do funcionário responsável"
-                  />
+                  <label>Responsáveis</label>
+                  <div className="multi-funcionarios-control">
+                    <select onChange={e => {
+                      const val = e.target.value;
+                      if (val && !formData.funcionario_responsavel.includes(val)) {
+                        setFormData(prev => ({ ...prev, funcionario_responsavel: [...prev.funcionario_responsavel, val] }));
+                      }
+                      e.target.value='';
+                    }}>
+                      <option value="">Adicionar usuário...</option>
+                      {usuarios.filter(u => !formData.funcionario_responsavel.includes(String(u.id))).map(u => (
+                        <option key={u.id} value={u.id}>{u.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {Array.isArray(formData.funcionario_responsavel) && formData.funcionario_responsavel.length > 0 && (
+                    <div className="multi-funcionarios-chips" style={{marginTop:'6px'}}>
+                      {formData.funcionario_responsavel.map(fid => {
+                        const u = usuarios.find(u => String(u.id) === String(fid));
+                        const nome = u?.nome || fid;
+                        return (
+                          <span key={fid} className="func-chip" title={nome}>
+                            {nome}
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, funcionario_responsavel: prev.funcionario_responsavel.filter(id => id !== fid) }))}>×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
