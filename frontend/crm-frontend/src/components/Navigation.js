@@ -105,7 +105,23 @@ const Navigation = () => {
           <div className="user-menu" ref={dropdownRef}>
             <div className="user-avatar" onClick={toggleDropdown}>
               {user?.foto_perfil ? (
-                <img src={user.foto_perfil} alt="Avatar" />
+                <img 
+                  src={user.foto_perfil} 
+                  alt={user.nome || 'Avatar'}
+                  onError={(e)=>{ 
+                    console.warn('Falha ao carregar imagem de perfil, usando fallback', user.foto_perfil);
+                    e.currentTarget.style.display='none';
+                    const parent=e.currentTarget.parentElement;
+                    if(parent && !parent.querySelector('.user-avatar-fallback')){
+                      const span=document.createElement('span');
+                      span.className='user-avatar-fallback';
+                      span.textContent='👤';
+                      parent.appendChild(span);
+                    }
+                  }}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                />
               ) : (
                 <span className="user-avatar-fallback">👤</span>
               )}

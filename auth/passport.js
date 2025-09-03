@@ -67,13 +67,25 @@ const configureGoogleStrategy = (pool) => {
           nome: user.nome,
           ativo: user.ativo
         });
+        // Atualizar foto_perfil se vier do Google e (não existir ainda ou tiver mudado)
+        let updated = false;
+        const newPhoto = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+        if (newPhoto && newPhoto !== user.foto_perfil) {
+          await client.query(
+            'UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP, foto_perfil = $1 WHERE id = $2',
+            [newPhoto, user.id]
+          );
+          updated = true;
+          user.foto_perfil = newPhoto;
+          googleLogger.debug('🖼️ Foto de perfil atualizada a partir do Google', { userId: user.id });
+        } else {
+          await client.query(
+            'UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1',
+            [user.id]
+          );
+        }
         
-        await client.query(
-          'UPDATE usuarios SET ultimo_login = CURRENT_TIMESTAMP WHERE id = $1',
-          [user.id]
-        );
-        
-        googleLogger.debug('⏰ Último login atualizado para usuário', { userId: user.id });
+        googleLogger.debug('⏰ Último login atualizado para usuário', { userId: user.id, fotoAtualizada: updated });
         console.log(`✅ Login realizado: ${user.email}`);
         
       } else {

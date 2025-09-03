@@ -155,12 +155,10 @@ async function importServicos() {
                     hora = $3, 
                     valor = $4, 
                     notas = $5, 
-                    status = $6, 
-                    funcionario_responsavel = $7,
+                    status = $6,
                     updated_at = CURRENT_TIMESTAMP
-                  WHERE id = $8
+                  WHERE id = $7
                 `;
-                
                 await pool.query(updateQuery, [
                   servico.cliente_id,
                   servico.data,
@@ -168,7 +166,6 @@ async function importServicos() {
                   servico.valor,
                   servico.notas,
                   servico.status,
-                  servico.funcionario_responsavel,
                   servico.id
                 ]);
                 
@@ -177,11 +174,9 @@ async function importServicos() {
                 // Inserir novo serviço
                 const insertQuery = `
                   INSERT INTO servicos (
-                    id, cliente_id, data, hora, valor, notas, status, 
-                    funcionario_responsavel, created_at, updated_at
-                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    id, cliente_id, data, hora, valor, notas, status, created_at, updated_at
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 `;
-                
                 await pool.query(insertQuery, [
                   servico.id,
                   servico.cliente_id,
@@ -189,11 +184,25 @@ async function importServicos() {
                   servico.hora,
                   servico.valor,
                   servico.notas,
-                  servico.status,
-                  servico.funcionario_responsavel
+                  servico.status
                 ]);
                 
                 insertedCount++;
+              }
+
+              // Sincronizar relação N:N (campo pode ser lista separada por vírgula)
+              if (servico.funcionario_responsavel) {
+                const ids = servico.funcionario_responsavel.split(/[;,]+/).map(s => s.trim()).filter(Boolean);
+                for (const raw of ids) {
+                  const uid = parseInt(raw, 10);
+                  if (!isNaN(uid)) {
+                    try {
+                      await pool.query('INSERT INTO servicos_usuarios (servico_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [servico.id, uid]);
+                    } catch (e) {
+                      // Ignorar erro individual
+                    }
+                  }
+                }
               }
               
               // Log do progresso a cada 100 registros
