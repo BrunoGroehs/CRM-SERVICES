@@ -1262,6 +1262,90 @@
   white-space: nowrap;
 }
 
+/* Estilos para botões de ação da tabela de serviços */
+.servicos-table .actions-cell {
+  width: 120px;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.servicos-table .action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Botões modernos para tabela de serviços */
+.servicos-table .table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 45px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.servicos-table .table-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.servicos-table .table-action-btn:hover::before {
+  left: 100%;
+}
+
+.servicos-table .table-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.servicos-table .table-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Botão de editar para serviços */
+.servicos-table .table-action-btn.edit {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.servicos-table .table-action-btn.edit:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+/* Ícones para os botões de serviços */
+.servicos-table .table-action-btn .icon {
+  font-size: 12px;
+  margin-right: 2px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 /* Responsividade para tabela de serviços */
 @media (max-width: 768px) {
   .table-container {
@@ -1315,10 +1399,18 @@
     min-width: 80px !important;
   }
   
-  .actions-cell span {
-    padding: 4px 6px;
+  .action-buttons {
+    gap: 4px;
+  }
+  
+  .table-action-btn {
+    padding: 4px 8px;
     font-size: 10px;
-    min-width: 35px;
+    min-width: 40px;
+  }
+  
+  .table-action-btn .icon {
+    font-size: 10px;
   }
 }
 
@@ -1357,10 +1449,24 @@
     min-width: 60px !important;
   }
   
-  .actions-cell span {
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .table-action-btn {
     padding: 3px 5px;
     font-size: 9px;
-    min-width: 30px;
+    min-width: 25px;
+  }
+  
+  .table-action-btn .icon {
+    font-size: 8px;
+    margin-right: 1px;
+  }
+  
+  .table-action-btn span:not(.icon) {
+    display: none; /* Apenas ícones em mobile */
   }
   
   .servicos-table th,

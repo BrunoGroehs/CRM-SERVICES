@@ -120,7 +120,21 @@ const Servicos = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Erro na data';
+    }
   };
 
   const formatTime = (timeString) => {
@@ -464,7 +478,18 @@ const Servicos = () => {
                       </td>
                       <td className="valor-cell"><span className="valor-badge">{formatCurrency(servico.valor)}</span></td>
                       <td className="status-cell"><span className={`status-badge ${servico.status || 'pendente'}`}>{servico.status || 'Pendente'}</span></td>
-                      <td className="actions-cell"><div><span onClick={() => handleEdit(servico)} title="Editar serviço">Edit</span></div></td>
+                      <td className="actions-cell">
+                        <div className="action-buttons">
+                          <button 
+                            className="table-action-btn edit"
+                            onClick={() => handleEdit(servico)}
+                            title="Editar serviço"
+                          >
+                            <span className="icon">✏️</span>
+                            <span>EDIT</span>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

@@ -185,7 +185,21 @@ const Clientes = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Erro na data';
+    }
   };
 
   const formatTime = (timeString) => {
@@ -616,39 +630,23 @@ const Clientes = () => {
                     {cliente.indicacao || '-'}
                   </td>
                   <td className="actions-cell">
-                    <div style={{display: 'flex', gap: '4px', justifyContent: 'center', alignItems: 'center'}}>
-                      <span 
+                    <div className="action-buttons">
+                      <button 
+                        className="table-action-btn edit"
                         onClick={() => handleEdit(cliente)}
-                        style={{
-                          backgroundColor: '#fbbf24',
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '10px',
-                          fontWeight: 'bold',
-                          userSelect: 'none'
-                        }}
                         title="Editar cliente"
                       >
-                        EDIT
-                      </span>
-                      <span 
+                        <span className="icon">✏️</span>
+                        <span>EDIT</span>
+                      </button>
+                      <button 
+                        className="table-action-btn info"
                         onClick={() => handleVerDetalhes(cliente)}
-                        style={{
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '10px',
-                          fontWeight: 'bold',
-                          userSelect: 'none'
-                        }}
                         title="Ver detalhes"
                       >
-                        INFO
-                      </span>
+                        <span className="icon">👁️</span>
+                        <span>INFO</span>
+                      </button>
                     </div>
                   </td>
                 </tr>
