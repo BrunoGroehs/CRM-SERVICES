@@ -53,3 +53,5 @@ servico3.csv
 frontend/crm-frontend/.env.production
 frontend/crm-frontend/.env.production
 frontend/crm-frontend/.env.production
+clientes_NOVO.csv
+.gitignore

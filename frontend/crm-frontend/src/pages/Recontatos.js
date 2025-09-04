@@ -1315,17 +1315,7 @@ const Recontatos = () => {
                     />
                   </div>
 
-                  {/* FUNCIONÁRIO RESPONSÁVEL */}
-                  <div className="form-group">
-                    <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
-                    <input
-                      type="text"
-                      id="funcionario_responsavel"
-                      value={novoRecontatoData.funcionario_responsavel}
-                      onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, funcionario_responsavel: e.target.value }))}
-                      placeholder="Nome do funcionário responsável"
-                    />
-                  </div>
+                  {/* Campo Funcionário Responsável removido conforme solicitação */}
 
                   {/* OBSERVAÇÕES */}
                   <div className="form-group">

@@ -5,6 +5,7 @@ import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
+  const [hideValues, setHideValues] = useState(true); // inicia oculto conforme solicitado
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const authenticatedFetch = useAuthenticatedFetch();
@@ -76,11 +77,33 @@ const Dashboard = () => {
     );
   }
 
+  const maskCurrency = (value) => hideValues ? '••••' : formatCurrency(value || 0);
+  const maskNumber = (value) => hideValues ? '••••' : (value || 0);
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>📊 Dashboard CRM</h1>
         <p>Visão geral das métricas e estatísticas do sistema</p>
+        <button
+          type="button"
+          className="toggle-visibility-btn"
+          onClick={() => setHideValues(h => !h)}
+          aria-label={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+          style={{
+            background:'none',
+            border:'1px solid #ccc',
+            padding:'4px 10px',
+            borderRadius:'6px',
+            cursor:'pointer',
+            fontSize:'0.85rem',
+            display:'inline-flex',
+            alignItems:'center',
+            gap:'6px'
+          }}
+        >
+          {hideValues ? '👁️ Mostrar' : '🙈 Ocultar'}
+        </button>
       </div>
 
       <div className="metrics-grid">
@@ -107,9 +130,7 @@ const Dashboard = () => {
             </div>
             <div className="sub-metric">
               <span className="sub-metric-label">Receita Total:</span>
-              <span className="sub-metric-value">
-                {formatCurrency(metrics?.metricas?.servicos?.receita_total || 0)}
-              </span>
+              <span className="sub-metric-value">{maskCurrency(metrics?.metricas?.servicos?.receita_total)}</span>
               <span className="sub-metric-note">(apenas concluídos)</span>
             </div>
           </div>
@@ -157,7 +178,7 @@ const Dashboard = () => {
             <div className="label">Serviços Realizados</div>
           </div>
           <div className="summary-item">
-            <div className="value">{formatCurrency(metrics?.resumo?.receita_total || 0)}</div>
+            <div className="value">{maskCurrency(metrics?.resumo?.receita_total)}</div>
             <div className="label">Receita Total</div>
             <div className="note">(apenas concluídos)</div>
           </div>
