@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useConnection } from './ConnectionContext';
 
 const AuthContext = createContext();
 
@@ -14,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const { reportNetworkIssue } = useConnection();
 
   // Verificar status de autenticação ao carregar
   useEffect(() => {
@@ -42,9 +44,9 @@ export const AuthProvider = ({ children }) => {
         setAuthenticated(false);
       }
     } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-      setUser(null);
-      setAuthenticated(false);
+  console.error('Erro ao verificar autenticação:', error);
+  // Não desloga em erro de rede; apenas sinaliza e mantém estado atual
+  reportNetworkIssue('auth_check_failed');
     } finally {
       setLoading(false);
     }
@@ -95,9 +97,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Erro ao renovar autenticação:', error);
-      setUser(null);
-      setAuthenticated(false);
-      return false;
+      // Sinaliza problema de rede e não altera estado de auth
+      reportNetworkIssue('auth_refresh_failed');
+      return 'network_error';
     }
   };
 
