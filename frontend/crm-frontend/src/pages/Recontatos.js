@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../contexts/ToastContext';
 import './Recontatos.css';
@@ -6,6 +7,8 @@ import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Recontatos = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [recontatos, setRecontatos] = useState([]);
   const [filteredRecontatos, setFilteredRecontatos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,6 +216,18 @@ const Recontatos = () => {
       setLoading(false);
     }
   };
+
+  // Abrir modal de próximo recontato quando vier da criação de serviço
+  useEffect(() => {
+    const state = location.state;
+    if (state && state.triggerProximoRecontato && state.clienteId) {
+      // Guardar info mínima para o submit
+      setServicoCriado({ cliente_id: state.clienteId });
+      setShowProximoRecontatoModal(true);
+      // Limpar o state de navegação para evitar reabrir no back/refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const fetchServicosHistorico = async (clienteId) => {
     console.log('Carregando histórico para cliente:', clienteId);
@@ -697,24 +712,33 @@ const Recontatos = () => {
 
       // Encontrar o recontato atual do cliente para atualizar
       const recontatoAtual = recontatos.find(r => r.cliente_id === servicoCriado.cliente_id);
-      
-      if (!recontatoAtual) {
-  pushToast('Erro: recontato atual não encontrado', { type: 'error' });
-        return;
+      let response;
+      if (recontatoAtual) {
+        // Atualiza o existente
+        response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoAtual.id}`), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data_agendada: dataRecontato,
+            motivo: proximoRecontatoData.motivo,
+            observacoes: proximoRecontatoData.observacoes,
+            status: 'agendado'
+          })
+        });
+      } else {
+        // Cria um novo recontato caso não exista
+        response = await authenticatedFetch(getApiUrl('recontatos'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente_id: servicoCriado.cliente_id,
+            data_agendada: dataRecontato,
+            motivo: proximoRecontatoData.motivo,
+            observacoes: proximoRecontatoData.observacoes,
+            status: 'agendado'
+          })
+        });
       }
-
-      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoAtual.id}`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data_agendada: dataRecontato,
-          motivo: proximoRecontatoData.motivo,
-          observacoes: proximoRecontatoData.observacoes,
-          status: 'agendado'
-        })
-      });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);

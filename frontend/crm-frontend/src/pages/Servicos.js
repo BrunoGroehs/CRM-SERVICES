@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MultiFuncionariosSelect from '../components/MultiFuncionariosSelect';
 import './Servicos.css';
@@ -7,6 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Servicos = () => {
+  const navigate = useNavigate();
   const [servicos, setServicos] = useState([]);
   const [usuarios, setUsuarios] = useState([]); // novos usuários do sistema
   const [clientes, setClientes] = useState([]);
@@ -327,6 +329,16 @@ const Servicos = () => {
 
       await fetchServicos(); // Recarregar a lista
       handleCloseModal();
+
+      // Se foi criação (não edição), abrir fluxo de recontato na página de Recontatos
+      if (!isEditing) {
+        const clienteId = dataToSend.cliente_id;
+        if (clienteId) {
+          navigate('/recontatos', {
+            state: { triggerProximoRecontato: true, clienteId }
+          });
+        }
+      }
     } catch (err) {
       console.error(isEditing ? 'Erro ao atualizar serviço:' : 'Erro ao criar serviço:', err);
       if (err.response) {
