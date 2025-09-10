@@ -240,9 +240,13 @@ app.get('/', (req, res) => {
 });
 
 // Rotas da API
-app.use('/auth', authRouter);
-app.use('/usuarios', usuariosRouter);
-app.use('/admin', adminRouter);
+try {
+  app.use('/auth', authRouter);
+  app.use('/usuarios', usuariosRouter);
+  app.use('/admin', adminRouter);
+} catch (error) {
+  console.error('❌ Erro ao configurar rotas da API:', error);
+}
 
 // Rota para guia de configuração OAuth
 app.get('/oauth-setup', (req, res) => {
@@ -250,9 +254,13 @@ app.get('/oauth-setup', (req, res) => {
 });
 
 // Rotas protegidas (requerem autenticação)
-app.use('/clientes', authenticateToken, clientesRouter);
-app.use('/servicos', authenticateToken, servicosRouter);
-app.use('/recontatos', authenticateToken, recontatosRouter);
+try {
+  app.use('/clientes', authenticateToken, clientesRouter);
+  app.use('/servicos', authenticateToken, servicosRouter);
+  app.use('/recontatos', authenticateToken, recontatosRouter);
+} catch (error) {
+  console.error('❌ Erro ao configurar rotas protegidas:', error);
+}
 
 // Endpoint Dashboard - Métricas do Sistema (protegido)
 app.get('/dashboard', authenticateToken, async (req, res) => {
@@ -449,6 +457,7 @@ if (process.env.NODE_ENV === 'production') {
     } else {
       next();
     }
+
   });
 }
 
