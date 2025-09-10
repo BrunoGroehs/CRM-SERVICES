@@ -16,6 +16,19 @@ router.use(sanitizeInput);
 router.use(authenticateToken);
 router.use(checkActiveUser);
 
+// Lista mínima para qualquer usuário autenticado (id, nome)
+router.get('/min', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, nome FROM usuarios WHERE ativo = true ORDER BY nome ASC`
+    );
+    res.json({ success: true, data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('❌ Erro ao listar usuários mínimos:', error);
+    res.status(500).json({ success: false, message: 'Erro interno no servidor' });
+  }
+});
+
 // Listar todos os usuários (apenas admin)
 router.get('/', checkRole(['admin']), strictLimiter, async (req, res) => {
   try {

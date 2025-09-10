@@ -83,13 +83,29 @@ const Servicos = () => {
 
   const fetchUsuarios = async () => {
     try {
-      const response = await authenticatedFetch(getApiUrl('admin/users'));
+      // Tenta endpoint público mínimo primeiro (para todos usuários autenticados)
+      let response = await authenticatedFetch(getApiUrl('usuarios/min'));
       if (response.ok) {
         const data = await response.json();
-        setUsuarios(data.users || []);
+        const arr = data.data || data.users || data; // aceita diferentes formatos
+        const mapped = Array.isArray(arr) ? arr.map(u => ({ id: u.id, nome: u.nome })) : [];
+        setUsuarios(mapped);
+        return;
+      }
+
+      // Fallback: se falhar, tenta endpoint admin (para admins/managers)
+      response = await authenticatedFetch(getApiUrl('admin/users'));
+      if (response.ok) {
+        const data = await response.json();
+        const arr = data.users || data.data || data;
+        const mapped = Array.isArray(arr) ? arr.map(u => ({ id: u.id, nome: u.nome })) : [];
+        setUsuarios(mapped);
+      } else {
+        setUsuarios([]);
       }
     } catch (e) {
       console.error('Erro ao carregar usuários:', e);
+      setUsuarios([]);
     }
   };
 

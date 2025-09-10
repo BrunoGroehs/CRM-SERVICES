@@ -66,18 +66,22 @@ const Calendario = () => {
 
       // Buscar usuários (para seleção de funcionários múltiplos)
       try {
-        const usuariosResp = await authenticatedFetch(getApiUrl('admin/users'));
+        // tentar endpoint mínimo
+        let usuariosResp = await authenticatedFetch(getApiUrl('usuarios/min'));
         if (usuariosResp.ok) {
           const usuariosData = await usuariosResp.json();
-          // Aceita formato { users: [...] } ou array direto
-          const usersArray = usuariosData.users || usuariosData;
-          if (Array.isArray(usersArray)) {
-            setUsuarios(usersArray.map(u => ({ id: u.id, nome: u.nome })));
+          const usersArray = usuariosData.data || usuariosData.users || usuariosData;
+          setUsuarios(Array.isArray(usersArray) ? usersArray.map(u => ({ id: u.id, nome: u.nome })) : []);
+        } else {
+          // fallback admin
+          usuariosResp = await authenticatedFetch(getApiUrl('admin/users'));
+          if (usuariosResp.ok) {
+            const usuariosData = await usuariosResp.json();
+            const usersArray = usuariosData.users || usuariosData.data || usuariosData;
+            setUsuarios(Array.isArray(usersArray) ? usersArray.map(u => ({ id: u.id, nome: u.nome })) : []);
           } else {
             setUsuarios([]);
           }
-        } else {
-          setUsuarios([]);
         }
       } catch (err) {
         console.warn('Erro ao buscar usuários:', err);
