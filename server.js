@@ -15,6 +15,9 @@ const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger'
 const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
 const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
+const { router: despesasRouter, initializePool: initDespesasPool } = require('./routes/despesas');
+const { router: pagamentosRouter, initializePool: initPagamentosPool } = require('./routes/pagamento-funcionarios');
+const { router: rateioRouter, initializePool: initRateioPool } = require('./routes/rateio-config');
 const recontatosRouter = require('./routes/recontatos');
 const { router: authRouter, initializePool: initAuthPool } = require('./routes/auth');
 const { router: usuariosRouter, initializePool: initUsuariosPool } = require('./routes/usuarios');
@@ -155,6 +158,9 @@ initServicosPool(pool);
 initAuthPool(pool);
 initUsuariosPool(pool);
 initAdminPool(pool);
+initDespesasPool(pool);
+initPagamentosPool(pool);
+initRateioPool(pool);
 
 // Configurar estratégias de autenticação
 googleLogger.info('🔧 Configurando estratégias de autenticação...');
@@ -253,6 +259,9 @@ app.get('/oauth-setup', (req, res) => {
 app.use('/clientes', authenticateToken, clientesRouter);
 app.use('/servicos', authenticateToken, servicosRouter);
 app.use('/recontatos', authenticateToken, recontatosRouter);
+app.use('/despesas', despesasRouter); // autenticação aplicada dentro do módulo
+app.use('/pagamento-funcionarios', pagamentosRouter); // autenticação aplicada dentro do módulo
+app.use('/rateio-config', rateioRouter); // autenticação aplicada dentro do módulo
 
 // Endpoint Dashboard - Métricas do Sistema (protegido)
 app.get('/dashboard', authenticateToken, async (req, res) => {

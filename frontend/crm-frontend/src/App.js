@@ -15,6 +15,7 @@ import AuthCallback from './pages/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
 import ConnectionBanner from './components/ConnectionBanner';
+import DespesasPagamentos from './pages/DespesasPagamentos';
 import './App.css';
 import './styles/tokens.css';
 import './styles/global.css';
@@ -40,6 +41,7 @@ function App() {
                         <Route path="/servicos" element={<Servicos />} />
                         <Route path="/recontatos" element={<Recontatos />} />
                         <Route path="/calendario" element={<Calendario />} />
+                        <Route path="/financeiro" element={<DespesasPagamentos />} />
                         <Route path="/admin" element={
                           <RoleProtectedRoute allowedRoles={['admin', 'manager']}>
                             <AdminPanel />

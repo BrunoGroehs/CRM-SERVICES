@@ -16,7 +16,7 @@ const MultiFuncionariosSelect = ({ usuarios = [], value = [], onChange, label = 
     const user = usuarios.find(u => String(u.id) === String(userId));
     if (!user) return;
     if (value.some(v => v.id === user.id)) return; // already
-    onChange([ ...value, { id: user.id, nome: user.nome || user.email } ]);
+  onChange([ ...value, { id: user.id, nome: user.nome || user.email } ]);
   };
 
   const removeUser = (id) => {

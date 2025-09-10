@@ -100,6 +100,11 @@ const Navigation = () => {
               📅 Calendário
             </Link>
           </li>
+          <li className="nav-item">
+            <Link to="/financeiro" className={isActive('/financeiro')}>
+              💸 Financeiro
+            </Link>
+          </li>
         </ul>
   <div className="nav-user">
           <div className="user-menu" ref={dropdownRef}>

@@ -127,7 +127,8 @@ router.get('/', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel,
+        COALESCE(json_agg(json_build_object('usuario_id', su.usuario_id, 'percentual', su.percentual) ORDER BY su.usuario_id) FILTER (WHERE su.usuario_id IS NOT NULL), '[]') AS alocacoes
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
@@ -175,7 +176,8 @@ router.get('/:id', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel,
+        COALESCE(json_agg(json_build_object('usuario_id', su.usuario_id, 'percentual', su.percentual) ORDER BY su.usuario_id) FILTER (WHERE su.usuario_id IS NOT NULL), '[]') AS alocacoes
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
@@ -239,7 +241,8 @@ router.get('/cliente/:clienteId', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel,
+        COALESCE(json_agg(json_build_object('usuario_id', su.usuario_id, 'percentual', su.percentual) ORDER BY su.usuario_id) FILTER (WHERE su.usuario_id IS NOT NULL), '[]') AS alocacoes
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
@@ -268,8 +271,9 @@ router.get('/cliente/:clienteId', async (req, res) => {
 // POST /servicos - Cria um novo serviço (persistindo relacionamento N:N)
 router.post('/', async (req, res) => {
   try {
-  let { cliente_id, data, hora, valor, notas, status = 'agendado', funcionario_responsavel } = req.body;
+  let { cliente_id, data, hora, valor, notas, status = 'agendado', funcionario_responsavel, alocacoes } = req.body;
   const responsaveisIds = sanitizeUsuariosArray(funcionario_responsavel);
+  // alocacoes: [{ usuario_id, percentual }]
     const errors = validateServicoFields(req.body);
     if (errors.length > 0) {
       return res.status(400).json({
@@ -306,9 +310,10 @@ router.post('/', async (req, res) => {
       const servicoId = insertServico.rows[0].id;
       if (responsaveisIds.length) {
         for (const uid of responsaveisIds) {
+          const perc = Array.isArray(alocacoes) ? (alocacoes.find(a => String(a.usuario_id) === String(uid))?.percentual ?? null) : null;
           await client.query(
-            'INSERT INTO servicos_usuarios (servico_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
-            [servicoId, uid]
+            'INSERT INTO servicos_usuarios (servico_id, usuario_id, percentual) VALUES ($1,$2,$3) ON CONFLICT (servico_id, usuario_id) DO UPDATE SET percentual = EXCLUDED.percentual',
+            [servicoId, uid, perc]
           );
         }
       }
@@ -317,7 +322,8 @@ router.post('/', async (req, res) => {
       const servicoCompleto = await pool.query(`
         SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
                s.data, s.hora, s.valor, s.notas, s.status,
-               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel,
+               COALESCE(json_agg(json_build_object('usuario_id', su.usuario_id, 'percentual', su.percentual) ORDER BY su.usuario_id) FILTER (WHERE su.usuario_id IS NOT NULL), '[]') AS alocacoes
         FROM servicos s
         LEFT JOIN clientes c ON s.cliente_id = c.id
         LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
@@ -349,7 +355,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-  let { cliente_id, data, hora, valor, notas, status, funcionario_responsavel } = req.body;
+  let { cliente_id, data, hora, valor, notas, status, funcionario_responsavel, alocacoes } = req.body;
   const responsaveisIds = funcionario_responsavel !== undefined ? sanitizeUsuariosArray(funcionario_responsavel) : undefined;
     
     if (!id || isNaN(id)) {
@@ -428,14 +434,16 @@ router.put('/:id', async (req, res) => {
       if (responsaveisIds !== undefined) {
         await client.query('DELETE FROM servicos_usuarios WHERE servico_id = $1', [id]);
         for (const uid of responsaveisIds) {
-          await client.query('INSERT INTO servicos_usuarios (servico_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, uid]);
+          const perc = Array.isArray(alocacoes) ? (alocacoes.find(a => String(a.usuario_id) === String(uid))?.percentual ?? null) : null;
+          await client.query('INSERT INTO servicos_usuarios (servico_id, usuario_id, percentual) VALUES ($1,$2,$3) ON CONFLICT (servico_id, usuario_id) DO UPDATE SET percentual = EXCLUDED.percentual', [id, uid, perc]);
         }
       }
       await client.query('COMMIT');
       const servicoCompleto = await pool.query(`
         SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
                s.data, s.hora, s.valor, s.notas, s.status,
-               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel,
+               COALESCE(json_agg(json_build_object('usuario_id', su.usuario_id, 'percentual', su.percentual) ORDER BY su.usuario_id) FILTER (WHERE su.usuario_id IS NOT NULL), '[]') AS alocacoes
         FROM servicos s
         LEFT JOIN clientes c ON s.cliente_id = c.id
         LEFT JOIN servicos_usuarios su ON su.servico_id = s.id

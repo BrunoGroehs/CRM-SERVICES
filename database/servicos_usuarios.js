@@ -7,10 +7,14 @@ async function createServicosUsuariosTable(pool) {
         id SERIAL PRIMARY KEY,
         servico_id INTEGER NOT NULL REFERENCES servicos(id) ON DELETE CASCADE,
         usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    percentual NUMERIC,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(servico_id, usuario_id)
       );
     `);
+
+  // Garantir coluna percentual existe em bases já criadas
+  await pool.query('ALTER TABLE servicos_usuarios ADD COLUMN IF NOT EXISTS percentual NUMERIC;');
 
     // Índices para performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_servicos_usuarios_servico_id ON servicos_usuarios(servico_id);');
