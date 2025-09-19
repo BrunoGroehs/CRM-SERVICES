@@ -283,11 +283,16 @@ const Calendario = () => {
     }
   };
 
+  // Controle de envio para edição
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+
   // Função para salvar edição do serviço
   const handleSaveEdit = async () => {
     if (!editingService) return;
+    if (submittingEdit) return;
 
     try {
+      setSubmittingEdit(true);
       // Sanitizar array de IDs (funcionario_responsavel)
       const fr = Array.isArray(editingService.funcionario_responsavel)
         ? editingService.funcionario_responsavel.filter((v,i,a)=> v && a.indexOf(v)===i).map(v=>String(v))
@@ -323,6 +328,8 @@ const Calendario = () => {
     } catch (error) {
   console.error('Erro ao atualizar serviço:', error);
   pushToast('Erro ao atualizar serviço. Tente novamente.', { type: 'error' });
+    } finally {
+      setSubmittingEdit(false);
     }
   };
 
@@ -680,8 +687,9 @@ const Calendario = () => {
                   <button
                     type="submit"
                     className="modal-btn"
+                    disabled={submittingEdit}
                   >
-                    💾 Salvar Alterações
+                    {submittingEdit ? '⏳ Salvando...' : '💾 Salvar Alterações'}
                   </button>
                 </div>
               </form>

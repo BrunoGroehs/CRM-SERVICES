@@ -249,6 +249,8 @@ const Clientes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Evita múltiplos submits rápidos
+    if (submitting) return;
     setSubmitting(true);
 
     const isEditing = editingCliente && editingCliente.id;
@@ -459,6 +461,7 @@ const Clientes = () => {
 
   const handleSubmitRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return; // Evita múltiplos cliques rápidos
     
     // Validações
     if (!recontatoData.data_agendada) {
@@ -471,7 +474,7 @@ const Clientes = () => {
       return;
     }
     
-    setSubmitting(true);
+  setSubmitting(true);
 
     try {
       const response = await authenticatedFetch(getApiUrl('recontatos'), {

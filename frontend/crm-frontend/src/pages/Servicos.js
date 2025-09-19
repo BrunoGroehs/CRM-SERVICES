@@ -36,6 +36,7 @@ const Servicos = () => {
   const [formErrors, setFormErrors] = useState({});
   const [servicosDoCliente, setServicosDoCliente] = useState([]);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const { add: pushToast } = useToast();
 
@@ -307,6 +308,7 @@ const Servicos = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // evita cliques múltiplos rápidos
     
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -318,6 +320,7 @@ const Servicos = () => {
     const isEditing = editingServico && editingServico.id;
 
     try {
+      setSubmitting(true);
       // Preparar dados para envio, convertendo a data para formato ISO
   const dataToSend = { ...formData, data: formatDateForAPI(formData.data) };
   dataToSend.funcionario_responsavel = (formData.funcionario_responsavel || []).map(id => String(id));
@@ -343,7 +346,7 @@ const Servicos = () => {
         throw new Error(errorData.message || errorMessage);
       }
 
-      await fetchServicos(); // Recarregar a lista
+  await fetchServicos(); // Recarregar a lista
       handleCloseModal();
 
       // Se foi criação (não edição), abrir fluxo de recontato na página de Recontatos
@@ -361,6 +364,8 @@ const Servicos = () => {
         try { const t = await err.response.text(); console.error('Resposta bruta:', t);} catch(_){}
       }
       setFormErrors({ submit: err.message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -760,8 +765,8 @@ const Servicos = () => {
                           🗑️ Excluir
                         </button>
                     )}
-                    <button type="submit" className="modal-btn">
-                      {editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço'}
+                    <button type="submit" className="modal-btn" disabled={submitting}>
+                      {submitting ? '⏳ Enviando...' : (editingServico ? '💾 Salvar Alterações' : '✨ Criar Serviço')}
                     </button>
                   </div>
                 </form>

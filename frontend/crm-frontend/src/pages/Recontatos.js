@@ -71,6 +71,12 @@ const Recontatos = () => {
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [recontatoParaDeletar, setRecontatoParaDeletar] = useState(null);
+  // flags de envio para evitar múltiplos cliques
+  const [submittingNovo, setSubmittingNovo] = useState(false);
+  const [submittingEditar, setSubmittingEditar] = useState(false);
+  const [submittingServico, setSubmittingServico] = useState(false);
+  const [submittingProximo, setSubmittingProximo] = useState(false);
+  const [submittingProrrogar, setSubmittingProrrogar] = useState(false);
 
   // Carregar usuários para seleção de responsáveis de serviço
   useEffect(() => {
@@ -283,6 +289,7 @@ const Recontatos = () => {
   // Função para criar novo recontato
   const handleSubmitNovoRecontato = async (e) => {
     e.preventDefault();
+    if (submittingNovo) return;
     
     // Validação básica
     if (!novoRecontatoData.cliente_id) {
@@ -301,6 +308,7 @@ const Recontatos = () => {
     }
     
     try {
+      setSubmittingNovo(true);
       const response = await authenticatedFetch(getApiUrl('recontatos'), {
         method: 'POST',
         headers: {
@@ -331,12 +339,15 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao criar recontato:', err);
   pushToast('Erro ao criar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingNovo(false);
     }
   };
 
   // Função para editar recontato
   const handleSubmitEditarRecontato = async (e) => {
     e.preventDefault();
+    if (submittingEditar) return;
     
     // Validação básica
     if (!recontatoParaEditar.data_agendada) {
@@ -350,6 +361,7 @@ const Recontatos = () => {
     }
 
     try {
+      setSubmittingEditar(true);
       const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoParaEditar.id}`), {
         method: 'PUT',
         headers: {
@@ -375,6 +387,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao atualizar recontato:', err);
   pushToast('Erro ao atualizar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingEditar(false);
     }
   };
 
@@ -465,6 +479,7 @@ const Recontatos = () => {
 
   const handleSubmitServico = async (e) => {
     e.preventDefault();
+    if (submittingServico) return;
     
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -473,6 +488,7 @@ const Recontatos = () => {
     }
 
     try {
+      setSubmittingServico(true);
       const dataToSend = { ...formData };
       if (Array.isArray(dataToSend.funcionario_responsavel)) {
         dataToSend.funcionario_responsavel = dataToSend.funcionario_responsavel.map(id => String(id));
@@ -509,6 +525,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao criar serviço:', err);
       setFormErrors({ submit: err.message });
+    } finally {
+      setSubmittingServico(false);
     }
   };
 
@@ -598,8 +616,10 @@ const Recontatos = () => {
 
   const confirmarProrrogacao = async () => {
     if (!recontatoParaProrrogar) return;
+    if (submittingProrrogar) return;
     
     try {
+      setSubmittingProrrogar(true);
       const novaData = calcularNovaData();
       
       if (!novaData) {
@@ -644,6 +664,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao prorrogar recontato:', err);
   pushToast(`Erro ao prorrogar recontato: ${err.message}`, { type: 'error' });
+    } finally {
+      setSubmittingProrrogar(false);
     }
   };
 
@@ -705,6 +727,7 @@ const Recontatos = () => {
 
   const handleSubmitProximoRecontato = async (e) => {
     e.preventDefault();
+    if (submittingProximo) return;
 
     if (!servicoCriado) {
   pushToast('Erro: informações do serviço não encontradas', { type: 'error' });
@@ -712,6 +735,7 @@ const Recontatos = () => {
     }
 
     try {
+      setSubmittingProximo(true);
       const dataRecontato = proximoRecontatoData.data_personalizada;
       
       if (!dataRecontato) {
@@ -765,6 +789,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao reagendar recontato:', err);
   pushToast('Erro ao reagendar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingProximo(false);
     }
   };
 
@@ -1385,8 +1411,8 @@ const Recontatos = () => {
                     <button type="button" className="modal-btn outline" onClick={() => setShowAddModal(false)}>
                       Cancelar
                     </button>
-                    <button type="submit" className="modal-btn">
-                      Criar Recontato
+                    <button type="submit" className="modal-btn" disabled={submittingNovo}>
+                      {submittingNovo ? '⏳ Enviando...' : 'Criar Recontato'}
                     </button>
                   </div>
                 </form>
@@ -1487,7 +1513,9 @@ const Recontatos = () => {
               
               <div className="modal-footer">
                 <button className="modal-btn outline" onClick={handleCloseProrrogarModal}>Cancelar</button>
-                <button className="modal-btn" onClick={confirmarProrrogacao}>⏳ Confirmar Prorrogação</button>
+                <button className="modal-btn" onClick={confirmarProrrogacao} disabled={submittingProrrogar}>
+                  {submittingProrrogar ? '⏳ Enviando...' : '⏳ Confirmar Prorrogação'}
+                </button>
               </div>
             </div>
           </div>
@@ -1675,8 +1703,8 @@ const Recontatos = () => {
                 <button type="button" onClick={handleCloseServicoModal} className="modal-btn modal-btn-secondary">
                   Cancelar
                 </button>
-                <button type="submit" className="modal-btn">
-                  📅 Criar Serviço
+                <button type="submit" className="modal-btn" disabled={submittingServico}>
+                  {submittingServico ? '⏳ Enviando...' : '📅 Criar Serviço'}
                 </button>
               </div>
             </form>
@@ -1941,7 +1969,7 @@ const Recontatos = () => {
 
                 <div className="modal-footer">
                   <button type="button" className="modal-btn outline" onClick={handleSkipProximoRecontato}>⏭️ Pular Reagendamento</button>
-                  <button type="submit" className="modal-btn">📅 Reagendar Recontato</button>
+                  <button type="submit" className="modal-btn" disabled={submittingProximo}> {submittingProximo ? '⏳ Enviando...' : '📅 Reagendar Recontato'} </button>
                 </div>
               </form>
             </div>
@@ -2040,7 +2068,7 @@ const Recontatos = () => {
 
                 <div className="modal-footer">
                   <button type="button" className="modal-btn outline" onClick={() => setShowEditModal(false)}>Cancelar</button>
-                  <button type="submit" className="modal-btn">💾 Salvar Alterações</button>
+                  <button type="submit" className="modal-btn" disabled={submittingEditar}>{submittingEditar ? '⏳ Enviando...' : '💾 Salvar Alterações'}</button>
                 </div>
               </form>
             </div>
