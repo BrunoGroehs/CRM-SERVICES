@@ -71,6 +71,7 @@ const Recontatos = () => {
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [recontatoParaDeletar, setRecontatoParaDeletar] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Carregar usuários para seleção de responsáveis de serviço
   useEffect(() => {
@@ -283,6 +284,8 @@ const Recontatos = () => {
   // Função para criar novo recontato
   const handleSubmitNovoRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     
     // Validação básica
     if (!novoRecontatoData.cliente_id) {
@@ -331,12 +334,16 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao criar recontato:', err);
   pushToast('Erro ao criar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // Função para editar recontato
   const handleSubmitEditarRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     
     // Validação básica
     if (!recontatoParaEditar.data_agendada) {
@@ -375,6 +382,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao atualizar recontato:', err);
   pushToast('Erro ao atualizar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -465,6 +474,8 @@ const Recontatos = () => {
 
   const handleSubmitServico = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -509,6 +520,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao criar serviço:', err);
       setFormErrors({ submit: err.message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -597,6 +610,8 @@ const Recontatos = () => {
   };
 
   const confirmarProrrogacao = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     if (!recontatoParaProrrogar) return;
     
     try {
@@ -644,6 +659,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao prorrogar recontato:', err);
   pushToast(`Erro ao prorrogar recontato: ${err.message}`, { type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -705,6 +722,8 @@ const Recontatos = () => {
 
   const handleSubmitProximoRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
 
     if (!servicoCriado) {
   pushToast('Erro: informações do serviço não encontradas', { type: 'error' });
@@ -765,6 +784,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao reagendar recontato:', err);
   pushToast('Erro ao reagendar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1385,8 +1406,8 @@ const Recontatos = () => {
                     <button type="button" className="modal-btn outline" onClick={() => setShowAddModal(false)}>
                       Cancelar
                     </button>
-                    <button type="submit" className="modal-btn">
-                      Criar Recontato
+                    <button type="submit" className="modal-btn" disabled={submitting}>
+                      {submitting ? '⏳ Criando...' : 'Criar Recontato'}
                     </button>
                   </div>
                 </form>
@@ -1486,8 +1507,8 @@ const Recontatos = () => {
               </div>
               
               <div className="modal-footer">
-                <button className="modal-btn outline" onClick={handleCloseProrrogarModal}>Cancelar</button>
-                <button className="modal-btn" onClick={confirmarProrrogacao}>⏳ Confirmar Prorrogação</button>
+                <button className="modal-btn outline" onClick={handleCloseProrrogarModal} disabled={submitting}>Cancelar</button>
+                <button className="modal-btn" onClick={confirmarProrrogacao} disabled={submitting}>{submitting ? '⏳ Prorrogando...' : '⏳ Confirmar Prorrogação'}</button>
               </div>
             </div>
           </div>
@@ -1672,11 +1693,11 @@ const Recontatos = () => {
               )}
 
               <div className="modal-footer">
-                <button type="button" onClick={handleCloseServicoModal} className="modal-btn modal-btn-secondary">
+                <button type="button" onClick={handleCloseServicoModal} className="modal-btn modal-btn-secondary" disabled={submitting}>
                   Cancelar
                 </button>
-                <button type="submit" className="modal-btn">
-                  📅 Criar Serviço
+                <button type="submit" className="modal-btn" disabled={submitting}>
+                  {submitting ? '⏳ Criando...' : '📅 Criar Serviço'}
                 </button>
               </div>
             </form>
@@ -1940,8 +1961,8 @@ const Recontatos = () => {
                 </div>
 
                 <div className="modal-footer">
-                  <button type="button" className="modal-btn outline" onClick={handleSkipProximoRecontato}>⏭️ Pular Reagendamento</button>
-                  <button type="submit" className="modal-btn">📅 Reagendar Recontato</button>
+                  <button type="button" className="modal-btn outline" onClick={handleSkipProximoRecontato} disabled={submitting}>⏭️ Pular Reagendamento</button>
+                  <button type="submit" className="modal-btn" disabled={submitting}>{submitting ? '⏳ Reagendando...' : '📅 Reagendar Recontato'}</button>
                 </div>
               </form>
             </div>
@@ -2039,8 +2060,8 @@ const Recontatos = () => {
                 </div>
 
                 <div className="modal-footer">
-                  <button type="button" className="modal-btn outline" onClick={() => setShowEditModal(false)}>Cancelar</button>
-                  <button type="submit" className="modal-btn">💾 Salvar Alterações</button>
+                  <button type="button" className="modal-btn outline" onClick={() => setShowEditModal(false)} disabled={submitting}>Cancelar</button>
+                  <button type="submit" className="modal-btn" disabled={submitting}>{submitting ? '⏳ Salvando...' : '💾 Salvar Alterações'}</button>
                 </div>
               </form>
             </div>

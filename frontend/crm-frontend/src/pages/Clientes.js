@@ -249,6 +249,7 @@ const Clientes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double submit
     setSubmitting(true);
 
     const isEditing = editingCliente && editingCliente.id;
@@ -459,6 +460,7 @@ const Clientes = () => {
 
   const handleSubmitRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double submit
     
     // Validações
     if (!recontatoData.data_agendada) {
