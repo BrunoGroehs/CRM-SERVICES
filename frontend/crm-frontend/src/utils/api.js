@@ -1,6 +1,5 @@
 // API utility functions
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
-
 export const getApiUrl = (endpoint) => {
   // Remove leading slash if present to avoid double slashes
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
@@ -33,4 +32,5 @@ export const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-export default { getApiUrl, apiRequest };
+const apiUtils = { getApiUrl, apiRequest };
+export default apiUtils;
