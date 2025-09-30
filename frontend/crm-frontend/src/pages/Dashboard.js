@@ -10,13 +10,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const authenticatedFetch = useAuthenticatedFetch();
 
-  useEffect(() => {
-    fetchDashboardData();
-    // Auto-refresh a cada 30 segundos
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchDashboardData]);
-
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -41,6 +34,13 @@ const Dashboard = () => {
       setLoading(false);
     }
   }, [authenticatedFetch]);
+
+  useEffect(() => {
+    fetchDashboardData();
+    // Auto-refresh a cada 30 segundos
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {

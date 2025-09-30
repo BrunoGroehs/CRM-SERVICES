@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useConnection } from '../contexts/ConnectionContext';
 
@@ -5,7 +6,7 @@ export const useAuthenticatedFetch = () => {
   const { refreshAuth, logout } = useAuth();
   const { reportNetworkIssue } = useConnection();
 
-  const authenticatedFetch = async (url, options = {}) => {
+  const authenticatedFetch = useCallback(async (url, options = {}) => {
     const defaultOptions = {
       credentials: 'include',
       headers: {
@@ -43,7 +44,7 @@ export const useAuthenticatedFetch = () => {
   reportNetworkIssue('fetch_failed');
       throw error;
     }
-  };
+  }, [refreshAuth, logout, reportNetworkIssue]);
 
   return authenticatedFetch;
 };

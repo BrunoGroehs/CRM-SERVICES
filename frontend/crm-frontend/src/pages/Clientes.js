@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './Clientes.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
@@ -40,10 +40,8 @@ const Clientes = () => {
   });
 
   const authenticatedFetch = useAuthenticatedFetch();
-
-  useEffect(() => {
-    fetchClientes();
-  }, [fetchClientes]);
+  const authFetchRef = useRef(authenticatedFetch);
+  useEffect(() => { authFetchRef.current = authenticatedFetch; }, [authenticatedFetch]);
 
   // Efeito para filtrar clientes baseado na pesquisa
   useEffect(() => {
@@ -105,7 +103,7 @@ const Clientes = () => {
   const fetchClientes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await authenticatedFetch(getApiUrl('clientes'));
+      const response = await authFetchRef.current(getApiUrl('clientes'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -126,7 +124,12 @@ const Clientes = () => {
     } finally {
       setLoading(false);
     }
-  }, [authenticatedFetch]);
+  }, []);
+
+  // carregar clientes inicial uma única vez (função estável)
+  useEffect(() => {
+    fetchClientes();
+  }, [fetchClientes]);
 
   const fetchHistoricoServicos = async (clienteId) => {
     try {
