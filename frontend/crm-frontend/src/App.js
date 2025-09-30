@@ -10,6 +10,7 @@ import Servicos from './pages/Servicos';
 import Recontatos from './pages/Recontatos';
 import Calendario from './pages/Calendario';
 import AdminPanel from './pages/AdminPanel';
+import Financas from './pages/Financas';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -40,6 +41,7 @@ function App() {
                         <Route path="/servicos" element={<Servicos />} />
                         <Route path="/recontatos" element={<Recontatos />} />
                         <Route path="/calendario" element={<Calendario />} />
+                        <Route path="/financas" element={<Financas />} />
                         <Route path="/admin" element={
                           <RoleProtectedRoute allowedRoles={['admin', 'manager']}>
                             <AdminPanel />

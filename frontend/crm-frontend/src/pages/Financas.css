@@ -1,0 +1,128 @@
+/* Defaults in case app-wide CSS variables are not defined */
+:root {
+  --gradient-primary: linear-gradient(135deg, #6a8dff, #7ed6ff);
+  --color-card-bg: #fff;
+  --color-surface: #f7f9fc;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-light: #6b7280;
+  --color-primary: #1f6feb;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.08);
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.page { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+.page, .page * { box-sizing: border-box; }
+
+.page-header { display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 12px; margin-bottom:1rem; text-align:center; }
+.page-header h1 { margin: 0; font-size: 1.9rem; letter-spacing:.2px; background: var(--gradient-primary); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+.toolbar { display:flex; align-items:center; gap:12px; flex-wrap: wrap; }
+
+.month-nav { display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px; background: var(--gradient-primary); border-radius: 14px; box-shadow: var(--shadow-card); }
+.month-nav .nav-btn { background: rgba(255,255,255,0.2); color:#fff; border:none; padding: 8px 14px; border-radius: 12px; font-weight:700; cursor:pointer; }
+.month-nav .nav-btn:hover { background: rgba(255,255,255,0.28); }
+.month-nav .label-btn { background: transparent; color:#fff; border:none; font-size: 1.25rem; font-weight:800; letter-spacing:.2px; cursor:pointer; }
+.visually-hidden { position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px, 1px, 1px, 1px); white-space:nowrap; }
+
+.stat-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom: 12px; }
+@media (max-width: 1200px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .stat-grid { grid-template-columns: 1fr; } }
+.stat-card { background: var(--color-card-bg); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 0.9rem 1rem; display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center; }
+.stat-card .label { color: var(--color-text-light); font-size:.85rem; }
+.stat-card .value { font-size:1.25rem; font-weight:700; color: var(--color-text); }
+
+.card { background: var(--color-card-bg); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 1rem; overflow: visible; }
+.card + .card { margin-top: 1rem; }
+
+.section-title { margin: 0 0 .5rem; font-size: 1.2rem; color: var(--color-text); }
+
+.grid { display:grid; grid-template-columns: 1fr 380px; gap: 16px; align-items:start; }
+@media (max-width: 1024px) { .grid { grid-template-columns: 1fr; } }
+
+.table-wrap { width:100%; overflow:auto; border:1px solid var(--color-border); border-radius: var(--radius-sm); }
+.table { width: 100%; border-collapse: collapse; min-width: 680px; }
+.table th, .table td { padding: .6rem .75rem; border-bottom: 1px solid var(--color-border); text-align: left; word-break: break-word; overflow-wrap: anywhere; }
+.table .nowrap { white-space: nowrap; }
+.data-cell, .valor-cell { white-space: nowrap; }
+.table thead th { color: var(--color-text-light); font-weight: 600; background: #fafbff; position: sticky; top:0; z-index:1; }
+.table tbody tr:nth-child(odd) { background: #fcfdff; }
+
+.btn { background: var(--gradient-primary); color: #fff; border: none; border-radius: var(--radius-sm); padding: .5rem .9rem; cursor: pointer; transition: transform .06s ease, box-shadow .2s ease; }
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn:active { transform: translateY(0); }
+.btn.secondary { background: #eef2ff; color:#1f2a69; }
+.btn.ghost { background: transparent; color: var(--color-primary); border:1px solid var(--color-border); }
+.btn.danger { background: #dc2626; }
+.btn[disabled] { opacity:.6; cursor:not-allowed; }
+.btn.sm { padding: .35rem .65rem; font-size: .9rem; }
+
+/* Totais por funcionário */
+.total-row { display:flex; flex-direction: column; gap: 8px; padding: 10px 6px; border-bottom: 1px solid var(--color-border); }
+.row-main { display:flex; flex-direction: column; align-items:center; gap:6px; text-align:center; }
+.row-actions { display:flex; align-items:center; justify-content:center; gap:8px; }
+.valores { display:flex; flex-wrap: wrap; gap:12px; color:#444; font-size: .95rem; }
+.valores .saldo { font-weight:600; }
+.valores .saldo.negativo { color: #c62828; }
+.valores .saldo.zero { color: #2e7d32; }
+
+.money-input { width: 110px; padding: 8px 10px 8px 6px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); }
+.money-box { display:flex; align-items:center; gap:6px; background: var(--color-surface); padding:4px 8px; border-radius: var(--radius-sm); border:1px solid var(--color-border); }
+.money-box .prefix { color:#555; }
+
+.icon-btn { width:28px; height:28px; border-radius:50%; background:#eef; border:1px solid #e1e8ff; color:#1f2a69; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.icon-btn:hover { background:#dde6ff; }
+
+.historico { background: rgba(0,0,0,0.03); border-radius: 8px; padding:8px; }
+.hist-line { display:flex; justify-content:space-between; gap:12px; font-size:.9rem; padding:6px 0; border-bottom:1px dashed var(--color-border); }
+.hist-line:last-child { border-bottom:none; }
+.hist-line.vazio { color:#666; border-bottom:none; }
+
+/* Funcionários chips */
+.pills { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.pill { display:inline-flex; align-items:center; gap:8px; background:#eef5ff; color:#1b3a74; padding:4px 10px; border-radius: 999px; border:1px solid #d7e3ff; font-size:.9rem; }
+.pill .close { background:#fff; border:1px solid #d7e3ff; width:22px; height:22px; border-radius:50%; line-height:0; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.pill .close:hover { background:#f2f6ff; }
+.pill.sm { padding: 1px 6px; font-size: .8rem; }
+
+.funcionarios-cell { display:flex; flex-direction:column; gap:6px; }
+.funcionarios-list { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+
+/* Inline form utilities */
+.inline-form { display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:8px; flex-wrap: wrap; }
+.empty { padding:.75rem; color:#666; text-align:center; }
+
+/* User select inline */
+.user-select-inline { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+.user-select-inline select { padding:6px 8px; border:1px solid var(--color-border); border-radius: var(--radius-sm); background: #fff; }
+
+/* Comissões padrão */
+.comissoes-grid { display:grid; grid-template-columns: 1fr; gap:12px; max-width: 720px; margin: 0 auto; }
+.comissao-item { display:flex; flex-direction: row; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px dashed var(--color-border); }
+.comissao-item:last-child { border-bottom:none; }
+.comissao-nome { font-weight:500; }
+.comissao-nome { font-weight:500; flex:1; }
+.comissao-input { display:flex; align-items:center; gap:6px; min-width: 130px; }
+.comissao-input input { flex: 0 0 90px; width:90px; max-width: 90px; padding:6px 8px; border:1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.comissao-input span { display:inline-block; width:18px; text-align:center; }
+
+/* Despesas compact */
+.inline-form.compact { gap:6px; margin-bottom:6px; }
+.inline-form.compact input[type="text"] { padding:4px 6px; font-size:.9rem; }
+.inline-form.compact .money-input { width:90px; padding:4px 6px; }
+.inline-form.compact .btn { padding:.35rem .6rem; }
+.despesas-list .hist-line { font-size:.9rem; padding:4px 0; }
+.despesas-list .hist-line span { overflow-wrap:anywhere; }
+
+/* Utilities */
+.muted { color: var(--color-text-light); }
+.muted.small { color: var(--color-text-light); font-size: .85rem; }
+.spacer { height: 8px; }
+.table-foot { padding:.6rem .8rem; text-align:right; color:var(--color-text-light); border-top:1px solid var(--color-border); }
+
+/* Loading */
+.loading { display:flex; align-items:center; justify-content:center; padding: 2rem 0; color: var(--color-text-light); }
+.spinner { width:18px; height:18px; border:2px solid #c7d2fe; border-top-color:#1f2a69; border-radius:50%; animation: spin .8s linear infinite; margin-right:8px; }
+@keyframes spin { to { transform: rotate(360deg); } }

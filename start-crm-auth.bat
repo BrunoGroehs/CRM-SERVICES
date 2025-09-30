@@ -19,18 +19,18 @@ echo 🛑 Finalizando processos Node.js existentes...
 taskkill /f /im node.exe 2>nul
 echo.
 
-echo 🗄️ Iniciando Backend (Porta 3001)...
+echo 🗄️ Iniciando Backend (Porta 3001) em modo DEV (auto-reload)...
 echo    Pasta: %CD%
-echo    Comando: npm start
-start "CRM Backend" cmd /k "npm start"
+echo    Comando: set PORT=3001 ^&^& set NODE_ENV=development ^&^& npm run dev
+start "CRM Backend" cmd /k "set PORT=3001 && set NODE_ENV=development && npm run dev"
 echo ⏳ Aguardando backend inicializar (8 segundos)...
 timeout /t 8 /nobreak >nul
 echo.
 
 echo 🌐 Iniciando Frontend (Porta 3000)...
 echo    Pasta: %CD%\frontend\crm-frontend
-echo    Comando: npm start
-start "CRM Frontend" cmd /k "cd /d %CD%\frontend\crm-frontend && npm start"
+echo    Comando: set REACT_APP_API_URL=http://localhost:3001 ^&^& npm start
+start "CRM Frontend" cmd /k "cd /d %CD%\frontend\crm-frontend && set REACT_APP_API_URL=http://localhost:3001 && npm start"
 
 echo ⏳ Aguardando frontend inicializar (15 segundos)...
 timeout /t 15 /nobreak >nul

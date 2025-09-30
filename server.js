@@ -15,6 +15,7 @@ const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger'
 const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
 const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
+const { router: financasRouter, initializePool: initFinancasPool } = require('./routes/financas');
 const recontatosRouter = require('./routes/recontatos');
 const { router: authRouter, initializePool: initAuthPool } = require('./routes/auth');
 const { router: usuariosRouter, initializePool: initUsuariosPool } = require('./routes/usuarios');
@@ -155,6 +156,7 @@ initServicosPool(pool);
 initAuthPool(pool);
 initUsuariosPool(pool);
 initAdminPool(pool);
+initFinancasPool(pool);
 
 // Configurar estratégias de autenticação
 googleLogger.info('🔧 Configurando estratégias de autenticação...');
@@ -253,6 +255,8 @@ app.get('/oauth-setup', (req, res) => {
 app.use('/clientes', authenticateToken, clientesRouter);
 app.use('/servicos', authenticateToken, servicosRouter);
 app.use('/recontatos', authenticateToken, recontatosRouter);
+app.use('/financas', authenticateToken, financasRouter);
+logger.info('📈 Rotas de Finanças montadas em /financas');
 
 // Endpoint Dashboard - Métricas do Sistema (protegido)
 app.get('/dashboard', authenticateToken, async (req, res) => {

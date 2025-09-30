@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "fix-schema": "node scripts/check_and_fix_schema.js",
   "test": "echo \"Error: no test specified\" && exit 1",
   "import-data": "node scripts/import_csv.js --clientes ./clientes_NOVO.csv --servicos ./servicos_NOVO.csv",
   "update-servicos-concluido": "node scripts/update_all_servicos_concluido.js --only-pending",

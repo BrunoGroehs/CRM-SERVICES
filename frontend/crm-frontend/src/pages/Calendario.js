@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
+import { getApiUrl } from '../utils/api';
 import './Calendario.css';
 
 const Calendario = () => {
@@ -18,9 +19,6 @@ const Calendario = () => {
   const authenticatedFetch = useAuthenticatedFetch();
   const { add: pushToast } = useToast();
 
-  const getApiUrl = (endpoint) => {
-    return `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/${endpoint}`;
-  };
 
   useEffect(() => {
     fetchData();
@@ -382,10 +380,13 @@ const Calendario = () => {
   const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   const formatCurrency = (value) => {
+    const num = parseFloat(
+      typeof value === 'string' ? value.replace(/\./g, '').replace(',', '.') : value
+    );
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(Number.isFinite(num) ? num : 0);
   };
 
   const formatTime = (timeString) => {

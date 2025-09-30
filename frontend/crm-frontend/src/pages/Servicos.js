@@ -255,7 +255,7 @@ const Servicos = () => {
     
     setEditingServico(null);
     setFormData({
-  cliente_id: '', data: dataAtual, hora: '09:00', valor: '', notas: '', status: 'agendado', funcionario_responsavel: [], funcionarios: []
+  cliente_id: '', data: dataAtual, hora: '09:00', valor: '', notas: '', status: 'agendado', funcionario_responsavel: ['1','2','3'], funcionarios: []
     });
     setFormErrors({});
     setShowModal(true);

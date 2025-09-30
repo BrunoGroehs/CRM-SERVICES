@@ -113,7 +113,7 @@ const sanitizeUsuariosArray = (input) => {
   return [];
 };
 
-// GET /servicos - Retorna todos os serviços (agora agregando usuários responsáveis via join table)
+// GET /servicos - Retorna todos os serviços (agora agregando usuários responsáveis via subselect para evitar GROUP BY complexo)
 router.get('/', async (req, res) => {
   try {
     const query = `
@@ -127,14 +127,20 @@ router.get('/', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
-      LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
-      GROUP BY s.id, c.nome, c.telefone
+      ORDER BY s.data DESC, s.hora DESC
     `;
     const result = await pool.query(query);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -146,62 +152,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao buscar serviços',
-      error: error.message
-    });
-  }
-});
-
-// GET /servicos/:id - Retorna um serviço específico (com array de usuários)
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'ID do serviço deve ser um número válido'
-      });
-    }
-    
-    const query = `
-      SELECT 
-        s.id,
-        s.cliente_id,
-        c.nome as cliente_nome,
-        c.telefone as cliente_telefone,
-        c.email as cliente_email,
-        s.data,
-        s.hora,
-        s.valor,
-        s.notas,
-        s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
-      FROM servicos s
-      LEFT JOIN clientes c ON s.cliente_id = c.id
-      LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
-      WHERE s.id = $1
-      GROUP BY s.id, c.nome, c.telefone, c.email
-    `;
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Serviço não encontrado'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: result.rows[0],
-      message: 'Serviço encontrado com sucesso'
-    });
-  } catch (error) {
-    console.error('Erro ao buscar serviço:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erro interno do servidor ao buscar serviço',
-      error: error.message
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
     });
   }
 });
@@ -210,14 +161,14 @@ router.get('/:id', async (req, res) => {
 router.get('/cliente/:clienteId', async (req, res) => {
   try {
     const { clienteId } = req.params;
-    
+
     if (!clienteId || isNaN(clienteId)) {
       return res.status(400).json({
         success: false,
         message: 'ID do cliente deve ser um número válido'
       });
     }
-    
+
     // Verificar se cliente existe
     const clienteExists = await checkClienteExists(clienteId);
     if (!clienteExists) {
@@ -226,7 +177,7 @@ router.get('/cliente/:clienteId', async (req, res) => {
         message: 'Cliente não encontrado'
       });
     }
-    
+
     const query = `
       SELECT 
         s.id,
@@ -239,16 +190,21 @@ router.get('/cliente/:clienteId', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
-      LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
       WHERE s.cliente_id = $1
-      GROUP BY s.id, c.nome, c.telefone, c.email
       ORDER BY s.data DESC, s.hora DESC
     `;
     const result = await pool.query(query, [clienteId]);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -260,16 +216,83 @@ router.get('/cliente/:clienteId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao buscar histórico do cliente',
-      error: error.message
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
     });
   }
 });
+
+// GET /servicos/:id - Retorna um serviço específico (com array de usuários)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID do serviço deve ser um número válido'
+      });
+    }
+
+    const query = `
+      SELECT 
+        s.id,
+        s.cliente_id,
+        c.nome as cliente_nome,
+        c.telefone as cliente_telefone,
+        c.email as cliente_email,
+        s.data,
+        s.hora,
+        s.valor,
+        s.notas,
+        s.status,
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
+      FROM servicos s
+      LEFT JOIN clientes c ON s.cliente_id = c.id
+      WHERE s.id = $1
+    `;
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serviço não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: 'Serviço encontrado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao buscar serviço:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao buscar serviço',
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
+    });
+  }
+});
+
+// (removido bloco duplicado de /cliente/:clienteId)
 
 // POST /servicos - Cria um novo serviço (persistindo relacionamento N:N)
 router.post('/', async (req, res) => {
   try {
   let { cliente_id, data, hora, valor, notas, status = 'agendado', funcionario_responsavel } = req.body;
-  const responsaveisIds = sanitizeUsuariosArray(funcionario_responsavel);
+  // garantir que 1,2,3 estejam presentes na criação
+  let responsaveisIds = sanitizeUsuariosArray(funcionario_responsavel);
+  const obrigatorios = [1,2,3];
+  for (const baseId of obrigatorios) {
+    if (!responsaveisIds.includes(baseId)) responsaveisIds.push(baseId);
+  }
     const errors = validateServicoFields(req.body);
     if (errors.length > 0) {
       return res.status(400).json({
@@ -317,12 +340,17 @@ router.post('/', async (req, res) => {
       const servicoCompleto = await pool.query(`
         SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
                s.data, s.hora, s.valor, s.notas, s.status,
-               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+               COALESCE(
+                 (
+                   SELECT array_agg(su.usuario_id::text)
+                   FROM servicos_usuarios su
+                   WHERE su.servico_id = s.id
+                 ),
+                 ARRAY[]::text[]
+               ) AS funcionario_responsavel
         FROM servicos s
         LEFT JOIN clientes c ON s.cliente_id = c.id
-        LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
         WHERE s.id = $1
-        GROUP BY s.id, c.nome, c.telefone
       `, [servicoId]);
       res.status(201).json({
         success: true,
@@ -435,12 +463,17 @@ router.put('/:id', async (req, res) => {
       const servicoCompleto = await pool.query(`
         SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
                s.data, s.hora, s.valor, s.notas, s.status,
-               COALESCE(array_agg(su.usuario_id::text) FILTER (WHERE su.usuario_id IS NOT NULL), '{}') AS funcionario_responsavel
+               COALESCE(
+                 (
+                   SELECT array_agg(su.usuario_id::text)
+                   FROM servicos_usuarios su
+                   WHERE su.servico_id = s.id
+                 ),
+                 ARRAY[]::text[]
+               ) AS funcionario_responsavel
         FROM servicos s
         LEFT JOIN clientes c ON s.cliente_id = c.id
-        LEFT JOIN servicos_usuarios su ON su.servico_id = s.id
         WHERE s.id = $1
-        GROUP BY s.id, c.nome, c.telefone
       `, [id]);
       res.json({
         success: true,

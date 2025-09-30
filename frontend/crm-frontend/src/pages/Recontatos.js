@@ -399,7 +399,7 @@ const Recontatos = () => {
       valor: '',
       notas: `Recontato realizado - ${recontato.observacoes || ''}`,
       status: 'agendado',
-      funcionario_responsavel: ''
+      funcionario_responsavel: ['1','2','3']
     });
     setFormErrors({});
     
@@ -945,7 +945,7 @@ const Recontatos = () => {
       valor: '',
       status: 'agendado',
       notas: '',
-  funcionario_responsavel: []
+  funcionario_responsavel: ['1','2','3']
     });
     
     // Pré-selecionar e bloquear o cliente

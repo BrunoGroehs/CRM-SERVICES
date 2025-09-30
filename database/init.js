@@ -3,6 +3,7 @@ const { createServicosTable, createServicosUpdateTrigger } = require('./servicos
 const { createServicosUsuariosTable } = require('./servicos_usuarios');
 const { createRecontatosTable, createRecontatosUpdateTrigger } = require('./recontatos');
 const { createUsuariosTable, createUsuariosUpdateTrigger } = require('./usuarios');
+const { createFinancasTables } = require('./financas');
 
 // Função para criar a tabela de clientes se ela não existir
 async function createClientesTable(pool) {
@@ -125,6 +126,9 @@ async function initializeDatabase(pool) {
 
     // Criar tabela de relacionamento N:N
     await createServicosUsuariosTable(pool);
+
+  // Tabelas de Finanças (comissões padrão, pagamentos e coluna override)
+  await createFinancasTables(pool);
 
     // Remover colunas legacy se ainda existirem
     try {
