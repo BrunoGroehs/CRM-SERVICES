@@ -11,6 +11,37 @@ const initializePool = (dbPool) => {
   pool = dbPool;
 };
 
+// Helper: parse number from pt-BR/en-US formats safely
+const parseNumero = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const s = String(v).trim();
+  if (!s) return null;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && !hasDot) {
+    const n = Number(s.replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+  if (hasDot && !hasComma) {
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    const decimalSep = lastComma > lastDot ? ',' : '.';
+    const thousandSep = decimalSep === ',' ? '.' : ',';
+    const normalized = s.split(thousandSep).join('').replace(decimalSep, '.');
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : null;
+  }
+  const n = Number(s.replace(/\s+/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
+
+const withinDecimal102 = (n) => n === null || Math.abs(n) <= 99999999.99;
+
 // Validação dos campos obrigatórios para serviços
 const validateServicoFields = (servico) => {
   const errors = [];
@@ -41,9 +72,14 @@ const validateServicoFields = (servico) => {
     errors.push('Status deve ser: agendado, em_andamento, concluido ou cancelado');
   }
   
-  // Validação de valor (se fornecido)
-  if (servico.valor && (isNaN(servico.valor) || parseFloat(servico.valor) < 0)) {
-    errors.push('Valor deve ser um número positivo');
+  // Validação de valor (se fornecido) - aceita "pt-BR" e checa limites DECIMAL(10,2)
+  if (servico.valor !== undefined && servico.valor !== null && servico.valor !== '') {
+    const n = parseNumero(servico.valor);
+    if (n === null || n < 0) {
+      errors.push('Valor deve ser um número positivo');
+    } else if (!withinDecimal102(n)) {
+      errors.push('Valor muito grande para o campo (máximo 99.999.999,99)');
+    }
   }
   
   return errors;
@@ -81,9 +117,13 @@ const validateServicoUpdateFields = (servico) => {
   }
   
   // Validação de valor (se fornecido)
-  if (servico.valor !== undefined && servico.valor !== '' && servico.valor !== null && 
-      (isNaN(servico.valor) || parseFloat(servico.valor) < 0)) {
-    errors.push('Valor deve ser um número positivo');
+  if (servico.valor !== undefined && servico.valor !== '' && servico.valor !== null) {
+    const n = parseNumero(servico.valor);
+    if (n === null || n < 0) {
+      errors.push('Valor deve ser um número positivo');
+    } else if (!withinDecimal102(n)) {
+      errors.push('Valor muito grande para o campo (máximo 99.999.999,99)');
+    }
   }
   
   return errors;
@@ -321,7 +361,7 @@ router.post('/', async (req, res) => {
           cliente_id,
           data,
           hora,
-          valor ? parseFloat(valor) : null,
+          valor !== undefined && valor !== null && valor !== '' ? parseNumero(valor) : null,
           notas ? notas.trim() : null,
           status
         ]
@@ -448,7 +488,7 @@ router.put('/:id', async (req, res) => {
         updateData.cliente_id,
         updateData.data,
         updateData.hora,
-        updateData.valor ? parseFloat(updateData.valor) : null,
+        updateData.valor !== undefined && updateData.valor !== null && updateData.valor !== '' ? parseNumero(updateData.valor) : null,
         updateData.notas ? updateData.notas.trim() : null,
         updateData.status || 'agendado',
         id
