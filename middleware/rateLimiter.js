@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { logger } = require('../config/logger');
 
 // Rate limiter para rotas de autenticação - TEMPORARIAMENTE DESABILITADO PARA TESTES
 const authLimiter = rateLimit({
@@ -29,7 +30,14 @@ const apiLimiter = rateLimit({
     message: 'Muitas requisições. Tente novamente em 15 minutos.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skipFailedRequests: false,
+  keyGenerator: (req, res) => {
+    const forwarded = req.get('x-forwarded-for');
+    const key = req.ip || (forwarded ? forwarded.split(',')[0].trim() : req.connection?.remoteAddress);
+    logger.debug('⏱️ RateLimit key', { key, ip: req.ip, ips: req.ips, xff: forwarded || null });
+    return key || 'unknown';
+  }
 });
 
 // Rate limiter mais restritivo para operações sensíveis

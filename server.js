@@ -35,6 +35,11 @@ logger.info('🚀 Iniciando CRM Services...', {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Behind Render (and most PaaS) there's a reverse proxy; trust it so req.ip/req.secure work
+// This also satisfies express-rate-limit validations about X-Forwarded-For
+app.set('trust proxy', 1);
+logger.info('🛡️ trust proxy habilitado', { trustProxy: app.get('trust proxy') });
+
 // Configurações de segurança
 logger.info('🔒 Configurando segurança com Helmet...');
 app.use(helmet({
@@ -92,6 +97,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-key',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // honor X-Forwarded-* when setting secure cookies
   cookie: {
     secure: process.env.NODE_ENV === 'production', // HTTPS em produção
     httpOnly: true,
@@ -131,6 +137,8 @@ app.use((req, res, next) => {
     method: req.method,
     path: req.path,
     ip: req.ip,
+    ips: req.ips,
+    xForwardedFor: req.get('x-forwarded-for') || null,
     userAgent: req.get('User-Agent')
   });
   next();
