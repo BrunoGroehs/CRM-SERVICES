@@ -198,8 +198,8 @@ router.post('/', async (req, res) => {
 // PUT /clientes/:id - Atualiza um cliente existente
 router.put('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const { nome, telefone, email, endereco, cidade, cep, quantidade_paineis } = req.body;
+  const { id } = req.params;
+  const { nome, telefone, email, endereco, cidade, cep, indicacao, quantidade_paineis } = req.body;
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -238,19 +238,21 @@ router.put('/:id', async (req, res) => {
         endereco = $4, 
         cidade = $5, 
         cep = $6,
-        quantidade_paineis = $7,
+        indicacao = $7,
+        quantidade_paineis = $8,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $8
-      RETURNING id, nome, telefone, email, endereco, cidade, cep, quantidade_paineis, created_at, updated_at
+      WHERE id = $9
+      RETURNING id, nome, telefone, email, endereco, cidade, cep, indicacao, quantidade_paineis, created_at, updated_at
     `;
     
     const values = [
       nome.trim(),
       telefone.trim(),
-      email.trim().toLowerCase(),
+      email && email.trim() !== '' ? email.trim().toLowerCase() : null,
       endereco ? endereco.trim() : null,
       cidade ? cidade.trim() : null,
       cep ? cep.trim() : null,
+      indicacao ? indicacao.trim() : null,
       quantidade_paineis && !isNaN(quantidade_paineis) ? parseInt(quantidade_paineis) : null,
       id
     ];
@@ -263,16 +265,27 @@ router.put('/:id', async (req, res) => {
       message: 'Cliente atualizado com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
-    
+    console.error('❌ Erro ao atualizar cliente:', error);
+    console.error('📝 Detalhes do erro (update cliente):', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: (error.stack || '').split('\n').slice(0, 5).join('\n')
+    });
+
     // Tratamento de erro de email duplicado
-    if (error.code === '23505' && error.constraint === 'clientes_email_key') {
+    const isUniqueViolation = error.code === '23505';
+    const isEmailConstraint = (error.constraint && error.constraint.includes('clientes_email'))
+      || (error.detail && /clientes.*\(email\)/i.test(error.detail));
+    if (isUniqueViolation && isEmailConstraint) {
       return res.status(409).json({
         success: false,
         message: 'Email já está sendo usado por outro cliente'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao atualizar cliente',

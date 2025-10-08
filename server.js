@@ -125,10 +125,25 @@ logger.debug('📁 Configurando arquivos estáticos...');
 app.use(express.static('public'));
 
 // Servir frontend React em produção
+let buildPath = null;
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+  buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
   logger.info('📦 Modo produção: servindo frontend React', { buildPath });
   app.use(express.static(buildPath));
+
+  // Importante: antes das rotas de API, servir index.html para navegações do navegador
+  // Isso garante que GET /financas (rota do SPA) não bata no router de API /financas com 401 JSON
+  const spaRoutes = ['/', '/clientes', '/servicos', '/recontatos', '/calendario', '/financas', '/admin'];
+  const indexFile = path.join(buildPath, 'index.html');
+  spaRoutes.forEach((route) => {
+    app.get(route, (req, res, next) => {
+      const accept = req.get('accept') || '';
+      if (req.method === 'GET' && accept.includes('text/html')) {
+        return res.sendFile(indexFile);
+      }
+      return next();
+    });
+  });
 }
 
 // Middleware para logging de requests
