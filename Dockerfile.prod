@@ -1,0 +1,29 @@
+# Estágio 1: Build do Frontend
+FROM node:18-alpine as frontend-build
+WORKDIR /app/frontend
+COPY frontend/crm-frontend/package*.json ./
+RUN npm install
+COPY frontend/crm-frontend/ ./
+RUN npm run build
+
+# Estágio 2: Backend + Servidor
+FROM node:18-alpine
+WORKDIR /app
+
+# Instalar dependências do backend
+COPY package*.json ./
+RUN npm install --production
+
+# Copiar código fonte do backend
+COPY . .
+
+# Copiar o build do frontend do estágio anterior para o local esperado pelo server.js
+COPY --from=frontend-build /app/frontend/build ./frontend/crm-frontend/build
+
+# Variáveis de ambiente padrão (podem ser sobrescritas pelo docker-compose)
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
