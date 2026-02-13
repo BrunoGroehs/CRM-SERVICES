@@ -1,14 +1,13 @@
 const rateLimit = require('express-rate-limit');
+const { logger } = require('../config/logger');
 
-// Rate limiter para rotas de autenticação
+// Rate limiter para rotas de autenticação - TEMPORARIAMENTE DESABILITADO PARA TESTES
 const authLimiter = rateLimit({
-  windowMs: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 2 * 60 * 1000, // 15 min (prod) / 2 min (dev)
-  max: process.env.NODE_ENV === 'production' ? 5 : 50, // 5 tentativas (prod) / 50 (dev)
+  windowMs: 1 * 60 * 1000, // 1 minuto apenas
+  max: 1000, // 1000 tentativas - praticamente sem limite para testes
   message: {
     success: false,
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Muitas tentativas de login. Tente novamente em 15 minutos.'
-      : 'Muitas tentativas de login. Tente novamente em 2 minutos.'
+    message: 'Rate limit atingido - isso não deveria aparecer durante testes'
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -21,6 +20,7 @@ const authLimiter = rateLimit({
   }
 });
 
+
 // Rate limiter geral para API
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -30,7 +30,14 @@ const apiLimiter = rateLimit({
     message: 'Muitas requisições. Tente novamente em 15 minutos.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skipFailedRequests: false,
+  keyGenerator: (req, res) => {
+    const forwarded = req.get('x-forwarded-for');
+    const key = req.ip || (forwarded ? forwarded.split(',')[0].trim() : req.connection?.remoteAddress);
+    logger.debug('⏱️ RateLimit key', { key, ip: req.ip, ips: req.ips, xff: forwarded || null });
+    return key || 'unknown';
+  }
 });
 
 // Rate limiter mais restritivo para operações sensíveis

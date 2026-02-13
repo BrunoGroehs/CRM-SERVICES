@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './Clientes.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
+  const [filteredClientes, setFilteredClientes] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
   const [showModal, setShowModal] = useState(false);
   const [showRecontatoModal, setShowRecontatoModal] = useState(false);
   const [showDetalhesModal, setShowDetalhesModal] = useState(false);
@@ -20,6 +24,7 @@ const Clientes = () => {
   const [toasts, setToasts] = useState([]);
   const [recontatoData, setRecontatoData] = useState({
     data_agendada: '',
+    motivo: '',
     observacoes: '',
     status: 'agendado'
   });
@@ -31,14 +36,52 @@ const Clientes = () => {
     cidade: '',
     cep: '',
     indicacao: '',
-    quantidade_placas: ''
+    quantidade_paineis: ''
   });
 
   const authenticatedFetch = useAuthenticatedFetch();
+  const authFetchRef = useRef(authenticatedFetch);
+  useEffect(() => { authFetchRef.current = authenticatedFetch; }, [authenticatedFetch]);
 
+  // Efeito para filtrar clientes baseado na pesquisa
   useEffect(() => {
-    fetchClientes();
-  }, [fetchClientes]);
+    if (!searchTerm.trim()) {
+      setFilteredClientes(clientes);
+    } else {
+      const filtered = clientes.filter(cliente => 
+        cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.telefone?.includes(searchTerm) ||
+        cliente.cidade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.endereco?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cliente.indicacao?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredClientes(filtered);
+    }
+    setCurrentPage(1); // Reset para primeira página ao pesquisar
+  }, [clientes, searchTerm]);
+
+  // Lógica de paginação
+  const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentClientes = filteredClientes.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   // Função para mostrar toast
   const showToast = (message, type = 'success') => {
@@ -60,14 +103,20 @@ const Clientes = () => {
   const fetchClientes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await authenticatedFetch(getApiUrl('clientes'));
+      const response = await authFetchRef.current(getApiUrl('clientes'));
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      setClientes(data.data || []);
+      const clientesData = data.data || [];
+      // Ordenar clientes alfabeticamente por nome
+      const clientesOrdenados = clientesData.sort((a, b) => 
+        a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+      );
+      setClientes(clientesOrdenados);
+      setFilteredClientes(clientesOrdenados);
       setError(null);
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
@@ -75,7 +124,12 @@ const Clientes = () => {
     } finally {
       setLoading(false);
     }
-  }, [authenticatedFetch]);
+  }, []);
+
+  // carregar clientes inicial uma única vez (função estável)
+  useEffect(() => {
+    fetchClientes();
+  }, [fetchClientes]);
 
   const fetchHistoricoServicos = async (clienteId) => {
     try {
@@ -134,7 +188,21 @@ const Clientes = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Erro na data';
+    }
   };
 
   const formatTime = (timeString) => {
@@ -184,6 +252,7 @@ const Clientes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double submit
     setSubmitting(true);
 
     const isEditing = editingCliente && editingCliente.id;
@@ -227,7 +296,7 @@ const Clientes = () => {
           cidade: '',
           cep: '',
           indicacao: '',
-          quantidade_placas: ''
+          quantidade_paineis: ''
         });
         setEditingCliente(null);
         setShowModal(false);
@@ -249,7 +318,7 @@ const Clientes = () => {
           cidade: '',
           cep: '',
           indicacao: '',
-          quantidade_placas: ''
+          quantidade_paineis: ''
         });
       }
       
@@ -282,7 +351,7 @@ const Clientes = () => {
       cidade: '',
       cep: '',
       indicacao: '',
-      quantidade_placas: ''
+      quantidade_paineis: ''
     });
     setShowModal(true);
   };
@@ -297,7 +366,7 @@ const Clientes = () => {
       cidade: cliente.cidade || '',
       cep: cliente.cep || '',
       indicacao: cliente.indicacao || '',
-      quantidade_placas: cliente.quantidade_placas || ''
+      quantidade_paineis: cliente.quantidade_paineis || ''
     });
     setShowModal(true);
   };
@@ -313,7 +382,7 @@ const Clientes = () => {
       cidade: '',
       cep: '',
       indicacao: '',
-      quantidade_placas: ''
+      quantidade_paineis: ''
     });
   };
 
@@ -394,6 +463,19 @@ const Clientes = () => {
 
   const handleSubmitRecontato = async (e) => {
     e.preventDefault();
+    if (submitting) return; // guard against double submit
+    
+    // Validações
+    if (!recontatoData.data_agendada) {
+      showToast('Selecione uma data para o recontato.', 'warning');
+      return;
+    }
+    
+    if (!recontatoData.motivo.trim()) {
+      showToast('Informe o motivo do recontato.', 'warning');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
@@ -412,12 +494,12 @@ const Clientes = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Cliente e recontato criados com sucesso!');
+  showToast('Cliente e recontato criados com sucesso!', 'success');
       handleCloseRecontatoModal();
       
     } catch (err) {
       console.error('Erro ao criar recontato:', err);
-      alert('Erro ao criar recontato: ' + err.message);
+  showToast('Erro ao criar recontato: ' + err.message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -428,13 +510,14 @@ const Clientes = () => {
     setNovoClienteId(null);
     setRecontatoData({
       data_agendada: '',
+      motivo: '',
       observacoes: '',
       status: 'agendado'
     });
   };
 
   const handleSkipRecontato = () => {
-    alert('Cliente criado com sucesso!');
+  showToast('Cliente criado com sucesso!', 'success');
     handleCloseRecontatoModal();
   };
 
@@ -465,90 +548,155 @@ const Clientes = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>👥 Clientes</h1>
-        <p>Lista de todos os clientes cadastrados no sistema</p>
-        <button className="add-btn" onClick={openModal}>
-          ➕ CLIENTE +
+        <div className="header-content">
+          <h1>👥 Clientes</h1>
+          <p>Lista de todos os clientes cadastrados no sistema</p>
+        </div>
+        <button className="modern-add-btn" onClick={openModal}>
+          <span className="btn-icon">+</span>
+          <span className="btn-text">Adicionar Cliente</span>
         </button>
       </div>
 
-      <div className="stats-bar">
-        <div className="stat-item">
-          <span className="stat-value">{clientes.length}</span>
-          <span className="stat-label">Total de Clientes</span>
+      {/* Barra de pesquisa */}
+      <div className="search-bar">
+        <div className="search-input-container">
+          <input
+            type="text"
+            placeholder="🔍 Pesquisar por nome, email, telefone, cidade..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              title="Limpar pesquisa"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {clientes.length === 0 ? (
+      {filteredClientes.length === 0 ? (
         <div className="empty-state">
-          <h3>Nenhum cliente encontrado</h3>
-          <p>Não há clientes cadastrados no sistema.</p>
+          <h3>{searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum cliente encontrado'}</h3>
+          <p>
+            {searchTerm 
+              ? `Não há clientes que correspondam a "${searchTerm}".`
+              : 'Não há clientes cadastrados no sistema.'
+            }
+          </p>
+          {searchTerm && (
+            <button className="clear-search-btn" onClick={() => setSearchTerm('')}>
+              Limpar pesquisa
+            </button>
+          )}
         </div>
       ) : (
-        <div className="data-grid">
-          {clientes.map((cliente) => (
-            <div key={cliente.id} className="data-card">
-              <div className="card-header">
-                <h3>{cliente.nome}</h3>
-                <div className="card-meta">
-                  {cliente.quantidade_placas && (
-                    <span className="card-placas">⚡ {cliente.quantidade_placas}un</span>
-                  )}
-                  <span className="card-id">ID: {cliente.id}</span>
-                </div>
+        <div className="table-container">
+          <table className="clientes-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Cidade</th>
+                <th>Endereço</th>
+                <th>Painéis</th>
+                <th>Indicação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentClientes.map((cliente) => (
+                <tr key={cliente.id}>
+                  <td className="id-cell">{cliente.id}</td>
+                  <td className="nome-cell">
+                    <strong>{cliente.nome}</strong>
+                  </td>
+                  <td className="telefone-cell">
+                    {cliente.telefone || '-'}
+                  </td>
+                  <td className="cidade-cell">
+                    {cliente.cidade || '-'}
+                  </td>
+                  <td className="endereco-cell">
+                    {cliente.endereco || '-'}
+                  </td>
+                  <td className="paineis-cell">
+                    {cliente.quantidade_paineis ? (
+                      <span className="paineis-badge">⚡ {cliente.quantidade_paineis}</span>
+                    ) : '-'}
+                  </td>
+                  <td className="indicacao-cell">
+                    {cliente.indicacao || '-'}
+                  </td>
+                  <td className="actions-cell">
+                    <div className="action-buttons">
+                      <button 
+                        className="table-action-btn edit"
+                        onClick={() => handleEdit(cliente)}
+                        title="Editar cliente"
+                      >
+                        <span className="icon">✏️</span>
+                        <span>EDIT</span>
+                      </button>
+                      <button 
+                        className="table-action-btn info"
+                        onClick={() => handleVerDetalhes(cliente)}
+                        title="Ver detalhes"
+                      >
+                        <span className="icon">👁️</span>
+                        <span>INFO</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {/* Controles de Paginação */}
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredClientes.length)} de {filteredClientes.length} clientes
               </div>
-              <div className="card-content">
-                <div className="info-row">
-                  <span className="info-label">📧 Email:</span>
-                  <span className="info-value">{cliente.email || 'Não informado'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📱 Telefone:</span>
-                  <span className="info-value">{cliente.telefone}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📍 Endereço:</span>
-                  <span className="info-value">{cliente.endereco}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">🏙️ Cidade:</span>
-                  <span className="info-value">{cliente.cidade}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">📮 CEP:</span>
-                  <span className="info-value">{cliente.cep}</span>
-                </div>
-                {cliente.indicacao && (
-                  <div className="info-row">
-                    <span className="info-label">👥 Indicação:</span>
-                    <span className="info-value">{cliente.indicacao}</span>
-                  </div>
-                )}
-                {cliente.criado_em && (
-                  <div className="info-row">
-                    <span className="info-label">📅 Cadastrado em:</span>
-                    <span className="info-value">{formatDate(cliente.criado_em)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="card-actions">
+              <div className="pagination-controls">
                 <button 
-                  className="edit-btn"
-                  onClick={() => handleEdit(cliente)}
-                  title="Editar cliente"
+                  className="pagination-btn prev" 
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
                 >
-                  ✏️ Editar
+                  ‹ Anterior
                 </button>
+                
+                {/* Páginas */}
+                <div className="pagination-pages">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`pagination-page ${page === currentPage ? 'active' : ''}`}
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
                 <button 
-                  className="details-btn"
-                  onClick={() => handleVerDetalhes(cliente)}
-                  title="Ver histórico e detalhes"
+                  className="pagination-btn next" 
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
                 >
-                  📋 Ver Detalhes
+                  Próxima ›
                 </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -559,12 +707,12 @@ const Clientes = () => {
       {/* Modal para cadastro de cliente */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-shell modal-md" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingCliente ? '✏️ Editar Cliente' : '➕ Cadastrar Novo Cliente'}</h2>
-              <button className="close-btn" onClick={closeModal}>✕</button>
+              <button className="modal-close" onClick={closeModal} aria-label="Fechar">✕</button>
             </div>
-            
+            <div className="modal-body">
             <form onSubmit={handleSubmit} className="cliente-form">
               <div className="form-row">
                 <div className="form-group">
@@ -657,12 +805,12 @@ const Clientes = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="quantidade_placas">⚡ Quantidade de Placas</label>
+                  <label htmlFor="quantidade_paineis">⚡ Quantidade de Placas</label>
                   <input
                     type="number"
-                    id="quantidade_placas"
-                    name="quantidade_placas"
-                    value={formData.quantidade_placas}
+                    id="quantidade_paineis"
+                    name="quantidade_paineis"
+                    value={formData.quantidade_paineis}
                     onChange={handleInputChange}
                     placeholder="Ex: 10"
                     min="0"
@@ -670,20 +818,18 @@ const Clientes = () => {
                 </div>
               </div>
 
-              <div className="form-actions">
-                <button type="button" onClick={closeModal} className="cancel-btn">
-                  ❌ Cancelar
-                </button>
-                <button type="submit" disabled={submitting} className="submit-btn">
+              <div className="modal-footer">
+                <button type="button" onClick={closeModal} className="modal-btn outline">Cancelar</button>
+                <button type="submit" disabled={submitting} className="modal-btn">
                   {submitting 
                     ? '⏳ Salvando...' 
                     : editingCliente 
                       ? '💾 Salvar Alterações' 
-                      : '✅ Salvar Cliente'
-                  }
+                      : '✅ Salvar Cliente'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -691,12 +837,12 @@ const Clientes = () => {
       {/* Modal para criação de recontato */}
       {showRecontatoModal && (
         <div className="modal-overlay" onClick={handleCloseRecontatoModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-shell modal-md" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>� Agendar Primeiro Recontato</h2>
-              <button className="close-btn" onClick={handleCloseRecontatoModal}>✕</button>
+              <h2>📞 Agendar Primeiro Recontato</h2>
+              <button className="modal-close" onClick={handleCloseRecontatoModal} aria-label="Fechar">✕</button>
             </div>
-            
+            <div className="modal-body">
             <form onSubmit={handleSubmitRecontato} className="recontato-form">
               <div className="recontato-intro">
                 <p>Cliente criado com sucesso!</p>
@@ -737,6 +883,19 @@ const Clientes = () => {
               </div>
 
               <div className="form-group">
+                <label htmlFor="motivo">Motivo do Recontato *</label>
+                <input
+                  type="text"
+                  id="motivo"
+                  name="motivo"
+                  value={recontatoData.motivo}
+                  onChange={handleRecontatoInputChange}
+                  placeholder="Ex: Follow-up inicial, apresentar serviços, verificar necessidades..."
+                  required
+                />
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="observacoes">� Observações (opcional)</label>
                 <textarea
                   id="observacoes"
@@ -748,19 +907,18 @@ const Clientes = () => {
                 />
               </div>
 
-              <div className="form-actions">
-                <button type="button" onClick={handleSkipRecontato} className="skip-btn">
-                  ⏭️ Finalizar sem Agendar
-                </button>
+              <div className="modal-footer">
+                <button type="button" onClick={handleSkipRecontato} className="modal-btn outline">Finalizar sem Agendar</button>
                 <button 
                   type="submit" 
                   disabled={submitting || !recontatoData.data_agendada} 
-                  className="submit-btn"
+                  className="modal-btn"
                 >
-                  {submitting ? '⏳ Agendando...' : '� Agendar Recontato'}
+                  {submitting ? '⏳ Agendando...' : '📅 Agendar Recontato'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -768,14 +926,20 @@ const Clientes = () => {
       {/* Modal de Detalhes do Cliente */}
       {showDetalhesModal && selectedCliente && (
         <div className="modal-overlay" onClick={handleCloseDetalhesModal}>
-          <div className="modal-content detalhes-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-xl" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label={`Detalhes do Cliente ${selectedCliente.nome}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📋 Detalhes do Cliente - {selectedCliente.nome}</h2>
-              <button className="close-btn" onClick={handleCloseDetalhesModal}>
+              <button className="modal-btn icon" onClick={handleCloseDetalhesModal} aria-label="Fechar detalhes">
                 ✕
               </button>
             </div>
-            
+
             <div className="modal-body">
               {/* Informações do Cliente */}
               <div className="cliente-info-detalhada">
@@ -807,7 +971,7 @@ const Clientes = () => {
                   </div>
                   <div className="info-row">
                     <span className="info-label">🔢 Quantidade de Placas:</span>
-                    <span className="info-value badge badge-primary">{selectedCliente.quantidade_placas || 0} placas</span>
+                    <span className="info-value badge badge-primary">{selectedCliente.quantidade_paineis || 0} placas</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">�📅 Cadastrado em:</span>
@@ -927,28 +1091,7 @@ const Clientes = () => {
         </div>
       )}
 
-      {/* Sistema de Toast Notifications */}
-      {toasts.length > 0 && (
-        <div className="toast-container">
-          {toasts.map(toast => (
-            <div key={toast.id} className={`toast ${toast.type}`}>
-              <span className="toast-icon">
-                {toast.type === 'success' && '✅'}
-                {toast.type === 'error' && '❌'}
-                {toast.type === 'warning' && '⚠️'}
-              </span>
-              <span className="toast-message">{toast.message}</span>
-              <button 
-                className="toast-close" 
-                onClick={() => removeToast(toast.id)}
-                aria-label="Fechar notificação"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+  {/* Toasts globais renderizados via <ToastProvider /> */}
 
     </div>
   );

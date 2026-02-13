@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useConnection } from './ConnectionContext';
+import { getApiUrl } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -14,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const { reportNetworkIssue } = useConnection();
 
   // Verificar status de autenticação ao carregar
   useEffect(() => {
@@ -23,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
+      const response = await fetch(getApiUrl('auth/me'), {
         credentials: 'include'
       });
       
@@ -41,9 +44,9 @@ export const AuthProvider = ({ children }) => {
         setAuthenticated(false);
       }
     } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-      setUser(null);
-      setAuthenticated(false);
+  console.error('Erro ao verificar autenticação:', error);
+  // Não desloga em erro de rede; apenas sinaliza e mantém estado atual
+  reportNetworkIssue('auth_check_failed');
     } finally {
       setLoading(false);
     }
@@ -51,12 +54,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = () => {
     // Redirecionar para Google OAuth
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    window.location.href = getApiUrl('auth/google');
   };
 
   const logout = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/auth/logout`, {
+      await fetch(getApiUrl('auth/logout'), {
         method: 'POST',
         credentials: 'include'
       });
@@ -73,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshAuth = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/auth/refresh`, {
+      const response = await fetch(getApiUrl('auth/refresh'), {
         method: 'POST',
         credentials: 'include'
       });
@@ -91,9 +94,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Erro ao renovar autenticação:', error);
-      setUser(null);
-      setAuthenticated(false);
-      return false;
+      // Sinaliza problema de rede e não altera estado de auth
+      reportNetworkIssue('auth_refresh_failed');
+      return 'network_error';
     }
   };
 

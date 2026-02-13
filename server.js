@@ -8,10 +8,14 @@ const helmet = require('helmet');
 const cors = require('cors');
 require('dotenv').config();
 
+// Importar sistema de logging
+const { logger, authLogger, googleLogger, dbLogger } = require('./config/logger');
+
 // Importar módulos do projeto
 const { initializeDatabase } = require('./database/init');
 const { router: clientesRouter, initializePool: initClientesPool } = require('./routes/clientes');
 const { router: servicosRouter, initializePool: initServicosPool } = require('./routes/servicos');
+const { router: financasRouter, initializePool: initFinancasPool } = require('./routes/financas');
 const recontatosRouter = require('./routes/recontatos');
 const { router: authRouter, initializePool: initAuthPool } = require('./routes/auth');
 const { router: usuariosRouter, initializePool: initUsuariosPool } = require('./routes/usuarios');
@@ -22,29 +26,55 @@ const { configureGoogleStrategy } = require('./auth/passport');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { authenticateToken } = require('./middleware/auth');
 
+logger.info('🚀 Iniciando CRM Services...', {
+  nodeEnv: process.env.NODE_ENV,
+  port: process.env.PORT || 3000,
+  timestamp: new Date().toISOString()
+});
+
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Behind Render (and most PaaS) there's a reverse proxy; trust it so req.ip/req.secure work
+// This also satisfies express-rate-limit validations about X-Forwarded-For
+app.set('trust proxy', 1);
+logger.info('🛡️ trust proxy habilitado', { trustProxy: app.get('trust proxy') });
+
 // Configurações de segurança
+logger.info('🔒 Configurando segurança com Helmet...');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "accounts.google.com"]
+      imgSrc: ["'self'", "data:", "https:", "*.googleusercontent.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Para React em produção
+      connectSrc: ["'self'", "accounts.google.com", "*.googleapis.com"],
+      frameSrc: ["'self'", "accounts.google.com"]
     }
-  }
+  },
+  crossOriginEmbedderPolicy: false // Para OAuth
 }));
 
 // Configurar CORS
-const allowedOrigins = [
-  'http://localhost:3001', 
-  'http://localhost:3000',
-  process.env.FRONTEND_URL || 'https://crm-services.onrender.com' // URL do Render em produção
-].filter(Boolean);
+const isProd = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProd 
+  ? [
+      process.env.RENDER_EXTERNAL_URL || process.env.BASE_URL || 'https://crm-services.onrender.com',
+      'https://accounts.google.com'
+    ]
+  : [
+      'http://localhost:3001', 
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ];
+
+logger.info('🌐 Configurando CORS', {
+  environment: isProd ? 'PRODUÇÃO' : 'DESENVOLVIMENTO',
+  allowedOrigins
+});
 
 app.use(cors({
   origin: allowedOrigins,
@@ -54,41 +84,87 @@ app.use(cors({
 }));
 
 // Middleware para cookies
+logger.debug('🍪 Configurando cookies...');
 app.use(cookieParser());
 
 // Configurar sessões
+logger.info('📝 Configurando sessões', {
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+});
+
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // honor X-Forwarded-* when setting secure cookies
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // HTTPS em produção
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Para CORS em produção
   }
 }));
 
 // Inicializar Passport
+authLogger.info('🔐 Inicializando Passport...');
 app.use(passport.initialize());
 app.use(passport.session());
 
 // Middleware para parsing JSON
+logger.debug('📄 Configurando middleware de parsing...');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting geral
+logger.debug('⏱️ Configurando rate limiting...');
 app.use('/api/', apiLimiter);
 
 // Middleware para servir arquivos estáticos
+logger.debug('📁 Configurando arquivos estáticos...');
 app.use(express.static('public'));
+
+// Servir frontend React em produção
+let buildPath = null;
+if (process.env.NODE_ENV === 'production') {
+  buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
+  logger.info('📦 Modo produção: servindo frontend React', { buildPath });
+  app.use(express.static(buildPath));
+
+  // Importante: antes das rotas de API, servir index.html para navegações do navegador
+  // Isso garante que GET /financas (rota do SPA) não bata no router de API /financas com 401 JSON
+  const spaRoutes = ['/', '/clientes', '/servicos', '/recontatos', '/calendario', '/financas', '/admin'];
+  const indexFile = path.join(buildPath, 'index.html');
+  spaRoutes.forEach((route) => {
+    app.get(route, (req, res, next) => {
+      const accept = req.get('accept') || '';
+      if (req.method === 'GET' && accept.includes('text/html')) {
+        return res.sendFile(indexFile);
+      }
+      return next();
+    });
+  });
+}
 
 // Middleware para logging de requests
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  logger.debug('🔄 Request recebido', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    ips: req.ips,
+    xForwardedFor: req.get('x-forwarded-for') || null,
+    userAgent: req.get('User-Agent')
+  });
   next();
 });
 
 // Configuração da conexão com PostgreSQL
+dbLogger.info('🗄️ Configurando conexão com PostgreSQL...', {
+  hasConnectionString: !!process.env.DATABASE_URL,
+  ssl: true
+});
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -97,13 +173,16 @@ const pool = new Pool({
 });
 
 // Inicializar o pool nas rotas
+dbLogger.info('🔗 Inicializando pool de conexões nas rotas...');
 initClientesPool(pool);
 initServicosPool(pool);
 initAuthPool(pool);
 initUsuariosPool(pool);
 initAdminPool(pool);
+initFinancasPool(pool);
 
 // Configurar estratégias de autenticação
+googleLogger.info('🔧 Configurando estratégias de autenticação...');
 configureGoogleStrategy(pool);
 
 // Disponibilizar o pool para as rotas de recontatos
@@ -112,7 +191,16 @@ app.locals.pool = pool;
 // Função para testar a conexão com o banco de dados
 async function testDatabaseConnection() {
   try {
+    dbLogger.info('🔄 Testando conexão com banco de dados...');
     const client = await pool.connect();
+    
+    dbLogger.info('✅ Conexão com PostgreSQL estabelecida', {
+      host: client.host,
+      port: client.port,
+      database: client.database,
+      user: client.user
+    });
+    
     console.log('✅ Conexão com o banco de dados PostgreSQL estabelecida com sucesso!');
     console.log('📊 Informações da conexão:');
     console.log(`   - Host: ${client.host}`);
@@ -120,7 +208,13 @@ async function testDatabaseConnection() {
     console.log(`   - Banco: ${client.database}`);
     console.log(`   - Usuário: ${client.user}`);
     client.release();
+    
+    dbLogger.debug('🔌 Conexão de teste liberada');
   } catch (error) {
+    dbLogger.error('❌ Erro ao conectar com banco', {
+      error: error.message,
+      stack: error.stack
+    });
     console.error('❌ Erro ao conectar com o banco de dados:', error.message);
   }
 }
@@ -171,13 +265,9 @@ app.get('/', (req, res) => {
 });
 
 // Rotas da API
-try {
-  app.use('/auth', authRouter);
-  app.use('/usuarios', usuariosRouter);
-  app.use('/admin', adminRouter);
-} catch (error) {
-  console.error('❌ Erro ao configurar rotas da API:', error);
-}
+app.use('/auth', authRouter);
+app.use('/usuarios', usuariosRouter);
+app.use('/admin', adminRouter);
 
 // Rota para guia de configuração OAuth
 app.get('/oauth-setup', (req, res) => {
@@ -185,13 +275,11 @@ app.get('/oauth-setup', (req, res) => {
 });
 
 // Rotas protegidas (requerem autenticação)
-try {
-  app.use('/clientes', authenticateToken, clientesRouter);
-  app.use('/servicos', authenticateToken, servicosRouter);
-  app.use('/recontatos', authenticateToken, recontatosRouter);
-} catch (error) {
-  console.error('❌ Erro ao configurar rotas protegidas:', error);
-}
+app.use('/clientes', authenticateToken, clientesRouter);
+app.use('/servicos', authenticateToken, servicosRouter);
+app.use('/recontatos', authenticateToken, recontatosRouter);
+app.use('/financas', authenticateToken, financasRouter);
+logger.info('📈 Rotas de Finanças montadas em /financas');
 
 // Endpoint Dashboard - Métricas do Sistema (protegido)
 app.get('/dashboard', authenticateToken, async (req, res) => {
@@ -368,137 +456,26 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Endpoint de debug para verificar build
-app.get('/debug/build', (req, res) => {
-  const fs = require('fs');
-  const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
-  const indexPath = path.join(buildPath, 'index.html');
-  
-  let buildContents = [];
-  let frontendExists = false;
-  let frontendContents = [];
-  
-  try {
-    if (fs.existsSync(buildPath)) {
-      buildContents = fs.readdirSync(buildPath);
+// Catch-all handler: serve React app para qualquer rota não encontrada (DEVE ser a última rota)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Se não é uma rota da API, serve o React
+    if (!req.path.startsWith('/api') && 
+        !req.path.startsWith('/auth') && 
+        !req.path.startsWith('/clientes') && 
+        !req.path.startsWith('/servicos') && 
+        !req.path.startsWith('/recontatos') && 
+        !req.path.startsWith('/usuarios') && 
+        !req.path.startsWith('/admin') && 
+        !req.path.startsWith('/dashboard') && 
+        !req.path.startsWith('/health') && 
+        !req.path.startsWith('/db-') && 
+        !req.path.startsWith('/oauth-setup')) {
+      logger.info('🔄 Servindo React app para rota:', { path: req.path });
+      res.sendFile(path.join(__dirname, 'frontend/crm-frontend/build', 'index.html'));
+    } else {
+      next();
     }
-  } catch (error) {
-    buildContents = [`Error: ${error.message}`];
-  }
-  
-  try {
-    const frontendPath = path.join(__dirname, 'frontend');
-    if (fs.existsSync(frontendPath)) {
-      frontendExists = true;
-      frontendContents = fs.readdirSync(frontendPath);
-    }
-  } catch (error) {
-    frontendContents = [`Error: ${error.message}`];
-  }
-  
-  res.json({
-    message: 'Debug do Build React',
-    paths: {
-      __dirname: __dirname,
-      buildPath: buildPath,
-      indexPath: indexPath
-    },
-    checks: {
-      buildExists: fs.existsSync(buildPath),
-      indexExists: fs.existsSync(indexPath),
-      frontendExists: frontendExists
-    },
-    contents: {
-      build: buildContents,
-      frontend: frontendContents
-    },
-    env: {
-      NODE_ENV: process.env.NODE_ENV,
-      PORT: process.env.PORT
-    }
-  });
-});
-
-// Servir arquivos estáticos do React 
-// Verificar se o build existe
-const fs = require('fs');
-const buildPath = path.join(__dirname, 'frontend/crm-frontend/build');
-const indexPath = path.join(buildPath, 'index.html');
-const buildExists = fs.existsSync(buildPath);
-const indexExists = fs.existsSync(indexPath);
-
-console.log(`🔍 Verificando build do React:`);
-console.log(`   - Build path: ${buildPath}`);
-console.log(`   - Build exists: ${buildExists}`);
-console.log(`   - Index exists: ${indexExists}`);
-console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
-
-// Sempre tentar servir o React em produção, independente da variável NODE_ENV
-if (buildExists && indexExists) {
-  console.log('✅ Servindo arquivos estáticos do React');
-  
-  // Servir arquivos estáticos do React build
-  app.use(express.static(buildPath, {
-    maxAge: '1d', // Cache por 1 dia
-    etag: true
-  }));
-  
-  // Rota catch-all para o React Router (deve ser a última rota)
-  app.get('/*', (req, res, next) => {
-    // Ignorar rotas da API
-    if (req.path.startsWith('/api/') || 
-        req.path.startsWith('/auth/') || 
-        req.path.startsWith('/usuarios/') || 
-        req.path.startsWith('/admin/') ||
-        req.path.startsWith('/clientes/') ||
-        req.path.startsWith('/servicos/') ||
-        req.path.startsWith('/recontatos/') ||
-        req.path.startsWith('/dashboard') ||
-        req.path.startsWith('/db-test') ||
-        req.path.startsWith('/health') ||
-        req.path.startsWith('/oauth-setup')) {
-      return next();
-    }
-    
-    try {
-      console.log(`📄 Servindo React App para: ${req.path}`);
-      res.sendFile(indexPath);
-    } catch (error) {
-      console.error('❌ Erro ao servir index.html:', error);
-      res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-  });
-} else {
-  console.log('⚠️ Build do React não encontrado - servindo apenas API');
-  console.log('   Para servir o frontend, execute: npm run build');
-  
-  // Endpoint de fallback para informar sobre o build
-  app.get('/*', (req, res, next) => {
-    // Ignorar rotas da API (mesmo check de cima)
-    if (req.path.startsWith('/api/') || 
-        req.path.startsWith('/auth/') || 
-        req.path.startsWith('/usuarios/') || 
-        req.path.startsWith('/admin/') ||
-        req.path.startsWith('/clientes/') ||
-        req.path.startsWith('/servicos/') ||
-        req.path.startsWith('/recontatos/') ||
-        req.path.startsWith('/dashboard') ||
-        req.path.startsWith('/db-test') ||
-        req.path.startsWith('/health') ||
-        req.path.startsWith('/oauth-setup')) {
-      return next();
-    }
-    
-    res.json({
-      message: 'CRM Services API - Frontend não disponível',
-      reason: 'Build do React não encontrado',
-      buildPath: buildPath,
-      buildExists: buildExists,
-      indexExists: indexExists,
-      solution: 'Execute: npm run build',
-      backend: `Servidor rodando na porta ${port}`,
-      endpoints: 'Veja GET / para lista completa de endpoints'
-    });
   });
 }
 

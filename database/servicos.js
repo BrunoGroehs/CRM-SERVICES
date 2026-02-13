@@ -12,13 +12,15 @@ async function createServicosTable(pool) {
         valor DECIMAL(10,2),
         notas TEXT,
         status VARCHAR(50) DEFAULT 'agendado',
-        funcionario_responsavel VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
       );
     `;
     
     await pool.query(createTableQuery);
     console.log('✅ Tabela "servicos" verificada/criada com sucesso');
+  // Remoção legacy: colunas antigas serão descartadas por script de migração.
     
     // Criar índices para melhor performance
     const createIndexes = [

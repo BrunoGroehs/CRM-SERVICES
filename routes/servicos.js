@@ -11,6 +11,37 @@ const initializePool = (dbPool) => {
   pool = dbPool;
 };
 
+// Helper: parse number from pt-BR/en-US formats safely
+const parseNumero = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const s = String(v).trim();
+  if (!s) return null;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && !hasDot) {
+    const n = Number(s.replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+  if (hasDot && !hasComma) {
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    const decimalSep = lastComma > lastDot ? ',' : '.';
+    const thousandSep = decimalSep === ',' ? '.' : ',';
+    const normalized = s.split(thousandSep).join('').replace(decimalSep, '.');
+    const n = Number(normalized);
+    return Number.isFinite(n) ? n : null;
+  }
+  const n = Number(s.replace(/\s+/g, ''));
+  return Number.isFinite(n) ? n : null;
+};
+
+const withinDecimal102 = (n) => n === null || Math.abs(n) <= 99999999.99;
+
 // Validação dos campos obrigatórios para serviços
 const validateServicoFields = (servico) => {
   const errors = [];
@@ -41,9 +72,58 @@ const validateServicoFields = (servico) => {
     errors.push('Status deve ser: agendado, em_andamento, concluido ou cancelado');
   }
   
+  // Validação de valor (se fornecido) - aceita "pt-BR" e checa limites DECIMAL(10,2)
+  if (servico.valor !== undefined && servico.valor !== null && servico.valor !== '') {
+    const n = parseNumero(servico.valor);
+    if (n === null || n < 0) {
+      errors.push('Valor deve ser um número positivo');
+    } else if (!withinDecimal102(n)) {
+      errors.push('Valor muito grande para o campo (máximo 99.999.999,99)');
+    }
+  }
+  
+  return errors;
+};
+
+// Validação específica para updates - permite atualizações parciais
+const validateServicoUpdateFields = (servico) => {
+  const errors = [];
+  
+  // Só valida os campos que foram fornecidos
+  if (servico.cliente_id !== undefined && (isNaN(servico.cliente_id) || !servico.cliente_id)) {
+    errors.push('cliente_id deve ser um número válido');
+  }
+  
+  if (servico.data !== undefined && (!servico.data || servico.data.trim() === '')) {
+    errors.push('Data do serviço não pode estar vazia');
+  }
+  
+  if (servico.hora !== undefined && (!servico.hora || servico.hora.trim() === '')) {
+    errors.push('Hora do serviço não pode estar vazia');
+  }
+  
+  // Validação de formato de data (YYYY-MM-DD)
+  if (servico.data && servico.data.trim() !== '') {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(servico.data)) {
+      errors.push('Data deve estar no formato YYYY-MM-DD');
+    }
+  }
+  
+  // Validação de status válido
+  const statusValidos = ['agendado', 'em_andamento', 'concluido', 'cancelado'];
+  if (servico.status && !statusValidos.includes(servico.status)) {
+    errors.push('Status deve ser: agendado, em_andamento, concluido ou cancelado');
+  }
+  
   // Validação de valor (se fornecido)
-  if (servico.valor && (isNaN(servico.valor) || parseFloat(servico.valor) < 0)) {
-    errors.push('Valor deve ser um número positivo');
+  if (servico.valor !== undefined && servico.valor !== '' && servico.valor !== null) {
+    const n = parseNumero(servico.valor);
+    if (n === null || n < 0) {
+      errors.push('Valor deve ser um número positivo');
+    } else if (!withinDecimal102(n)) {
+      errors.push('Valor muito grande para o campo (máximo 99.999.999,99)');
+    }
   }
   
   return errors;
@@ -61,7 +141,19 @@ const checkClienteExists = async (clienteId) => {
   }
 };
 
-// GET /servicos - Retorna todos os serviços
+// Helper: sanitizar array de IDs de usuários
+const sanitizeUsuariosArray = (input) => {
+  if (Array.isArray(input)) {
+    return [...new Set(input.filter(v => v !== null && v !== undefined && v !== '').map(v => parseInt(v, 10)).filter(v => !isNaN(v)))] ;
+  }
+  if (typeof input === 'string') {
+    const parts = input.split(/[;,\s]+/).map(p => p.trim()).filter(Boolean);
+    return [...new Set(parts.map(p => parseInt(p, 10)).filter(v => !isNaN(v)))];
+  }
+  return [];
+};
+
+// GET /servicos - Retorna todos os serviços (agora agregando usuários responsáveis via subselect para evitar GROUP BY complexo)
 router.get('/', async (req, res) => {
   try {
     const query = `
@@ -75,14 +167,20 @@ router.get('/', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        s.funcionario_responsavel
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       ORDER BY s.data DESC, s.hora DESC
     `;
-    
     const result = await pool.query(query);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -94,77 +192,23 @@ router.get('/', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao buscar serviços',
-      error: error.message
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
     });
   }
 });
 
-// GET /servicos/:id - Retorna um serviço específico
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'ID do serviço deve ser um número válido'
-      });
-    }
-    
-    const query = `
-      SELECT 
-        s.id,
-        s.cliente_id,
-        c.nome as cliente_nome,
-        c.telefone as cliente_telefone,
-        c.email as cliente_email,
-        s.data,
-        s.hora,
-        s.valor,
-        s.notas,
-        s.status,
-        s.funcionario_responsavel
-      FROM servicos s
-      LEFT JOIN clientes c ON s.cliente_id = c.id
-      WHERE s.id = $1
-    `;
-    
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Serviço não encontrado'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: result.rows[0],
-      message: 'Serviço encontrado com sucesso'
-    });
-  } catch (error) {
-    console.error('Erro ao buscar serviço:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erro interno do servidor ao buscar serviço',
-      error: error.message
-    });
-  }
-});
-
-// GET /servicos/cliente/:clienteId - Retorna histórico de serviços de um cliente
+// GET /servicos/cliente/:clienteId - Retorna histórico com usuários responsáveis
 router.get('/cliente/:clienteId', async (req, res) => {
   try {
     const { clienteId } = req.params;
-    
+
     if (!clienteId || isNaN(clienteId)) {
       return res.status(400).json({
         success: false,
         message: 'ID do cliente deve ser um número válido'
       });
     }
-    
+
     // Verificar se cliente existe
     const clienteExists = await checkClienteExists(clienteId);
     if (!clienteExists) {
@@ -173,7 +217,7 @@ router.get('/cliente/:clienteId', async (req, res) => {
         message: 'Cliente não encontrado'
       });
     }
-    
+
     const query = `
       SELECT 
         s.id,
@@ -186,15 +230,21 @@ router.get('/cliente/:clienteId', async (req, res) => {
         s.valor,
         s.notas,
         s.status,
-        s.funcionario_responsavel
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
       FROM servicos s
       LEFT JOIN clientes c ON s.cliente_id = c.id
       WHERE s.cliente_id = $1
       ORDER BY s.data DESC, s.hora DESC
     `;
-    
     const result = await pool.query(query, [clienteId]);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -206,25 +256,83 @@ router.get('/cliente/:clienteId', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao buscar histórico do cliente',
-      error: error.message
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
     });
   }
 });
 
-// POST /servicos - Cria um novo serviço
+// GET /servicos/:id - Retorna um serviço específico (com array de usuários)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID do serviço deve ser um número válido'
+      });
+    }
+
+    const query = `
+      SELECT 
+        s.id,
+        s.cliente_id,
+        c.nome as cliente_nome,
+        c.telefone as cliente_telefone,
+        c.email as cliente_email,
+        s.data,
+        s.hora,
+        s.valor,
+        s.notas,
+        s.status,
+        COALESCE(
+          (
+            SELECT array_agg(su.usuario_id::text)
+            FROM servicos_usuarios su
+            WHERE su.servico_id = s.id
+          ),
+          ARRAY[]::text[]
+        ) AS funcionario_responsavel
+      FROM servicos s
+      LEFT JOIN clientes c ON s.cliente_id = c.id
+      WHERE s.id = $1
+    `;
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serviço não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: 'Serviço encontrado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao buscar serviço:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor ao buscar serviço',
+      error: process.env.NODE_ENV !== 'production' ? (error.message || String(error)) : undefined
+    });
+  }
+});
+
+// (removido bloco duplicado de /cliente/:clienteId)
+
+// POST /servicos - Cria um novo serviço (persistindo relacionamento N:N)
 router.post('/', async (req, res) => {
   try {
-    const { 
-      cliente_id, 
-      data, 
-      hora, 
-      valor, 
-      notas, 
-      status = 'agendado', 
-      funcionario_responsavel 
-    } = req.body;
-    
-    // Validar campos obrigatórios
+  let { cliente_id, data, hora, valor, notas, status = 'agendado', funcionario_responsavel } = req.body;
+  // garantir que 1,2,3 estejam presentes na criação
+  let responsaveisIds = sanitizeUsuariosArray(funcionario_responsavel);
+  const obrigatorios = [1,2,3];
+  for (const baseId of obrigatorios) {
+    if (!responsaveisIds.includes(baseId)) responsaveisIds.push(baseId);
+  }
     const errors = validateServicoFields(req.body);
     if (errors.length > 0) {
       return res.status(400).json({
@@ -243,50 +351,60 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const query = `
-      INSERT INTO servicos (
-        cliente_id, 
-        data, 
-        hora, 
-        valor, 
-        notas, 
-        status, 
-        funcionario_responsavel
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [
-      cliente_id,
-      data,
-      hora,
-      valor ? parseFloat(valor) : null,
-      notas ? notas.trim() : null,
-      status,
-      funcionario_responsavel ? funcionario_responsavel.trim() : null
-    ];
-    
-    const result = await pool.query(query, values);
-    
-    // Buscar o serviço criado com dados do cliente
-    const servicoCompleto = await pool.query(`
-      SELECT 
-        s.*,
-        c.nome as cliente_nome,
-        c.telefone as cliente_telefone
-      FROM servicos s
-      LEFT JOIN clientes c ON s.cliente_id = c.id
-      WHERE s.id = $1
-    `, [result.rows[0].id]);
-    
-    res.status(201).json({
-      success: true,
-      data: servicoCompleto.rows[0],
-      message: 'Serviço criado com sucesso'
-    });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const insertServico = await client.query(
+        `INSERT INTO servicos (cliente_id, data, hora, valor, notas, status)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+        [
+          cliente_id,
+          data,
+          hora,
+          valor !== undefined && valor !== null && valor !== '' ? parseNumero(valor) : null,
+          notas ? notas.trim() : null,
+          status
+        ]
+      );
+      const servicoId = insertServico.rows[0].id;
+      if (responsaveisIds.length) {
+        for (const uid of responsaveisIds) {
+          await client.query(
+            'INSERT INTO servicos_usuarios (servico_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+            [servicoId, uid]
+          );
+        }
+      }
+      await client.query('COMMIT');
+      // Buscar agregado
+      const servicoCompleto = await pool.query(`
+        SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
+               s.data, s.hora, s.valor, s.notas, s.status,
+               COALESCE(
+                 (
+                   SELECT array_agg(su.usuario_id::text)
+                   FROM servicos_usuarios su
+                   WHERE su.servico_id = s.id
+                 ),
+                 ARRAY[]::text[]
+               ) AS funcionario_responsavel
+        FROM servicos s
+        LEFT JOIN clientes c ON s.cliente_id = c.id
+        WHERE s.id = $1
+      `, [servicoId]);
+      res.status(201).json({
+        success: true,
+        data: servicoCompleto.rows[0],
+        message: 'Serviço criado com sucesso'
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch (error) {
-    console.error('Erro ao criar serviço:', error);
+    console.error('Erro ao criar serviço:', { message: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao criar serviço',
@@ -295,19 +413,12 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /servicos/:id - Atualiza um serviço existente
+// PUT /servicos/:id - Atualiza um serviço existente (e seus responsáveis, se fornecidos)
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      cliente_id, 
-      data, 
-      hora, 
-      valor, 
-      notas, 
-      status, 
-      funcionario_responsavel 
-    } = req.body;
+  let { cliente_id, data, hora, valor, notas, status, funcionario_responsavel } = req.body;
+  const responsaveisIds = funcionario_responsavel !== undefined ? sanitizeUsuariosArray(funcionario_responsavel) : undefined;
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -315,19 +426,9 @@ router.put('/:id', async (req, res) => {
         message: 'ID do serviço deve ser um número válido'
       });
     }
-    
-    // Validar campos obrigatórios
-    const errors = validateServicoFields(req.body);
-    if (errors.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Dados inválidos',
-        errors: errors
-      });
-    }
-    
-    // Verificar se o serviço existe
-    const checkQuery = 'SELECT id FROM servicos WHERE id = $1';
+
+    // Verificar se o serviço existe e buscar dados atuais
+  const checkQuery = 'SELECT * FROM servicos WHERE id = $1';
     const checkResult = await pool.query(checkQuery, [id]);
     
     if (checkResult.rows.length === 0) {
@@ -336,61 +437,97 @@ router.put('/:id', async (req, res) => {
         message: 'Serviço não encontrado'
       });
     }
+
+    const currentService = checkResult.rows[0];
+
+    // Para atualizações parciais (como só status), usar dados existentes
+    const updateData = {
+      cliente_id: cliente_id !== undefined ? cliente_id : currentService.cliente_id,
+      data: data !== undefined ? data : currentService.data,
+      hora: hora !== undefined ? hora : currentService.hora,
+      valor: valor !== undefined ? valor : currentService.valor,
+      notas: notas !== undefined ? notas : currentService.notas,
+      status: status !== undefined ? status : currentService.status
+    };
+
+    // Validar os dados de update (permite atualizações parciais)
+    const errors = validateServicoUpdateFields(req.body);
     
-    // Verificar se cliente existe
-    const clienteExists = await checkClienteExists(cliente_id);
-    if (!clienteExists) {
+    if (errors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Cliente não encontrado. Verifique se o cliente_id está correto.'
+        message: 'Dados inválidos',
+        errors: errors
       });
     }
     
-    const query = `
-      UPDATE servicos 
-      SET 
-        cliente_id = $1,
-        data = $2,
-        hora = $3,
-        valor = $4,
-        notas = $5,
-        status = $6,
-        funcionario_responsavel = $7
-      WHERE id = $8
-      RETURNING *
-    `;
+    // Verificar se cliente existe (só se cliente_id foi fornecido)
+    if (cliente_id !== undefined) {
+      const clienteExists = await checkClienteExists(cliente_id);
+      if (!clienteExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cliente não encontrado. Verifique se o cliente_id está correto.'
+        });
+      }
+    }
     
-    const values = [
-      cliente_id,
-      data,
-      hora,
-      valor ? parseFloat(valor) : null,
-      notas ? notas.trim() : null,
-      status || 'agendado',
-      funcionario_responsavel ? funcionario_responsavel.trim() : null,
-      id
-    ];
-    
-    const result = await pool.query(query, values);
-    
-    // Buscar o serviço atualizado com dados do cliente
-    const servicoCompleto = await pool.query(`
-      SELECT 
-        s.*,
-        c.nome as cliente_nome,
-        c.telefone as cliente_telefone
-      FROM servicos s
-      LEFT JOIN clientes c ON s.cliente_id = c.id
-      WHERE s.id = $1
-    `, [id]);
-    
-    res.json({
-      success: true,
-      data: servicoCompleto.rows[0],
-      message: 'Serviço atualizado com sucesso'
-    });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`
+        UPDATE servicos SET
+          cliente_id = $1,
+          data = $2,
+          hora = $3,
+          valor = $4,
+          notas = $5,
+          status = $6
+        WHERE id = $7
+      `, [
+        updateData.cliente_id,
+        updateData.data,
+        updateData.hora,
+        updateData.valor !== undefined && updateData.valor !== null && updateData.valor !== '' ? parseNumero(updateData.valor) : null,
+        updateData.notas ? updateData.notas.trim() : null,
+        updateData.status || 'agendado',
+        id
+      ]);
+      if (responsaveisIds !== undefined) {
+        await client.query('DELETE FROM servicos_usuarios WHERE servico_id = $1', [id]);
+        for (const uid of responsaveisIds) {
+          await client.query('INSERT INTO servicos_usuarios (servico_id, usuario_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, uid]);
+        }
+      }
+      await client.query('COMMIT');
+      const servicoCompleto = await pool.query(`
+        SELECT s.id, s.cliente_id, c.nome AS cliente_nome, c.telefone AS cliente_telefone,
+               s.data, s.hora, s.valor, s.notas, s.status,
+               COALESCE(
+                 (
+                   SELECT array_agg(su.usuario_id::text)
+                   FROM servicos_usuarios su
+                   WHERE su.servico_id = s.id
+                 ),
+                 ARRAY[]::text[]
+               ) AS funcionario_responsavel
+        FROM servicos s
+        LEFT JOIN clientes c ON s.cliente_id = c.id
+        WHERE s.id = $1
+      `, [id]);
+      res.json({
+        success: true,
+        data: servicoCompleto.rows[0],
+        message: 'Serviço atualizado com sucesso'
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   } catch (error) {
-    console.error('Erro ao atualizar serviço:', error);
+    console.error('Erro ao atualizar serviço:', { message: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Erro interno do servidor ao atualizar serviço',
