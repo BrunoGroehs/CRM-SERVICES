@@ -9,6 +9,8 @@ const Navigation = () => {
   const { user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuRef = useRef(null);
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link';
@@ -34,6 +36,9 @@ const Navigation = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && !event.target.closest('.hamburger')) {
+        setMobileOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,13 +47,34 @@ const Navigation = () => {
     };
   }, []);
 
+  // Fechar menu mobile ao navegar
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+
+  // Body scroll lock
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+    }
+  }, [mobileOpen]);
+
   return (
-    <nav className="navbar">
+  <nav className="navbar">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          📊 CRM Services
+          <img src="/logo.png" alt="CRM Services" className="nav-logo-img" />
+          CRM Services
         </Link>
-        <ul className="nav-menu">
+        <button className={`hamburger ${mobileOpen ? 'is-active' : ''}`} aria-label="Menu" aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen(o => !o)}>
+          <span />
+          <span />
+          <span />
+        </button>
+  {/* Backdrop */}
+  <div className={`nav-backdrop ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
+  <ul ref={mobileMenuRef} className={`nav-menu ${mobileOpen ? 'open' : ''}`}>
           <li className="nav-item">
             <Link to="/" className={isActive('/')}>
               🏠 Dashboard
@@ -69,12 +95,33 @@ const Navigation = () => {
               📞 Recontatos
             </Link>
           </li>
+          <li className="nav-item">
+            <Link to="/calendario" className={isActive('/calendario')}>
+              📅 Calendário
+            </Link>
+          </li>
         </ul>
-        <div className="nav-user">
+  <div className="nav-user">
           <div className="user-menu" ref={dropdownRef}>
             <div className="user-avatar" onClick={toggleDropdown}>
               {user?.foto_perfil ? (
-                <img src={user.foto_perfil} alt="Avatar" />
+                <img 
+                  src={user.foto_perfil} 
+                  alt={user.nome || 'Avatar'}
+                  onError={(e)=>{ 
+                    console.warn('Falha ao carregar imagem de perfil, usando fallback', user.foto_perfil);
+                    e.currentTarget.style.display='none';
+                    const parent=e.currentTarget.parentElement;
+                    if(parent && !parent.querySelector('.user-avatar-fallback')){
+                      const span=document.createElement('span');
+                      span.className='user-avatar-fallback';
+                      span.textContent='👤';
+                      parent.appendChild(span);
+                    }
+                  }}
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                />
               ) : (
                 <span className="user-avatar-fallback">👤</span>
               )}

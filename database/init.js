@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { createServicosTable, createServicosUpdateTrigger } = require('./servicos');
+const { createServicosUsuariosTable } = require('./servicos_usuarios');
 const { createRecontatosTable, createRecontatosUpdateTrigger } = require('./recontatos');
 const { createUsuariosTable, createUsuariosUpdateTrigger } = require('./usuarios');
 
@@ -120,6 +121,18 @@ async function initializeDatabase(pool) {
     } else {
       await createServicosTable(pool);
       await createServicosUpdateTrigger(pool);
+    }
+
+    // Criar tabela de relacionamento N:N
+    await createServicosUsuariosTable(pool);
+
+    // Remover colunas legacy se ainda existirem
+    try {
+      await pool.query(`ALTER TABLE servicos DROP COLUMN IF EXISTS funcionario_responsavel;`);
+      await pool.query(`ALTER TABLE servicos DROP COLUMN IF EXISTS funcionarios;`);
+      console.log('🧹 Colunas legacy removidas (funcionario_responsavel, funcionarios)');
+    } catch (e) {
+      console.warn('Aviso: não foi possível remover colunas legacy:', e.message);
     }
     
     // Verificar se tabela recontatos existe

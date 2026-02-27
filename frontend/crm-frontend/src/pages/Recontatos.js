@@ -1,28 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useToast } from '../contexts/ToastContext';
 import './Recontatos.css';
 import { getApiUrl } from '../utils/api';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 
 const Recontatos = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [recontatos, setRecontatos] = useState([]);
   const [filteredRecontatos, setFilteredRecontatos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('todos');
+  
+  // Estados para paginação e busca
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 20;
+  
+  // Estados dos modais
   const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showServicoModal, setShowServicoModal] = useState(false);
   const [showProrrogarModal, setShowProrrogarModal] = useState(false);
   const [showProximoRecontatoModal, setShowProximoRecontatoModal] = useState(false);
   const [recontatoParaProrrogar, setRecontatoParaProrrogar] = useState(null);
   const [servicoCriado, setServicoCriado] = useState(null);
+  const [recontatoParaEditar, setRecontatoParaEditar] = useState(null);
+  
+  // Estados para menu de ações por linha
+  const [showActionsMenu, setShowActionsMenu] = useState(null);
+  
   const authenticatedFetch = useAuthenticatedFetch();
+  const { add: pushToast } = useToast();
   const [proximoRecontatoData, setProximoRecontatoData] = useState({
     periodo: '',
     data_personalizada: '',
+    motivo: '',
     observacoes: ''
   });
   const [prorrogacaoTempo, setProrrogacaoTempo] = useState({ tipo: 'dias', quantidade: 7 });
   const [clientes, setClientes] = useState([]);
+  const [novoRecontatoData, setNovoRecontatoData] = useState({
+    cliente_id: '',
+    data_agendada: '',
+    hora_agendada: '',
+    tipo_recontato: 'follow-up',
+    motivo: '',
+    status: 'agendado',
+    observacoes: '',
+    funcionario_responsavel: ''
+  });
   const [formData, setFormData] = useState({
     cliente_id: '',
     data: '',
@@ -30,12 +61,53 @@ const Recontatos = () => {
     valor: '',
     notas: '',
     status: 'agendado',
-    funcionario_responsavel: ''
+    funcionario_responsavel: [], // agora array de IDs
   });
+  const [usuarios, setUsuarios] = useState([]); // usuários para seleção de responsáveis
   const [formErrors, setFormErrors] = useState({});
   const [selectedCliente, setSelectedCliente] = useState(null);
+  const [clientePreSelecionado, setClientePreSelecionado] = useState(null);
   const [servicosHistorico, setServicosHistorico] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [recontatoParaDeletar, setRecontatoParaDeletar] = useState(null);
+  // flags de envio para evitar múltiplos cliques
+  const [submittingNovo, setSubmittingNovo] = useState(false);
+  const [submittingEditar, setSubmittingEditar] = useState(false);
+  const [submittingServico, setSubmittingServico] = useState(false);
+  const [submittingProximo, setSubmittingProximo] = useState(false);
+  const [submittingProrrogar, setSubmittingProrrogar] = useState(false);
+
+  // Carregar usuários para seleção de responsáveis de serviço
+  useEffect(() => {
+    fetchUsuarios();
+  }, []);
+
+  const fetchUsuarios = async () => {
+    try {
+      // Preferir endpoint público mínimo, com fallback para admin
+      let response = await authenticatedFetch(getApiUrl('usuarios/min'));
+      if (response.ok) {
+        const data = await response.json();
+        const arr = data.data || data.users || data;
+        const mapped = Array.isArray(arr) ? arr.map(u => ({ id: u.id, nome: u.nome })) : [];
+        setUsuarios(mapped);
+        return;
+      }
+      response = await authenticatedFetch(getApiUrl('admin/users'));
+      if (response.ok) {
+        const data = await response.json();
+        const arr = data.users || data.data || data;
+        const mapped = Array.isArray(arr) ? arr.map(u => ({ id: u.id, nome: u.nome })) : [];
+        setUsuarios(mapped);
+      } else {
+        setUsuarios([]);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar usuários:', e);
+      setUsuarios([]);
+    }
+  };
 
   // Função para determinar o status do recontato
   const getStatusInfo = (recontato) => {
@@ -71,6 +143,7 @@ const Recontatos = () => {
   const applyFilter = useCallback(() => {
     let filtered = recontatos;
     
+    // Aplicar filtro de status primeiro
     switch (activeFilter) {
       case 'atrasados':
         filtered = recontatos.filter(r => getStatusInfo(r).status === 'atrasado');
@@ -88,8 +161,52 @@ const Recontatos = () => {
         filtered = recontatos;
     }
     
+    // Aplicar busca por texto
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(recontato => {
+        const cliente = clientes.find(c => c.id === recontato.cliente_id);
+        return (
+          recontato.id?.toString().includes(searchLower) ||
+          cliente?.nome?.toLowerCase().includes(searchLower) ||
+          cliente?.cidade?.toLowerCase().includes(searchLower) ||
+          recontato.observacoes?.toLowerCase().includes(searchLower) ||
+          formatDate(recontato.data_agendada).includes(searchLower) ||
+          getStatusInfo(recontato).label.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+    
     setFilteredRecontatos(filtered);
-  }, [recontatos, activeFilter]);
+  }, [recontatos, activeFilter, searchTerm, clientes]);
+
+  // Funções de paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRecontatos = filteredRecontatos.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRecontatos.length / itemsPerPage);
+
+  // Resetar página quando filtro ou busca muda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, searchTerm]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Função para abrir menu de ações
+  const handleRowClick = (recontato, event) => {
+    event.stopPropagation();
+    setShowActionsMenu(showActionsMenu === recontato.id ? null : recontato.id);
+  };
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionsMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchRecontatos();
@@ -120,7 +237,20 @@ const Recontatos = () => {
     }
   };
 
+  // Abrir modal de próximo recontato quando vier da criação de serviço
+  useEffect(() => {
+    const state = location.state;
+    if (state && state.triggerProximoRecontato && state.clienteId) {
+      // Guardar info mínima para o submit
+      setServicoCriado({ cliente_id: state.clienteId });
+      setShowProximoRecontatoModal(true);
+      // Limpar o state de navegação para evitar reabrir no back/refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
   const fetchServicosHistorico = async (clienteId) => {
+    console.log('Carregando histórico para cliente:', clienteId);
     try {
       setLoadingHistorico(true);
       const response = await authenticatedFetch(getApiUrl(`servicos/cliente/${clienteId}`));
@@ -130,6 +260,7 @@ const Recontatos = () => {
       }
 
       const data = await response.json();
+      console.log('Histórico carregado:', data);
       setServicosHistorico(data.data || []);
     } catch (err) {
       console.error('Erro ao carregar histórico:', err);
@@ -144,10 +275,120 @@ const Recontatos = () => {
       const response = await authenticatedFetch(getApiUrl('clientes'));
       if (response.ok) {
         const data = await response.json();
-        setClientes(data.data || []);
+        // Ordenar clientes alfabeticamente por nome
+        const clientesOrdenados = (data.data || []).sort((a, b) => 
+          a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+        );
+        setClientes(clientesOrdenados);
       }
     } catch (err) {
       console.error('Erro ao carregar clientes:', err);
+    }
+  };
+
+  // Função para criar novo recontato
+  const handleSubmitNovoRecontato = async (e) => {
+    e.preventDefault();
+    if (submittingNovo) return;
+    
+    // Validação básica
+    if (!novoRecontatoData.cliente_id) {
+  pushToast('Selecione um cliente.', { type: 'warning' });
+      return;
+    }
+    
+    if (!novoRecontatoData.data_agendada) {
+  pushToast('Informe a data do recontato.', { type: 'warning' });
+      return;
+    }
+    
+    if (!novoRecontatoData.motivo.trim()) {
+  pushToast('Informe o motivo do recontato.', { type: 'warning' });
+      return;
+    }
+    
+    try {
+      setSubmittingNovo(true);
+      const response = await authenticatedFetch(getApiUrl('recontatos'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(novoRecontatoData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+  pushToast('Recontato criado com sucesso!', { type: 'success' });
+        setShowAddModal(false);
+        setNovoRecontatoData({
+          cliente_id: '',
+          data_agendada: '',
+          hora_agendada: '',
+          tipo_recontato: 'follow-up',
+          motivo: '',
+          status: 'agendado',
+          observacoes: '',
+          funcionario_responsavel: ''
+        });
+        fetchRecontatos(); // Atualiza a lista
+      } else {
+        const error = await response.json();
+  pushToast('Erro ao criar recontato: ' + (error.message || 'Erro desconhecido'), { type: 'error' });
+      }
+    } catch (err) {
+      console.error('Erro ao criar recontato:', err);
+  pushToast('Erro ao criar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingNovo(false);
+    }
+  };
+
+  // Função para editar recontato
+  const handleSubmitEditarRecontato = async (e) => {
+    e.preventDefault();
+    if (submittingEditar) return;
+    
+    // Validação básica
+    if (!recontatoParaEditar.data_agendada) {
+  pushToast('Informe a data do recontato.', { type: 'warning' });
+      return;
+    }
+    
+    if (!recontatoParaEditar.motivo.trim()) {
+  pushToast('Informe o motivo do recontato.', { type: 'warning' });
+      return;
+    }
+
+    try {
+      setSubmittingEditar(true);
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoParaEditar.id}`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data_agendada: recontatoParaEditar.data_agendada,
+          hora_agendada: recontatoParaEditar.hora_agendada,
+          motivo: recontatoParaEditar.motivo,
+          observacoes: recontatoParaEditar.observacoes
+        })
+      });
+
+      if (response.ok) {
+  pushToast('Recontato atualizado com sucesso!', { type: 'success' });
+        setShowEditModal(false);
+        setRecontatoParaEditar(null);
+        fetchRecontatos(); // Atualiza a lista
+      } else {
+        const error = await response.json();
+  pushToast('Erro ao atualizar recontato: ' + (error.message || 'Erro desconhecido'), { type: 'error' });
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar recontato:', err);
+  pushToast('Erro ao atualizar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingEditar(false);
     }
   };
 
@@ -177,6 +418,8 @@ const Recontatos = () => {
 
   const handleCloseServicoModal = () => {
     setShowServicoModal(false);
+    setClientePreSelecionado(null);
+    setServicosHistorico([]);
     setFormData({
       cliente_id: '',
       data: '',
@@ -236,6 +479,7 @@ const Recontatos = () => {
 
   const handleSubmitServico = async (e) => {
     e.preventDefault();
+    if (submittingServico) return;
     
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -244,12 +488,17 @@ const Recontatos = () => {
     }
 
     try {
+      setSubmittingServico(true);
+      const dataToSend = { ...formData };
+      if (Array.isArray(dataToSend.funcionario_responsavel)) {
+        dataToSend.funcionario_responsavel = dataToSend.funcionario_responsavel.map(id => String(id));
+      }
       const response = await authenticatedFetch(getApiUrl('servicos'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -267,7 +516,7 @@ const Recontatos = () => {
         cliente_id: formData.cliente_id
       });
 
-      alert('Serviço criado com sucesso!');
+  pushToast('Serviço criado com sucesso!', { type: 'success' });
       handleCloseServicoModal();
       
       // Abrir modal para próximo recontato
@@ -276,6 +525,8 @@ const Recontatos = () => {
     } catch (err) {
       console.error('Erro ao criar serviço:', err);
       setFormErrors({ submit: err.message });
+    } finally {
+      setSubmittingServico(false);
     }
   };
 
@@ -365,12 +616,14 @@ const Recontatos = () => {
 
   const confirmarProrrogacao = async () => {
     if (!recontatoParaProrrogar) return;
+    if (submittingProrrogar) return;
     
     try {
+      setSubmittingProrrogar(true);
       const novaData = calcularNovaData();
       
       if (!novaData) {
-        alert('Erro ao calcular a nova data. Verifique os valores inseridos.');
+  pushToast('Falha ao calcular a nova data, verifique os valores.', { type: 'error' });
         return;
       }
       
@@ -405,12 +658,14 @@ const Recontatos = () => {
         throw new Error(errorMessage);
       }
 
-      alert(`Recontato prorrogado para ${formatDateSafe(novaData.toISOString())} com sucesso!`);
+  pushToast(`Recontato prorrogado para ${formatDateSafe(novaData.toISOString())}!`, { type: 'success' });
       handleCloseProrrogarModal();
       await fetchRecontatos(); // Recarregar lista
     } catch (err) {
       console.error('Erro ao prorrogar recontato:', err);
-      alert(`Erro ao prorrogar recontato: ${err.message}`);
+  pushToast(`Erro ao prorrogar recontato: ${err.message}`, { type: 'error' });
+    } finally {
+      setSubmittingProrrogar(false);
     }
   };
 
@@ -472,51 +727,70 @@ const Recontatos = () => {
 
   const handleSubmitProximoRecontato = async (e) => {
     e.preventDefault();
+    if (submittingProximo) return;
 
     if (!servicoCriado) {
-      alert('Erro: informações do serviço não encontradas');
+  pushToast('Erro: informações do serviço não encontradas', { type: 'error' });
       return;
     }
 
     try {
+      setSubmittingProximo(true);
       const dataRecontato = proximoRecontatoData.data_personalizada;
       
       if (!dataRecontato) {
-        alert('Por favor, selecione uma data para o próximo recontato');
+  pushToast('Selecione uma data para o próximo recontato', { type: 'warning' });
+        return;
+      }
+
+      if (!proximoRecontatoData.motivo.trim()) {
+  pushToast('Informe o motivo do recontato', { type: 'warning' });
         return;
       }
 
       // Encontrar o recontato atual do cliente para atualizar
       const recontatoAtual = recontatos.find(r => r.cliente_id === servicoCriado.cliente_id);
-      
-      if (!recontatoAtual) {
-        alert('Erro: recontato atual não encontrado para este cliente');
-        return;
+      let response;
+      if (recontatoAtual) {
+        // Atualiza o existente
+        response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoAtual.id}`), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data_agendada: dataRecontato,
+            motivo: proximoRecontatoData.motivo,
+            observacoes: proximoRecontatoData.observacoes,
+            status: 'agendado'
+          })
+        });
+      } else {
+        // Cria um novo recontato caso não exista
+        response = await authenticatedFetch(getApiUrl('recontatos'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente_id: servicoCriado.cliente_id,
+            data_agendada: dataRecontato,
+            motivo: proximoRecontatoData.motivo,
+            observacoes: proximoRecontatoData.observacoes,
+            status: 'agendado'
+          })
+        });
       }
-
-      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoAtual.id}`), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data_agendada: dataRecontato,
-          observacoes: proximoRecontatoData.observacoes || `Recontato pós-serviço - Acompanhamento do serviço realizado`,
-          status: 'agendado'
-        })
-      });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Recontato reagendado com sucesso!');
+  pushToast('Recontato reagendado com sucesso!', { type: 'success' });
       handleCloseProximoRecontatoModal();
       await fetchRecontatos(); // Recarregar lista
       
     } catch (err) {
       console.error('Erro ao reagendar recontato:', err);
-      alert('Erro ao reagendar recontato: ' + err.message);
+  pushToast('Erro ao reagendar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setSubmittingProximo(false);
     }
   };
 
@@ -526,22 +800,25 @@ const Recontatos = () => {
     setProximoRecontatoData({
       periodo: '',
       data_personalizada: '',
+      motivo: '',
       observacoes: ''
     });
   };
 
   const handleSkipProximoRecontato = () => {
-    alert('Serviço criado com sucesso! Recontato não foi reagendado.');
+  pushToast('Serviço criado com sucesso! Recontato não foi reagendado.', { type: 'success' });
     handleCloseProximoRecontatoModal();
   };
 
-  const handleDeleteRecontato = async (recontato) => {
-    if (!window.confirm(`Tem certeza que deseja deletar o recontato de ${recontato.cliente_nome}?`)) {
-      return;
-    }
+  const askDeleteRecontato = (recontato) => {
+    setRecontatoParaDeletar(recontato);
+    setConfirmDeleteOpen(true);
+  };
 
+  const confirmDeleteRecontato = async () => {
+    if (!recontatoParaDeletar) return;
     try {
-      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontato.id}`), {
+      const response = await authenticatedFetch(getApiUrl(`recontatos/${recontatoParaDeletar.id}`), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -552,18 +829,39 @@ const Recontatos = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      alert('Recontato deletado com sucesso!');
-      handleCloseModal(); // Fechar modal de detalhes
-      await fetchRecontatos(); // Recarregar lista
-      
+      pushToast('Recontato deletado com sucesso!', { type: 'success' });
+      handleCloseModal();
+      await fetchRecontatos();
     } catch (err) {
       console.error('Erro ao deletar recontato:', err);
-      alert('Erro ao deletar recontato: ' + err.message);
+      pushToast('Erro ao deletar recontato: ' + err.message, { type: 'error' });
+    } finally {
+      setConfirmDeleteOpen(false);
+      setRecontatoParaDeletar(null);
     }
   };
 
+  const cancelDeleteRecontato = () => {
+    setConfirmDeleteOpen(false);
+    setRecontatoParaDeletar(null);
+  };
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return 'Data não disponível';
+    
+    try {
+      const date = new Date(dateString);
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data inválida';
+      }
+      
+      return date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Erro na data';
+    }
   };
 
   const formatTime = (timeString) => {
@@ -624,6 +922,49 @@ const Recontatos = () => {
     await fetchServicosHistorico(recontato.cliente_id);
   };
 
+  const handleEditarRecontato = (recontato) => {
+    const cliente = clientes.find(c => c.id === recontato.cliente_id);
+    
+    // Formatar a data para o formato YYYY-MM-DD
+    const dataFormatada = new Date(recontato.data_agendada).toISOString().split('T')[0];
+    
+    setRecontatoParaEditar({
+      id: recontato.id,
+      cliente_id: recontato.cliente_id,
+      clienteNome: cliente?.nome || `Cliente #${recontato.cliente_id}`,
+      data_agendada: dataFormatada,
+      hora_agendada: recontato.hora_agendada || '',
+      motivo: recontato.motivo || '',
+      observacoes: recontato.observacoes || ''
+    });
+    
+    setShowEditModal(true);
+  };
+
+  const handleAgendarServico = async (recontato) => {
+    // Abrir modal de serviço com cliente pré-selecionado e bloqueado
+    setFormData({
+      cliente_id: recontato.cliente_id,
+      data: '',
+      hora: '',
+      valor: '',
+      status: 'agendado',
+      notas: '',
+  funcionario_responsavel: []
+    });
+    
+    // Pré-selecionar e bloquear o cliente
+    setClientePreSelecionado({
+      id: recontato.cliente_id,
+      nome: recontato.cliente_nome
+    });
+    
+    // Carregar histórico de serviços do cliente
+    await fetchServicosHistorico(recontato.cliente_id);
+    
+    setShowServicoModal(true);
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedCliente(null);
@@ -659,8 +1000,14 @@ const Recontatos = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>📞 Recontatos</h1>
-        <p>Lista de todos os recontatos agendados no sistema</p>
+        <div className="header-content">
+          <h1>📞 Recontatos</h1>
+          <p>Lista de todos os recontatos agendados no sistema</p>
+        </div>
+        <button className="modern-add-btn" onClick={() => setShowAddModal(true)}>
+          <span className="btn-icon">+</span>
+          <span className="btn-text">Adicionar Recontato</span>
+        </button>
       </div>
 
       <div className="stats-bar recontatos-stats">
@@ -701,109 +1048,395 @@ const Recontatos = () => {
         </div>
       </div>
 
+      {/* Barra de pesquisa */}
+      <div className="search-bar">
+        <div className="search-input-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="🔍 Pesquisar por ID, cliente, cidade, observações, data..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button 
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              title="Limpar busca"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       {filteredRecontatos.length === 0 ? (
         <div className="empty-state">
           <h3>Nenhum recontato encontrado</h3>
-          <p>Não há recontatos {activeFilter === 'todos' ? 'cadastrados' : `na categoria "${activeFilter}"`} no sistema.</p>
+          <p>
+            {searchTerm 
+              ? 'Nenhum recontato corresponde à sua busca.' 
+              : `Não há recontatos ${activeFilter === 'todos' ? 'cadastrados' : `na categoria "${activeFilter}"`} no sistema.`
+            }
+          </p>
+          {searchTerm && (
+            <button 
+              className="clear-search-btn"
+              onClick={() => setSearchTerm('')}
+            >
+              Limpar busca
+            </button>
+          )}
         </div>
       ) : (
-        <div className="data-grid">
-          {filteredRecontatos.map((recontato) => {
-            const statusInfo = getStatusInfo(recontato);
-            return (
-              <div key={recontato.id} className={`data-card recontato-card ${statusInfo.class}`}>
-                <div className="card-header">
-                  <h3>{recontato.cliente_nome}</h3>
-                  <div className="card-badges">
-                    <span className="card-id">ID: {recontato.id}</span>
-                  </div>
-                </div>
-                <div className="card-content">
-                  <div className="info-row">
-                    <span className="info-label">📱 Telefone:</span>
-                    <span className="info-value" title={recontato.cliente_telefone}>{recontato.cliente_telefone}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📞 Recontato:</span>
-                    <span className="info-value" title={formatDate(recontato.data_agendada)}>{formatDate(recontato.data_agendada)}</span>
-                  </div>
-                  {recontato.hora_agendada && (
-                    <div className="info-row">
-                      <span className="info-label">⏰ Hora:</span>
-                      <span className="info-value" title={formatTime(recontato.hora_agendada)}>{formatTime(recontato.hora_agendada)}</span>
-                    </div>
-                  )}
-                  <div className="info-row">
-                    <span className="info-label">🎯 Motivo:</span>
-                    <span className="info-value" title={recontato.motivo || 'Não informado'}>{recontato.motivo || 'Não informado'}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📝 Nota:</span>
-                    <span className="info-value" title={recontato.observacoes || 'Sem nota'}>{recontato.observacoes || 'Sem nota'}</span>
-                  </div>
-                  {recontato.criado_em && (
-                    <div className="info-row">
-                      <span className="info-label">📅 Cadastrado em:</span>
-                      <span className="info-value" title={formatDate(recontato.criado_em)}>{formatDate(recontato.criado_em)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Botões de Ação */}
-                <div className="card-actions">
-                  <button 
-                    className="action-btn contatar-btn"
-                    onClick={() => handleContatar(recontato)}
-                    title="Contatar cliente via WhatsApp"
-                  >
-                    💬 Contatar
-                  </button>
+        <>
+          {/* Tabela de Recontatos */}
+          <div className="table-container">
+            <table className="recontatos-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>Data Recontato</th>
+                  <th>Motivo</th>
+                  <th className="observacoes-col">Observações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentRecontatos.map((recontato) => {
+                  const statusInfo = getStatusInfo(recontato);
+                  const cliente = clientes.find(c => c.id === recontato.cliente_id);
                   
-                  <button 
-                    className="action-btn marcar-btn"
-                    onClick={() => handleCriarServico(recontato)}
-                    title="Criar novo serviço para este cliente"
-                  >
-                    📅 Agendar Serviço
-                  </button>
-                  
-                  <button 
-                    className="action-btn prorrogar-btn"
-                    onClick={() => handleProrrogar(recontato)}
-                    title="Prorrogar recontato"
-                  >
-                    ⏳ Prorrogar
-                  </button>
-                  
-                  <button 
-                    className="action-btn detalhes-btn"
-                    onClick={() => handleVerDetalhes(recontato)}
-                    title="Ver histórico de serviços"
-                  >
-                    📋 Ver Detalhes
-                  </button>
+                  return (
+                    <tr 
+                      key={recontato.id} 
+                      className={`recontato-row ${statusInfo.class}`}
+                      onClick={(e) => handleRowClick(recontato, e)}
+                      style={{ cursor: 'pointer', position: 'relative' }}
+                    >
+                      <td className="id-cell">{recontato.id}</td>
+                      <td className="nome-cell">
+                        <strong>{cliente?.nome || `Cliente #${recontato.cliente_id}`}</strong>
+                      </td>
+                      <td className="telefone-cell">
+                        {cliente?.telefone || 'N/A'}
+                      </td>
+                      <td className="data-cell">
+                        <div className="data-info">
+                          <span className="data">{formatDate(recontato.data_agendada)}</span>
+                          {recontato.hora_agendada && (
+                            <span className="hora">{formatTime(recontato.hora_agendada)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="motivo-cell">
+                        {recontato.motivo || 'N/A'}
+                      </td>
+                      <td className="observacoes-cell" title={recontato.observacoes || 'Sem observações'}>
+                        <span className="observacoes-text">
+                          {recontato.observacoes ? 
+                            (recontato.observacoes.length > 50 ? 
+                              `${recontato.observacoes.substring(0, 50)}...` : 
+                              recontato.observacoes
+                            ) : 
+                            'Sem observações'
+                          }
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            
+            {/* Menu de ações posicionado fora da tabela */}
+            {showActionsMenu && (
+              <div className="actions-menu-overlay" onClick={() => setShowActionsMenu(null)}>
+                <div className="actions-menu" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const recontato = currentRecontatos.find(r => r.id === showActionsMenu);
+                    const cliente = clientes.find(c => c.id === recontato?.cliente_id);
+                    return (
+                      <>
+                        <div className="actions-menu-header">
+                          <div className="cliente-info-header">
+                            <h3 className="cliente-name">{cliente?.nome || `Cliente #${recontato?.cliente_id}`}</h3>
+                            <span className="recontato-date">Recontato: {formatDate(recontato?.data_agendada)}</span>
+                          </div>
+                          <button 
+                            className="close-actions-btn" 
+                            onClick={() => setShowActionsMenu(null)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        <div className="actions-dropdown">
+                          <button 
+                            className="action-btn contatar-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleContatar(recontato);
+                            }}
+                          >
+                            📞 Contatar
+                          </button>
+                          
+                          <button 
+                            className="action-btn servico-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleAgendarServico(recontato);
+                            }}
+                          >
+                            🛠️ Agendar Serviço
+                          </button>
+                          
+                          <button 
+                            className="action-btn prorrogar-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleProrrogar(recontato);
+                            }}
+                          >
+                            ⏳ Prorrogar
+                          </button>
+                          
+                          <button 
+                            className="action-btn detalhes-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleVerDetalhes(recontato);
+                            }}
+                          >
+                            📋 Ver Detalhes
+                          </button>
+                          
+                          <button 
+                            className="action-btn edit-btn"
+                            onClick={() => {
+                              setShowActionsMenu(null);
+                              handleEditarRecontato(recontato);
+                            }}
+                          >
+                            ✏️ Editar
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+
+          {/* Controles de Paginação */}
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Exibindo {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, filteredRecontatos.length)} de {filteredRecontatos.length} recontatos
+              {activeFilter !== 'todos' && ` (filtro: ${activeFilter})`}
+            </div>
+            <div className="pagination-controls">
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Anterior
+              </button>
+              
+              <div className="pagination-pages">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNumber}
+                      className={`pagination-page ${currentPage === pageNumber ? 'active' : ''}`}
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button 
+                className="pagination-btn"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Próximo →
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       <button className="refresh-btn" onClick={fetchRecontatos} disabled={loading}>
-        {loading ? '🔄 Atualizando...' : '🔄 Atualizar Lista'}
+        <span className="refresh-icon">↻</span>
+        <span className="refresh-text">{loading ? ' Atualizando...' : ' Atualizar Lista'}</span>
       </button>
+
+      {/* Modal de Criação de Recontato */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div 
+            className="modal-shell modal-lg" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Criar novo recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2>📞 Novo Recontato</h2>
+              <button className="modal-btn icon" onClick={() => setShowAddModal(false)} aria-label="Fechar modal de novo recontato">
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-form-section">
+                <form onSubmit={handleSubmitNovoRecontato} className="modal-form">
+                  {/* CLIENTE */}
+                  <div className="form-group">
+                    <label htmlFor="cliente_id">Cliente *</label>
+                    <select
+                      id="cliente_id"
+                      value={novoRecontatoData.cliente_id}
+                      onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, cliente_id: e.target.value }))}
+                      required
+                    >
+                      <option value="">Selecione um cliente</option>
+                      {clientes.map(cliente => (
+                        <option key={cliente.id} value={cliente.id}>
+                          {cliente.nome} - {cliente.telefone}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* DATA E HORA */}
+                  <div className="form-group-row-horizontal">
+                    <div className="form-group">
+                      <label htmlFor="data_agendada">Data *</label>
+                      <input
+                        type="date"
+                        id="data_agendada"
+                        value={novoRecontatoData.data_agendada}
+                        onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, data_agendada: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="hora_agendada">Hora</label>
+                      <input
+                        type="time"
+                        id="hora_agendada"
+                        value={novoRecontatoData.hora_agendada}
+                        onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, hora_agendada: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* TIPO E STATUS */}
+                  <div className="form-group-row-horizontal">
+                    <div className="form-group">
+                      <label htmlFor="tipo_recontato">Tipo</label>
+                      <select
+                        id="tipo_recontato"
+                        value={novoRecontatoData.tipo_recontato}
+                        onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, tipo_recontato: e.target.value }))}
+                      >
+                        <option value="follow-up">Follow-up</option>
+                        <option value="vendas">Vendas</option>
+                        <option value="suporte">Suporte</option>
+                        <option value="agendamento">Agendamento</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="status">Status</label>
+                      <select
+                        id="status"
+                        value={novoRecontatoData.status}
+                        onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, status: e.target.value }))}
+                      >
+                        <option value="agendado">Agendado</option>
+                        <option value="realizado">Realizado</option>
+                        <option value="cancelado">Cancelado</option>
+                        <option value="reagendado">Reagendado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* MOTIVO */}
+                  <div className="form-group">
+                    <label htmlFor="motivo">Motivo *</label>
+                    <input
+                      type="text"
+                      id="motivo"
+                      value={novoRecontatoData.motivo}
+                      onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, motivo: e.target.value }))}
+                      placeholder="Ex: Apresentar novos serviços, Follow-up de proposta..."
+                      required
+                    />
+                  </div>
+
+                  {/* Campo Funcionário Responsável removido conforme solicitação */}
+
+                  {/* OBSERVAÇÕES */}
+                  <div className="form-group">
+                    <label htmlFor="observacoes">Observações</label>
+                    <textarea
+                      id="observacoes"
+                      value={novoRecontatoData.observacoes}
+                      onChange={(e) => setNovoRecontatoData(prev => ({ ...prev, observacoes: e.target.value }))}
+                      placeholder="Observações adicionais sobre o recontato..."
+                      rows="3"
+                    />
+                  </div>
+
+                  <div className="modal-footer">
+                    <button type="button" className="modal-btn outline" onClick={() => setShowAddModal(false)}>
+                      Cancelar
+                    </button>
+                    <button type="submit" className="modal-btn" disabled={submittingNovo}>
+                      {submittingNovo ? '⏳ Enviando...' : 'Criar Recontato'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Prorrogação */}
       {showProrrogarModal && recontatoParaProrrogar && (
         <div className="modal-overlay" onClick={handleCloseProrrogarModal}>
-          <div className="modal-content prorrogar-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-md prorrogar-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Prorrogar recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>⏳ Prorrogar Recontato</h2>
-              <button className="close-btn" onClick={handleCloseProrrogarModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseProrrogarModal} aria-label="Fechar modal de prorrogação">✕</button>
             </div>
-            
+
             <div className="modal-body">
               <div className="prorrogar-info">
                 <h3>Cliente: {recontatoParaProrrogar.cliente_nome}</h3>
@@ -878,12 +1511,10 @@ const Recontatos = () => {
                 )}
               </div>
               
-              <div className="modal-actions">
-                <button className="cancel-btn" onClick={handleCloseProrrogarModal}>
-                  Cancelar
-                </button>
-                <button className="confirm-btn" onClick={confirmarProrrogacao}>
-                  ⏳ Confirmar Prorrogação
+              <div className="modal-footer">
+                <button className="modal-btn outline" onClick={handleCloseProrrogarModal}>Cancelar</button>
+                <button className="modal-btn" onClick={confirmarProrrogacao} disabled={submittingProrrogar}>
+                  {submittingProrrogar ? '⏳ Enviando...' : '⏳ Confirmar Prorrogação'}
                 </button>
               </div>
             </div>
@@ -894,35 +1525,52 @@ const Recontatos = () => {
       {/* Modal de Criação de Serviço */}
       {showServicoModal && (
         <div className="modal-overlay" onClick={handleCloseServicoModal}>
-          <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg modal-servico" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Criar novo serviço"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h2>📅 Novo Serviço</h2>
-              <button className="close-btn" onClick={handleCloseServicoModal}>
-                ✕
-              </button>
+              <button className="modal-btn icon" onClick={handleCloseServicoModal} aria-label="Fechar modal de serviço">✕</button>
             </div>
-            
-            <div className="modal-body-wide">
-              <div className="modal-form-section">
-                <form onSubmit={handleSubmitServico} className="modal-form">
+
+            <div className="modal-body modal-body-servico">
+              <div className="servico-layout-container">
+                {/* Coluna da Esquerda - Formulário */}
+                <div className="servico-form-column">
+                  <div className="modal-form-section">
+                    <form onSubmit={handleSubmitServico} className="modal-form">
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="cliente_id">Cliente *</label>
-                  <select
-                    id="cliente_id"
-                    name="cliente_id"
-                    value={formData.cliente_id}
-                    onChange={handleInputChange}
-                    className={formErrors.cliente_id ? 'error' : ''}
-                    required
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {clientes.map((cliente) => (
-                      <option key={cliente.id} value={cliente.id}>
-                        {cliente.nome} - {cliente.telefone}
-                      </option>
-                    ))}
-                  </select>
+                  {clientePreSelecionado ? (
+                    <input
+                      type="text"
+                      id="cliente_id"
+                      value={clientePreSelecionado.nome}
+                      className="readonly-field"
+                      readOnly
+                    />
+                  ) : (
+                    <select
+                      id="cliente_id"
+                      name="cliente_id"
+                      value={formData.cliente_id}
+                      onChange={handleInputChange}
+                      className={formErrors.cliente_id ? 'error' : ''}
+                      required
+                    >
+                      <option value="">Selecione um cliente</option>
+                      {clientes.map((cliente) => (
+                        <option key={cliente.id} value={cliente.id}>
+                          {cliente.nome} - {cliente.telefone}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {formErrors.cliente_id && (
                     <span className="error-message">{formErrors.cliente_id}</span>
                   )}
@@ -1013,15 +1661,35 @@ const Recontatos = () => {
 
               <div className="form-row">
                 <div className="form-group full-width">
-                  <label htmlFor="funcionario_responsavel">Funcionário Responsável</label>
-                  <input
-                    type="text"
-                    id="funcionario_responsavel"
-                    name="funcionario_responsavel"
-                    value={formData.funcionario_responsavel}
-                    onChange={handleInputChange}
-                    placeholder="Nome do funcionário responsável"
-                  />
+                  <label>Responsáveis</label>
+                  <div className="multi-funcionarios-control">
+                    <select onChange={e => {
+                      const val = e.target.value;
+                      if (val && !formData.funcionario_responsavel.includes(val)) {
+                        setFormData(prev => ({ ...prev, funcionario_responsavel: [...prev.funcionario_responsavel, val] }));
+                      }
+                      e.target.value='';
+                    }}>
+                      <option value="">Adicionar usuário...</option>
+                      {usuarios.filter(u => !formData.funcionario_responsavel.includes(String(u.id))).map(u => (
+                        <option key={u.id} value={u.id}>{u.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {Array.isArray(formData.funcionario_responsavel) && formData.funcionario_responsavel.length > 0 && (
+                    <div className="multi-funcionarios-chips" style={{marginTop:'6px'}}>
+                      {formData.funcionario_responsavel.map(fid => {
+                        const u = usuarios.find(u => String(u.id) === String(fid));
+                        const nome = u?.nome || fid;
+                        return (
+                          <span key={fid} className="func-chip" title={nome}>
+                            {nome}
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, funcionario_responsavel: prev.funcionario_responsavel.filter(id => id !== fid) }))}>×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1031,22 +1699,25 @@ const Recontatos = () => {
                 </div>
               )}
 
-              <div className="form-actions">
-                <button type="button" onClick={handleCloseServicoModal} className="cancel-btn">
+              <div className="modal-footer">
+                <button type="button" onClick={handleCloseServicoModal} className="modal-btn modal-btn-secondary">
                   Cancelar
                 </button>
-                <button type="submit" className="submit-btn">
-                  📅 Criar Serviço
+                <button type="submit" className="modal-btn" disabled={submittingServico}>
+                  {submittingServico ? '⏳ Enviando...' : '📅 Criar Serviço'}
                 </button>
               </div>
             </form>
-              </div>
-              
-              <div className="modal-historico-section">
-                {/* Seção do Histórico do Cliente */}
-                {formData.cliente_id && (
-                  <div className="modal-historico">
-                    <h3>📋 Histórico de Serviços</h3>
+                  </div>
+                </div>
+                
+                {/* Coluna da Direita - Histórico */}
+                <div className="servico-historico-column">
+                  <div className="modal-historico-section">
+                    {/* Seção do Histórico do Cliente */}
+                    {(formData.cliente_id || clientePreSelecionado) && (
+                      <div className="modal-historico">
+                        <h3>📋 Histórico de Serviços</h3>
                     {servicosHistorico.length > 0 ? (
                       <div className="historico-modal-lista">
                         {servicosHistorico.map((servico) => (
@@ -1084,6 +1755,8 @@ const Recontatos = () => {
                     )}
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1093,32 +1766,62 @@ const Recontatos = () => {
       {/* Modal de Detalhes do Cliente */}
       {showModal && selectedCliente && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content cliente-modal" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="modal-shell modal-lg cliente-modal" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Detalhes do recontato"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h2>📋 Histórico de Serviços - {selectedCliente.cliente_nome}</h2>
-              <button className="close-btn" onClick={handleCloseModal}>
-                ✕
-              </button>
+              <h2>📋 Detalhes do Recontato</h2>
+              <button className="modal-btn icon" onClick={handleCloseModal} aria-label="Fechar modal de detalhes">✕</button>
             </div>
-            
+
             <div className="modal-body">
-              <div className="cliente-info">
-                <div className="info-row">
-                  <span className="info-label">👤 Cliente:</span>
-                  <span className="info-value" title={selectedCliente.cliente_nome}>{selectedCliente.cliente_nome}</span>
+              <div className="cliente-info-detailed">
+                <div className="info-section">
+                  <h3>👤 Informações do Cliente</h3>
+                  <div className="info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Nome:</span>
+                      <span className="info-value">{selectedCliente.cliente_nome}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Telefone:</span>
+                      <span className="info-value">{selectedCliente.cliente_telefone}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">📱 Telefone:</span>
-                  <span className="info-value" title={selectedCliente.cliente_telefone}>{selectedCliente.cliente_telefone}</span>
+
+                <div className="info-section">
+                  <h3>📞 Detalhes do Recontato</h3>
+                  <div className="info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Data do Recontato:</span>
+                      <span className="info-value">{formatDate(selectedCliente.data_agendada)}</span>
+                    </div>
+                    {selectedCliente.hora_agendada && (
+                      <div className="info-row">
+                        <span className="info-label">Hora:</span>
+                        <span className="info-value">{formatTime(selectedCliente.hora_agendada)}</span>
+                      </div>
+                    )}
+                    <div className="info-row">
+                      <span className="info-label">Motivo:</span>
+                      <span className="info-value">{selectedCliente.motivo || 'Não informado'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">📞 Recontato:</span>
-                  <span className="info-value" title={formatDate(selectedCliente.data_agendada)}>{formatDate(selectedCliente.data_agendada)}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">🎯 Motivo:</span>
-                  <span className="info-value" title={selectedCliente.motivo || 'Não informado'}>{selectedCliente.motivo || 'Não informado'}</span>
-                </div>
+
+                {selectedCliente.observacoes && (
+                  <div className="info-section">
+                    <h3>📝 Observações/Notas</h3>
+                    <div className="observacoes-content">
+                      <p>{selectedCliente.observacoes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="historico-section">
@@ -1174,7 +1877,7 @@ const Recontatos = () => {
               <div className="recontato-actions">
                 <button 
                   className="delete-recontato-btn"
-                  onClick={() => handleDeleteRecontato(selectedCliente)}
+                  onClick={() => askDeleteRecontato(selectedCliente)}
                   title="Deletar este recontato permanentemente"
                 >
                   🗑️ Deletar Recontato
@@ -1187,20 +1890,26 @@ const Recontatos = () => {
 
       {/* Modal de Próximo Recontato */}
       {showProximoRecontatoModal && (
-        <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && handleCloseProximoRecontatoModal()}>
-          <div className="beautiful-modal">
+        <div className="modal-overlay" onClick={(e) => e.target.classList.contains('modal-overlay') && handleCloseProximoRecontatoModal()}>
+          <div 
+            className="modal-shell modal-md" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Reagendar recontato" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3>🎯 Reagendar Recontato</h3>
-              <button className="close-btn" onClick={handleCloseProximoRecontatoModal}>×</button>
+              <h2>🎯 Reagendar Recontato</h2>
+              <button className="modal-btn icon" onClick={handleCloseProximoRecontatoModal} aria-label="Fechar modal">✕</button>
             </div>
-            
-            <div className="modal-content">
-              <div className="success-message">
-                <p>✅ Serviço criado com sucesso!</p>
-                <p>Agora vamos reagendar o recontato deste cliente para dar continuidade ao relacionamento.</p>
-              </div>
 
-              <form onSubmit={handleSubmitProximoRecontato}>
+            <div className="modal-body">
+              <form onSubmit={handleSubmitProximoRecontato} className="modal-form">
+                <div className="success-message" style={{textAlign: 'center', marginBottom: '20px', padding: '15px', backgroundColor: '#e8f5e8', borderRadius: '8px', border: '1px solid #4caf50', width: '100%'}}>
+                  <p style={{margin: '5px 0', color: '#2e7d32', fontWeight: 'bold', fontSize: '16px'}}>✅ Serviço criado com sucesso!</p>
+                  <p style={{margin: '5px 0', color: '#4caf50', fontSize: '14px'}}>Agora vamos reagendar o recontato deste cliente para dar continuidade ao relacionamento.</p>
+                </div>
+
                 <div className="form-group">
                   <label>📅 Quando fazer o próximo recontato?</label>
                   <div className="quick-options">
@@ -1232,25 +1941,35 @@ const Recontatos = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="observacoes_proximo">Observações (opcional):</label>
+                  <label htmlFor="motivo_proximo">🎯 Motivo do Recontato *</label>
+                  <input
+                    type="text"
+                    id="motivo_proximo"
+                    name="motivo"
+                    value={proximoRecontatoData.motivo}
+                    onChange={handleProximoRecontatoInputChange}
+                    placeholder="Ex: Follow-up pós-serviço, verificar satisfação, apresentar novos produtos..."
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="observacoes_proximo">📝 Observações (opcional):</label>
                   <textarea
                     id="observacoes_proximo"
                     name="observacoes"
                     value={proximoRecontatoData.observacoes}
                     onChange={handleProximoRecontatoInputChange}
-                    placeholder="Ex: Verificar satisfação com o serviço, apresentar novos produtos..."
+                    placeholder=""
                     rows="3"
                     className="form-input"
                   />
                 </div>
 
-                <div className="button-group">
-                  <button type="button" className="btn-secondary" onClick={handleSkipProximoRecontato}>
-                    Pular Reagendamento
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    Reagendar Recontato
-                  </button>
+                <div className="modal-footer">
+                  <button type="button" className="modal-btn outline" onClick={handleSkipProximoRecontato}>⏭️ Pular Reagendamento</button>
+                  <button type="submit" className="modal-btn" disabled={submittingProximo}> {submittingProximo ? '⏳ Enviando...' : '📅 Reagendar Recontato'} </button>
                 </div>
               </form>
             </div>
@@ -1258,6 +1977,120 @@ const Recontatos = () => {
         </div>
       )}
 
+      {/* Modal de Edição de Recontato */}
+      {showEditModal && recontatoParaEditar && (
+        <div className="modal-overlay" data-modal="edit" onClick={() => setShowEditModal(false)}>
+          <div 
+            className="modal-shell modal-md" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-label="Editar recontato" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2>✏️ Editar Recontato</h2>
+              <button className="modal-btn icon" onClick={() => setShowEditModal(false)} aria-label="Fechar modal de edição">✕</button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleSubmitEditarRecontato} className="modal-form">
+                <div className="form-group">
+                  <label htmlFor="clienteEdit">Cliente:</label>
+                  <input
+                    type="text"
+                    id="clienteEdit"
+                    value={recontatoParaEditar.clienteNome}
+                    disabled
+                    className="form-input disabled"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="dataEdit">Data do Recontato: *</label>
+                    <input
+                      type="date"
+                      id="dataEdit"
+                      value={recontatoParaEditar.data_agendada}
+                      onChange={(e) => setRecontatoParaEditar({
+                        ...recontatoParaEditar,
+                        data_agendada: e.target.value
+                      })}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="horaEdit">Hora do Recontato:</label>
+                    <input
+                      type="time"
+                      id="horaEdit"
+                      value={recontatoParaEditar.hora_agendada}
+                      onChange={(e) => setRecontatoParaEditar({
+                        ...recontatoParaEditar,
+                        hora_agendada: e.target.value
+                      })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="motivoEdit">Motivo do Recontato: *</label>
+                  <input
+                    type="text"
+                    id="motivoEdit"
+                    value={recontatoParaEditar.motivo}
+                    onChange={(e) => setRecontatoParaEditar({
+                      ...recontatoParaEditar,
+                      motivo: e.target.value
+                    })}
+                    required
+                    className="form-input"
+                    placeholder="Digite o motivo do recontato..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="observacoesEdit">Observações:</label>
+                  <textarea
+                    id="observacoesEdit"
+                    value={recontatoParaEditar.observacoes}
+                    onChange={(e) => setRecontatoParaEditar({
+                      ...recontatoParaEditar,
+                      observacoes: e.target.value
+                    })}
+                    placeholder="Observações adicionais sobre este recontato..."
+                    rows="3"
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button type="button" className="modal-btn outline" onClick={() => setShowEditModal(false)}>Cancelar</button>
+                  <button type="submit" className="modal-btn" disabled={submittingEditar}>{submittingEditar ? '⏳ Enviando...' : '💾 Salvar Alterações'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Deletar recontato"
+        tone="danger"
+        message={`Tem certeza que deseja deletar o recontato de ${recontatoParaDeletar?.cliente_nome || ''}?`}
+        details={<>
+          <p><strong>Data:</strong> {recontatoParaDeletar ? formatDate(recontatoParaDeletar.data_agendada) : '-'}</p>
+          {recontatoParaDeletar?.motivo && <p><strong>Motivo:</strong> {recontatoParaDeletar.motivo}</p>}
+          <p style={{marginTop:'8px'}}>Esta ação não pode ser desfeita.</p>
+        </>}
+        confirmLabel="Deletar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmDeleteRecontato}
+        onCancel={cancelDeleteRecontato}
+      />
     </div>
   );
 };
